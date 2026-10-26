@@ -16,7 +16,10 @@ B_SCENE_WORDS = 60  # TZ FR-12: slayd matni >= 60 so'z yoki jadval -> B tavsiya
 def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
     """Sahna tavsiyasi: matni ko'p yoki jadvalli slaydlar B, qolgani A (inson tasdiqlaydi)."""
     p = stack.project
-    heavy = {s.index for s in p.slides if len(s.body.split()) >= B_SCENE_WORDS or " | " in s.body}
+    # TZ FR-12 qoidasi; chegara loyiha meta'sida sozlanadi ("b_scene_words"): zich slaydli darslarda 60 da deyarli
+    # hamma slayd B bo'lib qoladi (namunada 65-139 so'z) — qaror inson tomonidan
+    limit = int(p.meta.get("b_scene_words", B_SCENE_WORDS))
+    heavy = {s.index for s in p.slides if len(s.body.split()) >= limit or " | " in s.body}
     out: list[LayoutSpan] = []
     for sp in p.slide_spans:
         lay = "B" if sp.slide in heavy else "A"

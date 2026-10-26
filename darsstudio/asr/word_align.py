@@ -108,4 +108,11 @@ def align(segments: list[Segment], em: Emissions) -> tuple[list[Word], int]:
         else:
             words += a
             ok += 1
+    # segment oynalari (± pad) ustma-ust tushadi: so'zlar vaqt bo'yicha kesishmasin
+    for i in range(1, len(words)):
+        p, w = words[i - 1], words[i]
+        if w.start_ms < p.end_ms:
+            mid = max(p.start_ms + 1, min(w.start_ms, p.end_ms))
+            words[i - 1] = p.model_copy(update={"end_ms": mid})
+            words[i] = w.model_copy(update={"start_ms": mid, "end_ms": max(w.end_ms, mid + 1)})
     return words, ok

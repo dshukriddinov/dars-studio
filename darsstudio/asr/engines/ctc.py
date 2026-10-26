@@ -35,7 +35,8 @@ class CtcEngine:
         if self.device.type == "cuda":
             self.model = self.model.half()
         vocab = self.proc.tokenizer.get_vocab()
-        self.vocab: dict[str, int] = dict(vocab)
+        n_out = int(self.model.config.vocab_size)  # qo'shimcha tokenlar (<s>, </s>) model chiqishida yo'q
+        self.vocab: dict[str, int] = {t: i for t, i in vocab.items() if i < n_out}
         self.blank = int(self.proc.tokenizer.pad_token_id)
         self.sep = self.vocab.get(self.proc.tokenizer.word_delimiter_token or "|")
         self.inv = {i: t for t, i in self.vocab.items()}
