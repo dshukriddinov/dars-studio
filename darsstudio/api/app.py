@@ -245,6 +245,120 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         sched.resume(job_id)
         return queue.get(job_id).model_dump(mode="json")
 
+    @app.get("/api/projects/{name}/frame/{frame}")
+    def frame_image(name: str, frame: int, mode: str = "orig", width: int = 960) -> Any:
+        """Kalibrlash uchun kadr (JPEG): orig | keyed (shaxmat fonda) | matte. Keyer CPU'da (server CUDA yuklamaydi)."""
+        import cv2
+        import numpy as np
+        import torch
+        from fastapi.responses import Response
+
+        from darsstudio.media.frames import planes
+        from darsstudio.render import prepare
+        from darsstudio.render.keyer import Keyer, to_rgb, ycbcr
+        p = store(name).load()
+        if not 0 <= frame < p.total_frames:
+            raise HTTPException(400, "Kadr raqami loyiha chegarasidan tashqarida.")
+        pr = prepare.work_probe(p)
+        w, h = pr.video.width, pr.video.height
+        y, u, v = planes(prepare.read_frame(pr, frame), w, h)
+        t = lambda x: torch.from_numpy(np.ascontiguousarray(x)).unsqueeze(0)  # noqa: E731
+        if mode == "orig":
+            img = to_rgb(*ycbcr(t(y), t(u), t(v), pr.full_range))[0].permute(1, 2, 0).numpy()
+        else:
+            r = Keyer(p.key, w, h, pr.full_range, torch.device("cpu"))(t(y), t(u), t(v))
+            a = r.alpha[0].permute(1, 2, 0).numpy()
+            if mode == "matte":
+                img = a.repeat(3, 2)
+            else:
+                checker = ((np.indices((h, w)).sum(0) // 32) % 2 * 0.3 + 0.35)[..., None].repeat(3, 2)
+                img = r.rgb[0].permute(1, 2, 0).numpy() + checker * (1 - a)
+        out = (np.clip(img, 0, 1) * 255).astype(np.uint8)[..., ::-1]
+        if width and width < w:
+            out = cv2.resize(out, (width, round(h * width / w)), interpolation=cv2.INTER_AREA)
+        ok, buf = cv2.imencode(".jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 88])
+        return Response(buf.tobytes(), media_type="image/jpeg")
+
+    @app.post("/api/projects/{name}/key/suggest")
+    def key_suggest(name: str, frame: int) -> dict[str, Any]:
+        from darsstudio.render import prepare
+        st = stack(name)
+        prepare.ensure_key(st, prepare.work_probe(st.project), frame=frame)
+        return project_view(st)
+
+    @app.post("/api/projects/{name}/preview")
+    def preview(name: str, start_s: float, duration_s: float = 10.0) -> dict[str, Any]:
+        """"Haqiqiy ko'rinish" (FR-15): oraliq render navbatga (alohida jarayon); natija /files orqali."""
+        s = store(name)
+        p = s.load()
+        fps = float(p.fps_frac)
+        out = s.root / "cache" / "preview" / f"preview_{int(start_s * 1000)}_{int(duration_s * 1000)}.mp4"
+        args = {"out": str(out), "start": max(0, int(start_s * fps)), "frames": max(1, int(duration_s * fps)),
+                "profile": "web"}
+        return {"id": queue.add("render", str(s.root), args, resources_for("render", args)),
+                "file": str(out.relative_to(s.root)).replace("\\", "/")}
+
+    @app.get("/api/projects/{name}/files/{path:path}")
+    def project_file(name: str, path: str) -> FileResponse:
+        """Loyiha ichidagi eksport/preview fayllari (yo'l loyiha papkasidan chiqmaydi)."""
+        s = store(name)
+        f = (s.root / path).resolve()
+        if not str(f).startswith(str(s.root.resolve())) or not f.is_file() or f.name == "project.json":
+            raise HTTPException(404, "Fayl topilmadi.")
+        return FileResponse(f)
+
+    @app.get("/api/projects/{name}/exports")
+    def exports(name: str) -> list[dict[str, Any]]:
+        s = store(name)
+        out = []
+        for f in sorted(s.root.glob("exports/**/*.mp4")):
+            qa = f.with_name("qa.json")
+            out.append({"file": str(f.relative_to(s.root)).replace("\\", "/"),
+                        "size_mb": round(f.stat().st_size / 2**20, 1),
+                        "qa": json.loads(qa.read_text(encoding="utf-8")) if qa.is_file() else None})
+        return out
+
+    @app.get("/api/templates")
+    def list_templates() -> list[str]:
+        from darsstudio.render import templates
+        return sorted(d.name for d in templates.templates_dir().iterdir() if (d / "template.json").is_file())
+
+    @app.get("/api/templates/{tid}")
+    def get_template(tid: str) -> dict[str, Any]:
+        from darsstudio.render import templates
+        if not NAME_RE.match(tid):
+            raise HTTPException(400, "Noto'g'ri shablon nomi.")
+        return templates.load(tid).model_dump(mode="json", exclude={"dir"})
+
+    @app.get("/api/templates/{tid}/background")
+    def template_bg(tid: str) -> FileResponse:
+        from darsstudio.render import templates
+        if not NAME_RE.match(tid):
+            raise HTTPException(400, "Noto'g'ri shablon nomi.")
+        t = templates.load(tid)
+        return FileResponse(t.asset(t.background))
+
+    class TemplatePatch(BaseModel):
+        screen_quad: list[list[float]] | None = None
+        teacher_anchor: list[int] | None = None
+
+    @app.put("/api/templates/{tid}")
+    def put_template(tid: str, r: TemplatePatch) -> dict[str, Any]:
+        from darsstudio.render import templates
+        if not NAME_RE.match(tid):
+            raise HTTPException(400, "Noto'g'ri shablon nomi.")
+        t = templates.load(tid)
+        upd: dict[str, Any] = {}
+        if r.screen_quad is not None:
+            if len(r.screen_quad) != 4:
+                raise HTTPException(400, "4 ta nuqta kerak: TL, TR, BR, BL.")
+            upd["screen_quad"] = tuple(tuple(p) for p in r.screen_quad)
+        if r.teacher_anchor is not None:
+            upd["teacher_anchor"] = tuple(r.teacher_anchor)
+        t = templates.Template.model_validate({**t.model_dump(), **upd})
+        templates.save(t)
+        return t.model_dump(mode="json", exclude={"dir"})
+
     @app.websocket("/ws")
     async def ws(sock: WebSocket) -> None:
         await sock.accept()

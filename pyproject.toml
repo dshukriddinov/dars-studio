@@ -70,7 +70,7 @@ plugins = ["pydantic.mypy"]
 
 # TZ 10.1: asosiy modullar strict. Numerik kod (cv2/torch/numpy stub'lari noaniq) uchun yumshatilgan.
 [[tool.mypy.overrides]]
-module = ["darsstudio.render.*", "darsstudio.slides.*", "darsstudio.cli", "darsstudio.asr.engines.*"]
+module = ["darsstudio.render.*", "darsstudio.slides.*", "darsstudio.cli", "darsstudio.asr.engines.*", "darsstudio.api.*"]
 disallow_untyped_calls = false
 disable_error_code = ["arg-type", "call-overload", "assignment", "list-item", "no-any-return"]
 
