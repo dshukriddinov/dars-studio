@@ -4,11 +4,15 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from darsstudio import paths
 from darsstudio.media.probe import MediaError
 from darsstudio.project import importer
 from darsstudio.project.store import ProjectStore
+
+if TYPE_CHECKING:
+    from darsstudio.project.commands import CommandStack
 
 
 def _meta(items: list[str]) -> dict[str, str]:
@@ -54,6 +58,86 @@ def cmd_info(a: argparse.Namespace) -> int:
     return 0
 
 
+def _stack(project: str) -> "CommandStack":
+    from darsstudio.project.commands import CommandStack
+    return CommandStack(ProjectStore(Path(project)))
+
+
+def cmd_render(a: argparse.Namespace) -> int:
+    from darsstudio.render import prepare, renderer, templates
+    st = _stack(a.project)
+    p = st.project
+    tpl = templates.load(a.template or p.template_id)
+    pr = prepare.work_probe(p)
+    pngs = prepare.ensure_slides(st)
+    warped = prepare.ensure_warped(st, tpl, pngs)
+    prepare.ensure_key(st, pr)
+    prepare.ensure_placement(st, pr, tpl)
+    if a.slides_csv:
+        ss, ls = prepare.read_slides_csv(Path(a.slides_csv), p.fps_frac, p.total_frames, len(p.slides))
+        st.do("slayd vaqtlari (CSV)", {"slide_spans": [s.model_dump(mode="json") for s in ss],
+                                       "layout_spans": [s.model_dump(mode="json") for s in ls]})
+    p = st.project
+    if not p.slide_spans:
+        raise MediaError("Slayd vaqtlari yo'q: --slides-csv bering.")
+    fps = p.fps_frac
+    start = round(prepare.parse_time(a.start) * fps) if a.start else 0
+    frames = round(prepare.parse_time(a.duration) * fps) if a.duration else None
+    out = Path(a.out)
+
+    def progress(d: int, t: int) -> None:
+        print(f"\r{d}/{t} kadr ({100 * d // max(t, 1)}%)", end="", file=sys.stderr, flush=True)
+
+    opts = renderer.RenderOptions(profile=a.profile, preset=a.preset, chunk_sec=a.chunk_sec, start=start,
+                                  frames=frames, on_progress=progress)
+    rep = renderer.render(p, pr, tpl, warped, pngs, p.slide_spans, p.layout_spans, out,
+                          st.store.cache("render"), opts)
+    print(f"\nTayyor: {out}\n  {rep.frames} kadr, {rep.seconds} s ({rep.fps} kadr/s), "
+          f"VRAM pik {rep.vram_peak_mb} MB, ogohlantirishlar {len(rep.warnings)}")
+    return 0
+
+
+def cmd_calibrate_key(a: argparse.Namespace) -> int:
+    import cv2
+    import numpy as np
+    import torch
+
+    from darsstudio.media.frames import planes
+    from darsstudio.render import prepare
+    from darsstudio.render.keyer import Keyer, to_rgb, ycbcr
+    st = _stack(a.project)
+    pr = prepare.work_probe(st.project)
+    prepare.ensure_key(st, pr, frame=a.frame)
+    w, h = pr.video.width, pr.video.height
+    y, u, v = planes(prepare.read_frame(pr, a.frame), w, h)
+    t = lambda x: torch.from_numpy(np.ascontiguousarray(x)).unsqueeze(0)  # noqa: E731
+    res = Keyer(st.project.key, w, h, pr.full_range, torch.device("cpu"))(t(y), t(u), t(v))
+    before = to_rgb(*ycbcr(t(y), t(u), t(v), pr.full_range))[0].permute(1, 2, 0).numpy()
+    checker = ((np.indices((h, w)).sum(0) // 32) % 2 * 0.35 + 0.35)[..., None].repeat(3, 2)
+    a_ = res.alpha[0].permute(1, 2, 0).numpy()
+    after = res.rgb[0].permute(1, 2, 0).numpy() + checker * (1 - a_)
+    out = st.store.cache("render") / "calib"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, img in (("oldin", before), ("keyin", after), ("matte", a_.repeat(3, 2))):
+        cv2.imwrite(str(out / f"key_{a.frame}_{name}.png"), (np.clip(img, 0, 1) * 255).astype(np.uint8)[..., ::-1])
+    print(f"Key: {st.project.key.model_dump()}\nRasmlar: {out}")
+    return 0
+
+
+def cmd_calibrate_screen(a: argparse.Namespace) -> int:
+    import json as _json
+
+    from darsstudio.render import templates
+    tpl = templates.load(a.template)
+    pts = _json.loads(Path(a.points).read_text(encoding="utf-8") if Path(a.points).is_file() else a.points)
+    if len(pts) != 4:
+        raise MediaError("4 ta nuqta kerak: TL, TR, BR, BL.")
+    tpl = tpl.model_copy(update={"screen_quad": tuple(tuple(map(float, p)) for p in pts)})
+    templates.save(tpl)
+    print(f"{a.template}: screen_quad = {pts}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="darsstudio")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -81,6 +165,27 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("info", help="loyiha haqida qisqa ma'lumot")
     s.add_argument("project")
     s.set_defaults(fn=cmd_info)
+    s = sub.add_parser("render", help="yakuniy MP4 (B3: slayd vaqtlari CSV'dan)")
+    s.add_argument("project")
+    s.add_argument("--slides-csv", help="start,slide[,layout] (soniya yoki m:ss)")
+    s.add_argument("--out", required=True)
+    s.add_argument("--template")
+    s.add_argument("--profile", choices=("web", "arxiv"), default="web")
+    s.add_argument("--preset", default="p7", help="NVENC preset p1..p7")
+    s.add_argument("--chunk-sec", type=int, default=60)
+    s.add_argument("--start", help="bo'lak boshi (soniya yoki m:ss)")
+    s.add_argument("--duration", help="bo'lak uzunligi (soniya yoki m:ss)")
+    s.set_defaults(fn=cmd_render)
+
+    s = sub.add_parser("calibrate-key", help="kadrdan key rangi va garbage taklifi + oldin/keyin PNG")
+    s.add_argument("project")
+    s.add_argument("--frame", type=int, required=True)
+    s.set_defaults(fn=cmd_calibrate_key)
+
+    s = sub.add_parser("calibrate-screen", help="shablon ekran to'rtburchagi (4 nuqta JSON)")
+    s.add_argument("--template", required=True)
+    s.add_argument("--points", required=True, help="JSON fayl yoki '[[x,y],[x,y],[x,y],[x,y]]'")
+    s.set_defaults(fn=cmd_calibrate_screen)
     return ap
 
 

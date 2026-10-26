@@ -4,6 +4,43 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — B3, vertikal kesim: birinchi haqiqiy MP4
+
+**O'lchovlar (RTX 5070 Ti, torch 2.11+cu128, ffmpeg 7.1.1, NVENC p7, profil `web`):**
+- `tools/render_bench.py workdir/namuna` (to'liq 13 min 46 s, 20 664 kadr, A sahna, demo shablon):
+  **147.3 kadr/s**, 140.3 s, torch VRAM pik 2 656 MB, GPU umumiy band xotira pik 6 594 MB (displey va boshqa
+  dasturlar bilan), asosiy jarayon CPU ~1.3 yadro. Maqsad >= 80 kadr/s (AC-10) — bajarildi; 25 min ~4.3 min
+  (ekstrapolyatsiya).
+- 2.5 min bo'lak (`workdir/b3/namuna_frag.mp4`, A->B->A, 8 slayd CSV'dan): 47.5 s jami (slayd render PowerPoint
+  COM, warp, key taklifi, joylashtirish 413 namunada, render 25.4 s).
+- Testlar: `pytest -m "unit or media or windows"` 63 passed.
+
+**Qarorlar:**
+- PowerPoint 16.0 ish stansiyasida bor (O-01 javobi). LibreOffice yo'q: PPTX uchun zaxira yo'l faqat LibreOffice
+  o'rnatilsa ishlaydi; PDF pypdfium2 bilan.
+- `render_pptx.py` va `render_pdf.py` bitta `slides/render.py` ga birlashtirildi (umumiy kesh/stamp). 4K PNG
+  slaydning o'z nisbatida, 16:9 ga pillarbox warp/kompozitda.
+- Sarlavha placeholder'i bo'lmasa (namuna PPTX'da shunday) — eng yuqoridagi <= 12 so'zli matn sarlavha.
+- Keyer: guided filter bilan luma'ga tayangan chroma upsampling (r=2), CbCr masofasi smoothstep, garbage/keep,
+  choke + Gauss feather, spill G' = min(G, max(R,B)), [ixtiyoriy] guided edge refine. AI matting, light wrap,
+  vaqt bo'yicha EMA — qilinmadi (TZ'da [T]/[I]).
+- Key avtomatik taklifi (`keyer.suggest`): yashil piksellar medianasi, tolerantlik = 99.5-persentil + 0.02,
+  garbage = yashil maydon (ustun/qator > 30% yashil) tashqarisi. Namunada: key (-0.175, -0.274), tol 0.1225,
+  garbage x < 227 va x > 1627 (oq devorlar).
+- Joylashtirish: `MAX_SCALE = 1.0` (1080p manbani kattalashtirmaslik). Namunada bbox (604, 208)-(1224, 1080),
+  joy x=556, y=0, scale 1.0.
+- Audio (B3): manbadan AAC 192k, video `start` kadridan `-ss` (fayl boshiga nisbatan) — lab-sync saqlanadi;
+  52 ms siljishli sintetik klipda chaqnash (100-kadr) va beep 1 kadr ichida (test).
+- Chunk 60 s, checkpoint `cache/render/<kalit>/seg_XXXXX.json`, kalit = sozlamalar + shablon hash + slaydlar +
+  oraliqlar + profil. Qayta ishga tushirilganda tayyor segmentlar qayta yozilmaydi (test).
+- mypy: render/slides/cli uchun `arg-type, call-overload, assignment, list-item, no-any-return` o'chirilgan
+  (cv2/torch stub'lari), qolgan modullar strict.
+
+**G1 (inson qarori kutilmoqda):** `workdir/b3/namuna_frag.mp4` ni montajchi ko'rishi kerak: soch, qo'l, ko'zoynak
+(namunada yo'q), devor cheti, slayd o'qilishi, o'qituvchi joyi. Demo shablon sintetik (haqiqiy studiya foni — O-08).
+
+---
+
 ## 2026-10-26 — B2, media qatlami, TimeMap, loyiha modeli
 
 **O'lchovlar:** haqiqiy namuna (`namuna/video.MOV`, 13 min 46 s, 1080p25 yuvj420p, PCM 48 kHz, 20 664 kadr) +

@@ -1,0 +1,55 @@
+{
+ "id": "demo",
+ "canvas": [
+  1920,
+  1080
+ ],
+ "background": "background.png",
+ "screen_quad": [
+  [
+   150,
+   170
+  ],
+  [
+   1030,
+   200
+  ],
+  [
+   1022,
+   690
+  ],
+  [
+   142,
+   722
+  ]
+ ],
+ "screen_aspect": "16:9",
+ "teacher_anchor": [
+  1060,
+  40,
+  1880,
+  1080
+ ],
+ "safe_margin_px": 24,
+ "logo": {
+  "file": "logo.png",
+  "pos": [
+   1660,
+   32
+  ],
+  "height": 48
+ },
+ "lower_third": {
+  "style": "default",
+  "duration_s": 6
+ },
+ "transitions": {
+  "slide_frames": 8,
+  "layout_frames": 12
+ },
+ "fullscreen": {
+  "fit": "contain",
+  "pillarbox_color": "#000000"
+ },
+ "key_defaults": {}
+}

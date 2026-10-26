@@ -47,9 +47,9 @@ class FrameReader:
         self.w, self.h, self.nbytes = v.width, v.height, frame_bytes(v.width, v.height)
         args = ["-v", "error", "-nostdin"]
         if start:
-            # mutlaq stream vaqti: video start_time + (start - 0.5) kadr -> aynan `start` kadrdan
-            # (Eye Contact'da sinalgan)
-            t = v.start_time + (start - Fraction(1, 2)) / v.fps
+            # -ss fayl boshiga (format start_time) nisbatan: video start_time + (start - 0.5) kadr -> aynan
+            # `start` kadrdan (Eye Contact'da sinalgan)
+            t = v.start_time - p.format_start_time + (start - Fraction(1, 2)) / v.fps
             args += ["-ss", f"{float(t):.6f}"]
         args += ["-i", p.path, "-map", "0:v:0"]
         if count is not None:
@@ -88,8 +88,9 @@ class FrameWriter:
     Rang teglari `color_of` dan (manba probe) olinadi va kirishga ham, chiqishga ham yoziladi."""
 
     def __init__(self, path: Path, w: int, h: int, fps: Fraction, color_of: ProbeResult | None,
-                 encoder_args: Sequence[str], pix_fmt: str = "yuv420p", extra_out: Sequence[str] = ()) -> None:
-        tags = color_flags(color_of) if color_of else []
+                 encoder_args: Sequence[str], pix_fmt: str = "yuv420p", extra_out: Sequence[str] = (),
+                 tags: Sequence[str] | None = None) -> None:
+        tags = list(tags) if tags is not None else (color_flags(color_of) if color_of else [])
         self.nbytes = frame_bytes(w, h)
         args = ["-v", "error", "-nostdin", "-y", "-f", "rawvideo", "-pix_fmt", pix_fmt, "-s", f"{w}x{h}",
                 "-r", str(fps), *tags, "-i", "-", *encoder_args, *tags, *extra_out, str(path)]

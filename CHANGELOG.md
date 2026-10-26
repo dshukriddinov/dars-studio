@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### B3 — vertikal kesim, birinchi MP4 (2026-10-26)
+- `slides/`: `extract.py` (matn, jadval, eslatmalar, animatsiya/media/shrift ogohlantirishlari), `render.py`
+  (PowerPoint COM / LibreOffice / pypdfium2, 4K, kesh), `warp.py` (TZ 9.2, supersampling).
+- `render/`: `templates.py` (TZ 8.3), `keyer.py` (TZ 9.1, PyTorch), `placement.py` (TZ 9.3), `compositor.py`
+  (A/B, crossfade, logo), `renderer.py` (bitta o'tish, NVENC, chunk + checkpoint, A/V sinxron), `prepare.py`.
+- `templates/demo` (`tools/make_demo_template.py`), CLI: `render`, `calibrate-key`, `calibrate-screen`.
+- `tools/render_bench.py`: 147 kadr/s (1080p25, RTX 5070 Ti).
+
 ### B2 — media qatlami, TimeMap, loyiha modeli (2026-10-26)
 - `media/probe.py` (FR-02, Fraction fps, paket bo'yicha VFR, validatsiya, `file_id`), `media/normalize.py`
   (VFR->CFR, 48 kHz), `media/frames.py` (FrameReader/Writer, aniq seek), `media/proxy.py` (540p, GOP 12).

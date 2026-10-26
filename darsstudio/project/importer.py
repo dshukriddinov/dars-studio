@@ -31,7 +31,7 @@ def read_slide_titles(path: Path) -> list[Slide]:
             out.append(Slide(index=i, title=(t.text if t is not None and t.has_text_frame else "").strip()))
         return out
     if path.suffix.lower() == ".pdf":
-        import pypdfium2 as pdfium  # type: ignore[import-untyped]
+        import pypdfium2 as pdfium
         doc = pdfium.PdfDocument(str(path))
         return [Slide(index=i + 1) for i in range(len(doc))]
     raise MediaError(f"{path.name}: slaydlar PPTX yoki PDF bo'lishi kerak.")
