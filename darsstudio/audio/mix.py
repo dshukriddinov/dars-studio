@@ -68,9 +68,11 @@ def final_audio(denoised: Path, tm: TimeMap, out: Path, profile: str = "standart
     m = loudness.measure(cut)
     tmp = out.with_name(out.stem + ".tmp.wav")
     # loudnorm 192 kHz da chiqaradi: shu yerda limiter (4x oversampling ~ true peak). Manba clipping qilingan
-    # bo'lsa (namunada +0.5 dBTP) loudnorm yolg'iz AAC dan keyin TP <= -1.5 ni ushlab turolmadi (QA ushladi)
+    # bo'lsa (namunada +0.5 dBTP) loudnorm yolg'iz AAC dan keyin TP <= -1.5 ni ushlab turolmadi (QA ushladi).
+    # 16 kHz lowpass: AAC yuqori chastotani kesganda impulsda "ringing" +6 dB cho'qqi berdi (namunada 2.06 s)
     ffmpeg.run(["-v", "error", "-nostdin", "-y", "-i", str(cut), "-af", loudness.loudnorm_filter(m, profile)
-                + f",alimiter=limit={LIMIT_LIN}:attack=1:release=50:level=0,aresample={SR}:resampler=soxr",
+                + f",lowpass=f=16000:poles=2,alimiter=limit={LIMIT_LIN}:attack=1:release=50:level=0"
+                f",aresample={SR}:resampler=soxr",
                 "-c:a", "pcm_f32le", str(tmp)])
     tmp.replace(out)
     cut.unlink()

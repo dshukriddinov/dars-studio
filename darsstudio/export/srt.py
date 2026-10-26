@@ -76,9 +76,11 @@ def build_cues(words: Sequence[Word], tm: TimeMap) -> list[Cue]:
             c.end_ms = min(c.start_ms + int(MIN_S * 1000), nxt)
     end_ms = int(Fraction(tm.out_total) / tm.fps * 1000)   # titr videodan uzun bo'lmasin (QA)
     cues = [c for c in cues if c.start_ms < end_ms]
-    for c in cues:
+    for i, c in enumerate(cues):
         c.end_ms = min(c.end_ms, end_ms)
-    return cues
+        if i + 1 < len(cues):  # so'z vaqtlari ustma-ust bo'lsa ham titrlar kesishmasin (QA: monoton)
+            c.end_ms = min(c.end_ms, cues[i + 1].start_ms)
+    return [c for c in cues if c.end_ms > c.start_ms]
 
 
 def _ts(ms: int) -> str:
