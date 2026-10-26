@@ -4,6 +4,33 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — B9–B11: eksport, QA, paket, offline va barqarorlik sinovlari
+
+**End-to-end (haqiqiy namuna):** `export` — 13.8 min dars, Eye Contact patchlari bilan, `b_scene_words=120`:
+QA ogohlantirish (faqat inson tekshiruvi: 2 shubhali chegara, 1 kesish taklifi). Kadr 20 664 = kutilgan, A/V 0.0 ms,
+-16.1 LUFS, TP -2.4 dBTP, qora/muzlagan kadr yo'q. To'liq eksport (render + audio + QA) ~3 min.
+
+**QA haqiqiy xatolarni ushladi va tuzatildi:**
+1. TP -0.5 / +3.6 dBTP — manba clipping (+0.5) va AAC'ning impulsda "ringing" i (+6 dB, 2.06 s dagi bitta impuls).
+   Yechim: loudnorm (192 kHz) -> lowpass 16 kHz -> alimiter -3 dBFS -> 48 kHz. Natija -2.4 dBTP.
+2. SRT oxirgi titri videodan uzun; so'z vaqtlari ustma-ust bo'lganda titrlar kesishgan — chegaralandi.
+3. Sinxron slayd matnisiz (faqat sarlavhalar) ishlab 1 oraliq bergan — sinxrondan oldin matn ajratiladi.
+
+**Barqarorlik sinovi topgan xatolar:** (a) worker'dagi eski `asr` nomi navbatdagi `asr` vazifasini to'sgan;
+(b) **lost update** — parallel Eye Contact vazifasi eski project.json ni saqlab sinxron natijasini o'chirgan. Yechim:
+`project.lock` (O_EXCL, 60 s dan eski qulf olib tashlanadi) + har buyruq diskdagi so'nggi holatga qo'llanadi.
+Natija: 3 loyiha x 7 vazifa — hammasi tayyor; render 42% da worker o'ldirildi, qayta urinishda seg_00000 qayta
+yozilmadi (checkpoint). Python jarayonlari RAM pik 6.6 GB. (25 min o'rniga 2 min bo'laklar — vaqt uchun.)
+
+**Offline (AC-13):** `tools/offline_check.py` — socket qo'riqchisi bilan to'liq zanjir 117 s, tarmoqqa urinish 0.
+
+**Premiere paketi:** 2 min -> 1.2 GB (teacher.mov ProRes 4444, yuva444p12le, 3001 kadr); 25 min ~15 GB (TZ
+taxmini 30–60 GB). XML: V1 1, V2 4, V3 1, A1 1 klip. Premiere/DaVinci'da ochish — inson tekshiruvi.
+
+**Qabul jadvali:** `docs/QABUL.md`.
+
+---
+
 ## 2026-10-26 — B4/B5/B6/B8: audio, ASR, sinxron, kesish, Eye Contact, UI — o'lchovlar
 
 **ASR benchmark (G2 — qaror inson tomonidan).** 3 x 5 min namuna (bitta dars, bitta fan — TZ 3 fan talab qiladi),

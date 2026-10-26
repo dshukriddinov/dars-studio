@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### B9–B11 — eksport tuzatishlari, barqarorlik, offline, qabul jadvali (2026-10-26)
+- TP limiter + lowpass, SRT chegaralari, sinxron oldidan slayd matni; `project.lock` (lost update); `asr_raw`.
+- `docs/QABUL.md` — AC-01..AC-15 holati, o'lchov va dalillar.
+
 ### B4–B6, B8 — o'lchovlar va tuzatishlar (2026-10-26)
 - ASR benchmark (5 model x 3 namuna), vram_probe; tavsiya: rubaistt-v2-medium + sarahai CTC.
 - `ui/`: React UI (Tekshirish, Bosh sahifa, Yangi loyiha, Key/Shablon kalibrlash, Eksport, Sozlamalar).
