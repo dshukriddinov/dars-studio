@@ -77,3 +77,6 @@ disable_error_code = ["arg-type", "call-overload", "assignment", "list-item", "n
 [[tool.mypy.overrides]]
 module = ["lxml.*", "pythoncom", "win32com.*", "pypdfium2.*", "df.*", "df", "silero_vad", "faster_whisper", "sklearn.*", "scipy.*"]
 ignore_missing_imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"tools/package.py" = ["E501"]  # ichki .bat matni
