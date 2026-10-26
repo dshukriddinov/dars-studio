@@ -77,7 +77,8 @@ COPYRIGHT_TAIL_S = 15
 
 def render_project(stack: CommandStack, out: Path, *, template: str | None = None, profile: str = "web",
                    preset: str = "p7", chunk_sec: int = 60, start: int = 0, frames: int | None = None,
-                   eye: bool = True, on_progress: Callable[[int, int], None] | None = None) -> dict[str, Any]:
+                   eye: bool = True, subtitles: bool = True,
+                   on_progress: Callable[[int, int], None] | None = None) -> dict[str, Any]:
     """FR-16: tayyor loyihani render qiladi (kesishlar, ko'z patchlari, tozalangan audio, lower-third) + SRT."""
     p = stack.project
     tpl = templates.load(template or p.template_id)
@@ -126,7 +127,7 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
     lead, tail = (bumpers.wrap(out, tpl, p.fps_frac, profile, stack.store.cache("render"), extra.audio_wav)
                   if full else (0, 0))
     srt_path = None
-    if ws and full:
+    if ws and full and subtitles:
         srt_path = out.with_suffix(".srt")
         lead_ms = int(Fraction(lead) / p.fps_frac * 1000)
         cues = [srt.Cue(c.start_ms + lead_ms, c.end_ms + lead_ms, c.text) for c in srt.build_cues(ws, tm)]
@@ -147,7 +148,8 @@ def _unapproved_suspicious(stack: CommandStack) -> int:
 
 
 def export_project(stack: CommandStack, profile: str = "web", premiere: bool = False,
-                   pattern: str | None = None, on_progress: Callable[[int, int], None] | None = None) -> dict[str, Any]:
+                   pattern: str | None = None, on_progress: Callable[[int, int], None] | None = None,
+                   subtitles: bool = False) -> dict[str, Any]:
     """FR-16/17/18/19: exports/v<N>/<nom>.mp4 + .srt + .slides.csv/.json + qa.json [+ premiere/]."""
     from darsstudio.export import premiere_pkg, qa, tables
     store = stack.store
@@ -157,7 +159,7 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     d = exports / f"v{v}"
     d.mkdir(parents=True, exist_ok=True)
     mp4 = d / f"{name}.mp4"
-    r = render_project(stack, mp4, profile=profile, on_progress=on_progress)
+    r = render_project(stack, mp4, profile=profile, subtitles=subtitles, on_progress=on_progress)
     p = stack.project
     tm = cuts.timemap(p)
     tables.write_tables(p, tm, d / name, lead=r["intro_frames"])

@@ -83,6 +83,22 @@ class Timeline:
         return str(c), str(p), w
 
 
+TEACHER_SHARPEN = 1.0   # unsharp mask kuchi (sigma 1 px); 0 — o'chiq
+
+
+def sharpen(t: Tensor, amount: float, sigma: float = 1.0) -> Tensor:
+    """Premult RGBA [B,4,H,W]: RGB ga unsharp mask, natija [0, alpha] ichida (halo alfa chegarasidan chiqmaydi)."""
+    k = torch.arange(-2, 3, device=t.device, dtype=torch.float32)
+    g = torch.exp(-k * k / (2 * sigma * sigma))
+    g = (g / g.sum()).to(t.dtype)
+    rgb, a = t[:, :3], t[:, 3:]
+    c = rgb.shape[1]
+    blur = F.conv2d(F.pad(rgb, (2, 2, 0, 0), mode="replicate"), g.view(1, 1, 1, 5).expand(c, 1, 1, 5), groups=c)
+    blur = F.conv2d(F.pad(blur, (0, 0, 2, 2), mode="replicate"), g.view(1, 1, 5, 1).expand(c, 1, 5, 1), groups=c)
+    out = (rgb + amount * (rgb - blur)).clamp(min=0)
+    return torch.cat([torch.minimum(out, a), a], 1)
+
+
 class Compositor:
     def __init__(self, tpl: Template, warped: list[Path], slides_4k: list[Path], placement: TeacherPlacement,
                  src_size: tuple[int, int], device: torch.device, dtype: torch.dtype = torch.float16) -> None:
@@ -121,8 +137,12 @@ class Compositor:
         """[B,3,H,W] premult + [B,1,H,W] -> kanvas [B,4,ch,cw]."""
         t = torch.cat([rgb, alpha], 1).to(self.dtype)
         if (self.th, self.tw) != tuple(t.shape[-2:]):
-            t = F.interpolate(t.float(), size=(self.th, self.tw), mode="bilinear", align_corners=False,
+            # bicubic: bilinear+antialias kichraytirishda o'qituvchi sezilarli xiralashardi (namunada Laplacian 1124
+            # vs montajchi 1795)
+            t = F.interpolate(t.float(), size=(self.th, self.tw), mode="bicubic", align_corners=False,
                               antialias=self.pl.scale < 1).to(self.dtype)
+        if TEACHER_SHARPEN > 0:
+            t = sharpen(t, TEACHER_SHARPEN)
         cw, ch = self.canvas
         out = torch.zeros((t.shape[0], 4, ch, cw), device=self.dev, dtype=self.dtype)
         dx0, dy0, dx1, dy1 = self.dst

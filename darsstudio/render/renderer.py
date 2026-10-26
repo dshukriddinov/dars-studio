@@ -28,7 +28,7 @@ from darsstudio.media.probe import ProbeResult
 from darsstudio.media.timemap import TimeMap
 from darsstudio.project.model import LayoutSpan, Project, SlideSpan
 from darsstudio.project.store import atomic_write_json
-from darsstudio.render import eyepatch, overlays
+from darsstudio.render import compositor, eyepatch, overlays
 from darsstudio.render.compositor import Compositor, Timeline, over, premult, rgb_to_yuv420
 from darsstudio.render.keyer import Keyer
 from darsstudio.render.overlays import Overlay
@@ -36,7 +36,7 @@ from darsstudio.render.templates import Template
 
 log = logging.getLogger(__name__)
 
-RENDER_VERSION = 2  # render natijasiga ta'sir qiluvchi kod o'zgarsa oshiriladi (checkpoint kaliti)
+RENDER_VERSION = 3  # render natijasiga ta'sir qiluvchi kod o'zgarsa oshiriladi (checkpoint kaliti)
 BT709_TAGS = ["-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709"]
 PROFILES = {
     # TZ FR-16
@@ -128,7 +128,8 @@ def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spa
                          "ov": [[hashlib.md5(o.layer).hexdigest(), o.start, o.end, o.fade_frames, o.drift_px_per_frame]
                                 for o in extra.overlays],
                          "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
-                         "src": probe.path, "start": opts.start}, sort_keys=True).encode())
+                         "src": probe.path, "start": opts.start, "sharpen": compositor.TEACHER_SHARPEN},
+                        sort_keys=True).encode())
     return h.hexdigest()[:16]
 
 

@@ -99,7 +99,7 @@ def cmd_render(a: argparse.Namespace) -> int:
 def cmd_export(a: argparse.Namespace) -> int:
     from darsstudio import pipeline
     st = _stack(a.project)
-    r = pipeline.export_project(st, a.profile, a.premiere, on_progress=_progress)
+    r = pipeline.export_project(st, a.profile, a.premiere, on_progress=_progress, subtitles=a.srt)
     print()
     print(f"Eksport v{r['version']}: {r['path']}")
     print(f"  QA: {r['qa']}")
@@ -257,6 +257,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("project")
     s.add_argument("--profile", choices=("web", "arxiv"), default="web")
     s.add_argument("--premiere", action="store_true", help="Premiere/DaVinci paketi (o'qituvchi ProRes 4444)")
+    s.add_argument("--srt", action="store_true", help="subtitr (SRT) ham yozilsin (default: yo'q)")
     s.set_defaults(fn=cmd_export)
 
     s = sub.add_parser("cuts", help="pauza kesish takliflari (FR-09)")

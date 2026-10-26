@@ -4,6 +4,19 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — O'qituvchi tiniqligi, subtitr ixtiyoriy
+
+- Foydalanuvchi: o'qituvchi xira. O'lchov (yuz hududi, Laplacian dispersiyasi, 1080p): v6 1297; o'qituvchi
+  kichraytirish bilinear+antialias -> **bicubic+antialias**, keyin premult RGB'ga unsharp mask (sigma 1, kuch 1.0,
+  natija alfa bilan cheklanadi): **1497**. Kuch 0.6 da 1412. Ko'z bilan montajchi namunasiga yaqin (manbaning o'zi
+  yumshoq). Sozlash: `compositor.TEACHER_SHARPEN`.
+- Topildi: `RENDER_VERSION` oshirilmagani uchun v5/v6 eski segment keshidan yig'ilgan (zoom blur 16 namuna
+  qo'llanmagan). RENDER_VERSION 3, kesh kalitida sharpen ham bor.
+- Subtitr default o'chiq (foydalanuvchi: hozircha kerak emas; UI'da katakcha bo'ladi). CLI: `export --srt`.
+- Eksport v7: 837.28 s, A/V 0 ms, QA faqat tasdiqlanmagan shubhali joylar bo'yicha ogohlantirish.
+
+---
+
 ## 2026-10-26 — Montajchi uslubi Studio'da: `akademiya` shabloni, o'tishlar, sahna qoidasi, signallar, intro/outro
 
 **Qarorlar:**
