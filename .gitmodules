@@ -1,0 +1,3 @@
+[submodule "engines/eye-contact"]
+	path = engines/eye-contact
+	url = https://github.com/dshukriddinov/eye-contact.git

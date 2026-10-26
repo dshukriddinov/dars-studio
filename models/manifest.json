@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "_fields": "name, version, file (models/ ga nisbatan), source_url, sha256, license, vram_mb, size_mb",
+  "models": []
+}

@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+runtime/
+models/*
+!models/manifest.json
+cache/
+logs/
+workdir/
+tests/fixtures/generated/
+
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.zip
+
+# docs/ dagi nusxa asosiy
+/TEXNIK_TOPSHIRIQ.md
