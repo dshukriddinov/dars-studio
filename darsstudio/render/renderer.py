@@ -314,3 +314,58 @@ def _mux(segments: list[Path], p: ProbeResult, tm: TimeMap, start: int, frames: 
     args += ["-c:v", "copy", *BT709_TAGS, "-movflags", "+faststart", str(tmp)]
     ffmpeg.run(args)
     tmp.replace(out)
+
+
+PRORES_4444 = ["-c:v", "prores_ks", "-profile:v", "4444", "-pix_fmt", "yuva444p10le", "-vendor", "apl0"]
+
+
+def render_teacher_layer(project: Project, probe: ProbeResult, tpl: Template, out: Path,
+                         eyepatch_dir: Path | None = None, batch: int = 8, device: str | None = None,
+                         on_progress: Callable[[int, int], None] | None = None) -> Path:
+    """Premiere paketi uchun (FR-18): o'qituvchi qatlami — keyed + Eye Contact + rang, kanvasdagi yakuniy joyida,
+    kesilmagan asl vaqt chizig'ida, ProRes 4444 (to'g'ri alfa)."""
+    dev = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+    dtype = torch.float16 if dev.type == "cuda" else torch.float32
+    v = probe.video
+    w, h, fps = v.width, v.height, v.fps
+    keyer = Keyer(project.key, w, h, probe.full_range, dev)
+    comp = Compositor(tpl, [], [], project.placement, (w, h), dev, dtype)
+    cw, ch = tpl.canvas
+    patches = eyepatch.EyePatches(eyepatch_dir) if eyepatch_dir else None
+    total = project.total_frames
+    qin: queue.Queue[Any] = queue.Queue(maxsize=4)
+    qout: queue.Queue[Any] = queue.Queue(maxsize=4)
+    werr: list[BaseException] = []
+    tmp = out.with_name(out.stem + ".tmp" + out.suffix)
+    wr = FrameWriter(tmp, cw, ch, fps, None, PRORES_4444, pix_fmt="rgba", tags=[],
+                     extra_out=["-vf", "scale=out_color_matrix=bt709:out_range=tv", *BT709_TAGS])
+    wr.nbytes = cw * ch * 4
+    threading.Thread(target=_reader, args=(probe, [(0, total)], batch, qin, patches, project.eye_off),
+                     daemon=True).start()
+    tw = threading.Thread(target=_writer, args=(wr, qout, werr), daemon=True)
+    tw.start()
+    done = 0
+    try:
+        while (item := qin.get()) is not None:
+            if isinstance(item, BaseException):
+                raise item
+            idx, arr = item
+            t = torch.from_numpy(arr).to(dev)
+            ny = w * h
+            kr = keyer(t[:, :ny].view(-1, h, w), t[:, ny:ny + ny // 4].view(-1, h // 2, w // 2),
+                       t[:, ny + ny // 4:].view(-1, h // 2, w // 2))
+            layer = comp.teacher_layer(color_correct(kr.rgb, kr.alpha, project.placement.color), kr.alpha).float()
+            a = layer[:, 3:4]
+            rgb = torch.where(a > 1e-4, layer[:, :3] / a.clamp(min=1e-4), torch.zeros_like(layer[:, :3]))
+            rgba = torch.cat([rgb.clamp(0, 1), a], 1).permute(0, 2, 3, 1)
+            qout.put((rgba * 255).round().to(torch.uint8).cpu().numpy().reshape(len(idx), -1))
+            done += len(idx)
+            if on_progress:
+                on_progress(done, total)
+    finally:
+        qout.put(None)
+        tw.join()
+    if werr:
+        raise werr[0]
+    tmp.replace(out)
+    return out

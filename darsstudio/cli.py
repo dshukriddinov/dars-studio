@@ -96,6 +96,20 @@ def cmd_render(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export(a: argparse.Namespace) -> int:
+    from darsstudio import pipeline
+    st = _stack(a.project)
+    r = pipeline.export_project(st, a.profile, a.premiere, on_progress=_progress)
+    print()
+    print(f"Eksport v{r['version']}: {r['path']}")
+    print(f"  QA: {r['qa']}")
+    for c in r["qa_report"]["checks"]:
+        if c["status"] != "ok":
+            print(f"  {c['status']:<13} {c['id']}: {c['detail']}")
+    if r["premiere"]:
+        print(f"  Premiere paketi: {r['premiere']}")
+    return 0
+
 def cmd_cuts(a: argparse.Namespace) -> int:
     from darsstudio import pipeline
     st = _stack(a.project)
@@ -238,6 +252,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--duration", help="bo'lak uzunligi (soniya yoki m:ss)")
     s.add_argument("--no-eye", action="store_true", help="Eye Contact patchlarini qo'llamaslik")
     s.set_defaults(fn=cmd_render)
+
+    s = sub.add_parser("export", help="eksport: MP4, SRT, slayd jadvallari, QA, [Premiere paketi] (FR-16..19)")
+    s.add_argument("project")
+    s.add_argument("--profile", choices=("web", "arxiv"), default="web")
+    s.add_argument("--premiere", action="store_true", help="Premiere/DaVinci paketi (o'qituvchi ProRes 4444)")
+    s.set_defaults(fn=cmd_export)
 
     s = sub.add_parser("cuts", help="pauza kesish takliflari (FR-09)")
     s.add_argument("project")

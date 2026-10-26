@@ -115,3 +115,47 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
         srt_path.write_text(srt.to_srt(srt.build_cues(ws, tm)), encoding="utf-8")
     return {"report": rep.__dict__, "audio": audio_info, "srt": str(srt_path) if srt_path else None,
             "eye_contact": extra.eyepatch_dir is not None, "cuts": len(tm.ranges) - 1, "out_frames": tm.out_total}
+
+
+def _unapproved_suspicious(stack: CommandStack) -> int:
+    n = 0
+    for f in ("ai_align.json", "log_align.json"):
+        sf = stack.store.cache("sync") / f
+        if sf.is_file():
+            n += len(json.loads(sf.read_text(encoding="utf-8")).get("suspicious", []))
+    approved = sum(1 for s in stack.project.slide_spans if s.approved)
+    return 0 if approved == len(stack.project.slide_spans) else n
+
+
+def export_project(stack: CommandStack, profile: str = "web", premiere: bool = False,
+                   pattern: str | None = None, on_progress: Callable[[int, int], None] | None = None) -> dict[str, Any]:
+    """FR-16/17/18/19: exports/v<N>/<nom>.mp4 + .srt + .slides.csv/.json + qa.json [+ premiere/]."""
+    from darsstudio.export import premiere_pkg, qa, tables
+    store = stack.store
+    exports = store.root / "exports"
+    v = tables.next_version(exports)
+    name = tables.export_name(stack.project, v, pattern or tables.DEFAULT_PATTERN)
+    d = exports / f"v{v}"
+    d.mkdir(parents=True, exist_ok=True)
+    mp4 = d / f"{name}.mp4"
+    r = render_project(stack, mp4, profile=profile, on_progress=on_progress)
+    p = stack.project
+    tm = cuts.timemap(p)
+    tables.write_tables(p, tm, d / name)
+    pngs = sorted((store.cache("slides") / "4k").glob("*.png"))
+    srt_path = Path(r["srt"]) if r["srt"] else None
+    report = qa.run(p, mp4, tm, pngs, srt_path, _unapproved_suspicious(stack))
+    (d / "qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    pkg = None
+    if premiere:
+        tpl = templates.load(p.template_id)
+        warped = prepare.ensure_warped(stack, tpl, pngs)
+        ep = store.cache("eyepatch")
+        pr = prepare.work_probe(p)
+        use_ep = ep if eyepatch.is_valid(ep, Path(pr.path), float(p.eye_contact.get("lid_open", 0.5))) else None
+        pkg = premiere_pkg.build(p, tm, tpl, pngs, warped, store.cache("audio") / "denoised_48k.wav", pr,
+                                 d / "premiere", name, use_ep, on_progress=on_progress)
+    entry = {"version": v, "profile": profile, "path": str(mp4), "qa": report["verdict"],
+             "premiere": str(pkg) if pkg else None}
+    stack.do(f"eksport v{v}", {"exports": [*stack.project.exports, entry]})
+    return {**entry, "qa_report": report, "render": r}

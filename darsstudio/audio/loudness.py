@@ -7,7 +7,8 @@ from pathlib import Path
 
 from darsstudio.media import ffmpeg
 
-PROFILES = {"standart": (-16.0, -1.5, 11.0), "youtube": (-14.0, -1.5, 11.0)}  # I, TP, LRA
+# I, TP, LRA. TP maqsadi -2.0: AAC kodlash true peak ni ~0.3-0.5 dB oshiradi, MP4 da <= -1.5 dBTP qolsin (AC-08)
+PROFILES = {"standart": (-16.0, -2.0, 11.0), "youtube": (-14.0, -2.0, 11.0)}
 
 
 @dataclass(frozen=True)
