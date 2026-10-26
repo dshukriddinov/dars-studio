@@ -115,18 +115,21 @@ def check_srt(srt_text: str, duration_s: float) -> QaCheck:
 
 
 def run(p: Project, out: Path, tm: TimeMap, pngs: Sequence[Path], srt_path: Path | None, n_unapproved: int,
-        loudness_target: float = -16.0) -> dict[str, Any]:
+        loudness_target: float = -16.0, lead: int = 0, tail: int = 0) -> dict[str, Any]:
+    """lead/tail: yakuniy fayldagi intro/outro kadrlari."""
     fps = p.fps_frac
-    checks = check_file(out, tm.out_total, fps)
+    total = tm.out_total + lead + tail
+    checks = check_file(out, total, fps)
     checks.append(check_loudness(out, loudness_target))
-    b_ranges = [(float(Fraction(a) / fps), float(Fraction(b) / fps)) for ls in p.layout_spans if ls.layout == "B"
+    b_ranges = [(float(Fraction(a + lead) / fps), float(Fraction(b + lead) / fps))
+                for ls in p.layout_spans if ls.layout == "B"
                 for a, b in tm.map_span(ls.start, ls.end)]
     checks += check_black_frozen(out, b_ranges)
     checks.append(check_scenes(p.layout_spans, tm))
     checks.append(check_slide_files(p, pngs))
     checks.append(check_suspicious(n_unapproved, sum(c.status == "taklif" for c in p.cuts)))
     if srt_path is not None:
-        checks.append(check_srt(srt_path.read_text(encoding="utf-8"), tm.out_total / float(fps)))
+        checks.append(check_srt(srt_path.read_text(encoding="utf-8"), total / float(fps)))
     verdict = "xato" if any(c.status == "xato" for c in checks) else (
         "ogohlantirish" if any(c.status == "ogohlantirish" for c in checks) else "ok")
     return {"verdict": verdict, "checks": [asdict(c) for c in checks]}

@@ -3,6 +3,7 @@
 import json
 import logging
 from collections.abc import Callable
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,7 @@ from darsstudio.media.probe import MediaError, ProbeResult
 from darsstudio.project import cuts
 from darsstudio.project.commands import CommandStack
 from darsstudio.project.model import Word
-from darsstudio.render import eyepatch, overlays, prepare, renderer, templates
+from darsstudio.render import bumpers, eyepatch, overlays, prepare, renderer, templates
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +72,9 @@ def run_eye_contact(stack: CommandStack, pr: ProbeResult,
     return out
 
 
+COPYRIGHT_TAIL_S = 15
+
+
 def render_project(stack: CommandStack, out: Path, *, template: str | None = None, profile: str = "web",
                    preset: str = "p7", chunk_sec: int = 60, start: int = 0, frames: int | None = None,
                    eye: bool = True, on_progress: Callable[[int, int], None] | None = None) -> dict[str, Any]:
@@ -91,8 +95,17 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
         raise MediaError(f"{len(bad)} ta tasdiqlangan kesish so'z ichiga tushadi (masalan {bad[0].start}-kadr). "
                          "Ularni rad eting yoki suring.")
     tm = cuts.timemap(p)
-    extra = renderer.RenderInputs(timemap=tm, lower_third=overlays.lower_third(p.meta, tpl.canvas),
-                                  lower_third_s=tpl.lower_third.duration_s)
+    cp_from = None
+    if tpl.copyright is not None:
+        if tpl.copyright.on == "always":
+            cp_from = 0
+        else:  # oxirgi slayd, lekin oxirgi 15 s dan ko'p emas (namunada shunday)
+            last = max(p.slide_spans, key=lambda s: s.start)
+            g = next((s0 for s0, _ in tm.map_span(last.start, last.end)), tm.out_total)
+            cp_from = max(g, tm.out_total - round(COPYRIGHT_TAIL_S * p.fps_frac))
+    extra = renderer.RenderInputs(timemap=tm, overlays=overlays.build(
+        p.meta, tpl.lower_third.style, tpl.lower_third.duration_s, tpl.copyright.text if tpl.copyright else None,
+        cp_from, tm.out_total, p.fps_frac, tpl.canvas))
     den = stack.store.cache("audio") / "denoised_48k.wav"
     audio_info: dict[str, Any] = {}
     if den.is_file():
@@ -109,12 +122,18 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
                                   on_progress=on_progress)
     rep = renderer.render(p, pr, tpl, warped, pngs, p.slide_spans, p.layout_spans, out, stack.store.cache("render"),
                           opts, extra)
+    full = start == 0 and frames is None
+    lead, tail = (bumpers.wrap(out, tpl, p.fps_frac, profile, stack.store.cache("render"), extra.audio_wav)
+                  if full else (0, 0))
     srt_path = None
-    if ws and start == 0 and frames is None:
+    if ws and full:
         srt_path = out.with_suffix(".srt")
-        srt_path.write_text(srt.to_srt(srt.build_cues(ws, tm)), encoding="utf-8")
+        lead_ms = int(Fraction(lead) / p.fps_frac * 1000)
+        cues = [srt.Cue(c.start_ms + lead_ms, c.end_ms + lead_ms, c.text) for c in srt.build_cues(ws, tm)]
+        srt_path.write_text(srt.to_srt(cues), encoding="utf-8")
     return {"report": rep.__dict__, "audio": audio_info, "srt": str(srt_path) if srt_path else None,
-            "eye_contact": extra.eyepatch_dir is not None, "cuts": len(tm.ranges) - 1, "out_frames": tm.out_total}
+            "eye_contact": extra.eyepatch_dir is not None, "cuts": len(tm.ranges) - 1, "out_frames": tm.out_total,
+            "intro_frames": lead, "outro_frames": tail}
 
 
 def _unapproved_suspicious(stack: CommandStack) -> int:
@@ -141,10 +160,11 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     r = render_project(stack, mp4, profile=profile, on_progress=on_progress)
     p = stack.project
     tm = cuts.timemap(p)
-    tables.write_tables(p, tm, d / name)
+    tables.write_tables(p, tm, d / name, lead=r["intro_frames"])
     pngs = sorted((store.cache("slides") / "4k").glob("*.png"))
     srt_path = Path(r["srt"]) if r["srt"] else None
-    report = qa.run(p, mp4, tm, pngs, srt_path, _unapproved_suspicious(stack))
+    report = qa.run(p, mp4, tm, pngs, srt_path, _unapproved_suspicious(stack),
+                    lead=r["intro_frames"], tail=r["outro_frames"])
     (d / "qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     pkg = None
     if premiere:

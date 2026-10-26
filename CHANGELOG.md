@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Montajchi uslubi (2026-10-26)
+- `templates/akademiya`, `tools/make_template.py` (fon joylash, ekran quad'ini avtomatik topish).
+- O'tishlar: zoom blur (A<->B), clock wipe (A ichida); o'tish chegaradan oldin tugaydi.
+- Sahna qoidasi `scene_policy` (`words` | `a_then_b`); "keyingi slayd" og'zaki signallari.
+- Intro/outro (A/V 0 ms), `akademiya` lower-third, mualliflik matni; SRT/jadval/QA intro bilan suriladi.
+
 ### B9–B11 — eksport tuzatishlari, barqarorlik, offline, qabul jadvali (2026-10-26)
 - TP limiter + lowpass, SRT chegaralari, sinxron oldidan slayd matni; `project.lock` (lost update); `asr_raw`.
 - `docs/QABUL.md` — AC-01..AC-15 holati, o'lchov va dalillar.

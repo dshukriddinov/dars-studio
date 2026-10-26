@@ -4,6 +4,42 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — Montajchi uslubi Studio'da: `akademiya` shabloni, o'tishlar, sahna qoidasi, signallar, intro/outro
+
+**Qarorlar:**
+- `templates/akademiya` (`tools/make_template.py` bilan): fon x0.9145 (-4, 0), ekran quad avtomatik topildi
+  TL(15,20) TR(1026,141) BR(1026,698) BL(15,742) (qo'lda o'lchangandan +-1 px), o'qituvchi joyi shablonda qotirilgan
+  (`teacher_placement`: 0.929 @ (692, 79)), logosiz.
+- O'tishlar (`render/transitions.py`): A<->B — **zoom blur** (ekran markazi atrofida kattalashish + radial xiralik,
+  16 namuna; 8 da alohida "nusxalar" ko'rindi), A ichida slayd -> slayd — **clock wipe** (soat 3 dan, soat miliga
+  teskari). **O'tish endi chegaradan oldin tugaydi** (avval chegaradan keyin boshlanardi): yangi slayd ma'ruzachi
+  yangi gapni boshlaganda to'liq ko'rinadi — G3 o'lchovi ham shuni ko'rsatdi (o'tish oxiri bilan median 0.38 s).
+- Sahna qoidasi shablonda (`scene_policy`). TZ FR-12 (so'z soni) default bo'lib qoladi (D-qarorlari o'zgarmadi);
+  `akademiya` da `a_then_b`: slayd almashganda **10 s A**, keyin B; qolgan qism < 10 s bo'lsa A; birinchi va oxirgi
+  slayd A. 10 s — tayyor.mp4 dagi A bo'laklari (5–17 s) o'rtasi; tayyor2.mp4 da montajchi har slayd uchun alohida
+  qaror qilgan (A 16–120 s) — qiymat taxminiy, inson tahrirlaydi.
+- AI sinxron: "keyingi/navbatdagi slayd..." signali (oldidagi "xo'p/endi/demak" bilan) +-25 s ichida oldinga
+  chegarani o'ziga tortadi. "ushbu/mazkur slayd" signal emas.
+- Intro/outro (`render/bumpers.py`): shablondagi klip bir marta loyiha formatiga kodlanadi (kesh), video concat
+  demuxer bilan qayta kodlashsiz, audio PCM bo'laklardan bir marta AAC. AAC'ni `-c copy` bilan ulash har chokda
+  ~21 ms A/V siljish berdi (o'lchandi: video start 0.021 s) — shuning uchun audio alohida. SRT, slayd jadvali va QA
+  intro uzunligiga suriladi. Intro -12 LUFS -> loudnorm -16.
+- Overlay'lar: `akademiya` lower-third (ko'k gradient polosa y 870–982, ism Roboto Slab 700, 2 qator unvon, matn
+  16 px/s chapga siljiydi, 8.6 s, fade'siz); mualliflik matni oxirgi slaydda (oxirgi 15 s dan ko'p emas), Noto Serif
+  Italic, KATTA harflar. Shriftlar: Roboto Slab (Apache-2.0), Noto Serif (OFL) — litsenziya tekshirildi.
+
+**O'lchovlar (namuna, commit shu yozuv bilan):**
+- G3 (montajchi GT, 18 chegara): o'tish boshi bilan +-2 s **83% -> 94%**, median 1.26 s; o'tish oxiri bilan
+  +-1 s 72% -> **89%**, median **0.38 -> 0.20 s**. Slayd 7 (-14.9 s) tuzaldi (+1.26). Qolgan katta xato: slayd 10
+  (-4.1 s; signal "xo'p, parij..." — umumiy ibora emas).
+- Eksport v5: 837.28 s (intro 5.36 + 826.56 + outro 5.36), QA: fayl/kadr soni/davomiylik ok, **A/V 0.0 ms**,
+  -16.1 LUFS / TP -2.4 dBTP, qora/muzlagan kadr yo'q (B oraliqlari intro bilan surildi), SRT 195 titr.
+  Ogohlantirish faqat tasdiqlanmagan shubhali joylar uchun.
+
+**Ochiq:** zoom blur va lower-third harakatini inson montajchi namunasi bilan yonma-yon ko'rib baholashi kerak (G1).
+
+---
+
 ## 2026-10-26 — Montajchi tayyorlagan namuna (`namuna/tayyor.mp4`) tahlili: uslub va G3 ground truth
 
 **Vaqt bog'lanishi (audio korrelatsiya):** tayyor = manba + 1.421 s (manba boshidagi 3.94 s — "boshlasangiz bo'ladi"

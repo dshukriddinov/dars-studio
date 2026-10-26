@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 Tensor = torch.Tensor
 ZOOM_K = 0.6          # o'tish o'rtasida maksimal kattalashish (1 + K)
-BLUR_SAMPLES = 8      # radial (zoom) blur namunalari
+BLUR_SAMPLES = 16     # radial (zoom) blur namunalari (8 da alohida "nusxalar" ko'rinadi)
 BLUR_SPREAD = 0.12    # bitta kadr ichidagi masshtab farqi (xiralik kuchi)
 
 

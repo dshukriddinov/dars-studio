@@ -166,3 +166,14 @@ def test_srt_time_mapping(ms: int, out_ms: int) -> None:
         assert got is None
     else:
         assert got == out_ms
+
+
+def test_akademiya_overlays() -> None:
+    meta = {"oqituvchi": "Dalmuradova Nargiza", "unvon": "Dotsent | (PhD)"}
+    ovs = overlays.build(meta, "akademiya", 8.6, "Mazkur taqdimot akademiya mahsuloti", 900, 1000, FPS, (1920, 1080))
+    bar, txt, cp = ovs
+    assert (bar.start, bar.end, txt.end) == (0, 215, 215) and bar.fade_frames == 0
+    assert bar.layer[900, 100, 3] > 200 and bar.layer[900, 1500, 3] == 0      # chapda ko'k, o'ngga shaffof
+    assert txt.shift_at(0) == 0 and txt.shift_at(25) == -16                    # 16 px/s chapga
+    assert (cp.start, cp.end) == (900, 1000) and cp.alpha_at(899) == 0 and cp.alpha_at(950) == 1
+    assert overlays.build({}, "akademiya", 8.6, None, None, 1000, FPS, (1920, 1080)) == []

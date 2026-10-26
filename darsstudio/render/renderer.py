@@ -31,6 +31,7 @@ from darsstudio.project.store import atomic_write_json
 from darsstudio.render import eyepatch, overlays
 from darsstudio.render.compositor import Compositor, Timeline, over, premult, rgb_to_yuv420
 from darsstudio.render.keyer import Keyer
+from darsstudio.render.overlays import Overlay
 from darsstudio.render.templates import Template
 
 log = logging.getLogger(__name__)
@@ -71,8 +72,9 @@ class RenderInputs:
     timemap: TimeMap | None = None
     eyepatch_dir: Path | None = None
     audio_wav: Path | None = None     # chiqish vaqt o'qidagi WAV (audio.mix.final_audio)
-    lower_third: np.ndarray | None = None
+    lower_third: np.ndarray | None = None          # eski API: "default" uslub, fade 0.3 s
     lower_third_s: float = 6.0
+    overlays: list[Overlay] = field(default_factory=list)   # chiqish (asosiy qism) kadrlarida
 
 
 @dataclass
@@ -123,6 +125,8 @@ def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spa
                          "spans": [[s.model_dump(mode="json") for s in g] for g in spans],
                          "eye_off": [s.model_dump(mode="json") for s in project.eye_off], "eyepatch": ep,
                          "lt": None if extra.lower_third is None else hashlib.md5(extra.lower_third).hexdigest(),
+                         "ov": [[hashlib.md5(o.layer).hexdigest(), o.start, o.end, o.fade_frames, o.drift_px_per_frame]
+                                for o in extra.overlays],
                          "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
                          "src": probe.path, "start": opts.start}, sort_keys=True).encode())
     return h.hexdigest()[:16]
@@ -194,7 +198,11 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
     comp = Compositor(tpl, warped, slides_4k, project.placement, (w, h), dev, dtype)
     tl = Timeline.build(slide_spans, layout_spans, tpl)
     patches = eyepatch.EyePatches(extra.eyepatch_dir) if extra.eyepatch_dir else None
-    lt = premult(extra.lower_third, dev, dtype) if extra.lower_third is not None else None
+    ovs = list(extra.overlays)
+    if extra.lower_third is not None:
+        n_lt = round(Fraction(extra.lower_third_s).limit_denominator(1000) * fps)
+        ovs.append(overlays.Overlay(extra.lower_third, 0, n_lt, fade_frames=round(overlays.FADE_S * float(fps))))
+    ov_t = [premult(o.layer, dev, dtype) for o in ovs]
     key = render_key(project, tpl, slides_4k, (slide_spans, layout_spans), opts, probe, tm, extra)
     wd = work_root / key
     wd.mkdir(parents=True, exist_ok=True)
@@ -246,12 +254,13 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
                 rgb = color_correct(kr.rgb, kr.alpha, project.placement.color)
                 teacher = comp.teacher_layer(rgb, kr.alpha)
                 img = comp.compose(idx, tl, teacher)
-                if lt is not None:
-                    gs = range(g0 + got, g0 + got + len(idx))
-                    al = [overlays.lower_third_alpha(g, fps, extra.lower_third_s) for g in gs]
-                    for j, a in enumerate(al):
+                for o, ot in zip(ovs, ov_t, strict=True):
+                    for j in range(len(idx)):
+                        g = g0 + got + j
+                        a = o.alpha_at(g)
                         if a > 0:
-                            img[j] = over(lt * a, img[j])
+                            layer = ot if not o.drift_px_per_frame else torch.roll(ot, o.shift_at(g), dims=-1)
+                            img[j] = over(layer * a, img[j])
                 qout.put(rgb_to_yuv420(img).cpu().numpy())
                 ta = teacher[:, 3] > 0.5
                 top = ta[:, :top_zone].flatten(1).any(1)

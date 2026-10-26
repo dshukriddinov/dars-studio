@@ -42,11 +42,12 @@ def _sec(f: int | None, fps: Fraction) -> float | None:
     return None if f is None else round(float(Fraction(f) / fps), 3)
 
 
-def slide_rows(p: Project, tm: TimeMap) -> list[dict[str, Any]]:
+def slide_rows(p: Project, tm: TimeMap, lead: int = 0) -> list[dict[str, Any]]:
+    """lead: yakuniy fayldagi intro kadrlari (chiqish vaqtlari shuncha suriladi)."""
     fps = p.fps_frac
     rows = []
     for sp in p.slide_spans:
-        out = tm.map_span(sp.start, sp.end)
+        out = [(a + lead, b + lead) for a, b in tm.map_span(sp.start, sp.end)]
         lays = [ls.layout for ls in p.layout_spans if ls.start < sp.end and sp.start < ls.end]
         title = p.slides[sp.slide - 1].title if 0 < sp.slide <= len(p.slides) else ""
         rows.append({"slide_no": sp.slide, "title": title, "src_start": _sec(sp.start, fps),
@@ -68,8 +69,8 @@ def to_csv(rows: list[dict[str, Any]]) -> str:
     return buf.getvalue()
 
 
-def write_tables(p: Project, tm: TimeMap, base: Path) -> tuple[Path, Path]:
-    rows = slide_rows(p, tm)
+def write_tables(p: Project, tm: TimeMap, base: Path, lead: int = 0) -> tuple[Path, Path]:
+    rows = slide_rows(p, tm, lead)
     c, j = base.with_suffix(".slides.csv"), base.with_suffix(".slides.json")
     c.write_text(to_csv(rows), encoding="utf-8-sig")  # Excel o'zbekcha belgilarni to'g'ri ochsin
     j.write_text(json.dumps({"fps": p.fps, "rows": rows}, ensure_ascii=False, indent=1), encoding="utf-8")
