@@ -120,3 +120,33 @@ def test_invalid_command_keeps_state(tmp_path: Path) -> None:
     with pytest.raises(ValidationError):
         st.do("buzuvchi", {"slide_spans.1.start": 500})   # bo'shliq hosil qiladi
     assert st.project == before and st.undo_stack == [] and store.load() == before
+
+
+def test_concurrent_stacks_no_lost_update(tmp_path: Path) -> None:
+    """Barqarorlik sinovida topilgan: parallel vazifa eski nusxani saqlab, boshqa vazifa natijasini o'chirgan."""
+    import threading
+    store = ProjectStore(tmp_path / "p")
+    store.create_dirs()
+    store.save(make_project())
+    a, b = commands.CommandStack(store), commands.CommandStack(store)   # ikkalasi bir paytda yuklangan
+    a.do("sinxron", {"key.tolerance": 0.3})
+    b.do("eye contact", {"eye_contact": {"lid_open": 0.5, "status": "tayyor"}})   # b eski nusxada edi
+    p = store.load()
+    assert p.key.tolerance == 0.3 and p.eye_contact["status"] == "tayyor"
+
+    fields = ["key.softness", "key.spill", "key.choke_px", "key.feather_px"]
+    stacks = [commands.CommandStack(store) for _ in fields]
+
+    def work(i: int) -> None:
+        for k in range(10):
+            stacks[i].do(f"{i}-{k}", {fields[i]: float(k)})
+
+    ths = [threading.Thread(target=work, args=(i,)) for i in range(len(fields))]
+    for t in ths:
+        t.start()
+    for t in ths:
+        t.join()
+    final = store.load().key
+    assert (final.softness, final.spill, final.choke_px, final.feather_px) == (9.0,) * 4   # hech biri yo'qolmagan
+    assert len(commands.CommandStack(store).undo_stack) == 42
+    assert not (store.root / "project.lock").exists()

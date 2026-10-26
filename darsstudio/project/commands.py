@@ -5,8 +5,12 @@ Maydon yo'li nuqta bilan: "slide_spans", "key.tolerance", "cuts.3.status".
 Domen amallari (chegarani surish, kesishni tasdiqlash ...) shu `Change` lar ro'yxatini quradi.
 """
 
+import contextlib
 import json
-from collections.abc import Sequence
+import os
+import time
+from collections.abc import Iterator, Sequence
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
@@ -66,10 +70,20 @@ class CommandStack:
         self.project = project if project is not None else store.load()
         self.undo_stack: list[Command] = []
         self.redo_stack: list[Command] = []
-        if store.history_file.is_file():
-            h = json.loads(store.history_file.read_text(encoding="utf-8"))
+        self._load_history()
+
+    def _load_history(self) -> None:
+        if self.store.history_file.is_file():
+            h = json.loads(self.store.history_file.read_text(encoding="utf-8"))
             self.undo_stack = [Command.model_validate(c) for c in h.get("undo", [])]
             self.redo_stack = [Command.model_validate(c) for c in h.get("redo", [])]
+
+    def _reload(self) -> None:
+        """Bir loyihani bir nechta jarayon (API, navbat vazifalari) o'zgartiradi: har amal diskdagi so'nggi holat
+        ustiga qo'llanadi, aks holda eski nusxa boshqa jarayonning natijasini o'chirib yuboradi (lost update)."""
+        if self.store.exists():
+            self.project = self.store.load()
+        self._load_history()
 
     def _persist(self) -> None:
         atomic_write_json(self.store.history_file, {
@@ -79,31 +93,74 @@ class CommandStack:
         self.store.save(self.project)
 
     def execute(self, cmd: Command) -> Project:
-        self.project = _apply(self.project, cmd.changes, "new")
-        self.undo_stack = [*self.undo_stack, cmd][-HISTORY_LIMIT:]
-        self.redo_stack = []
-        self._persist()
+        with project_lock(self.store.root):
+            self._reload()
+            self.project = _apply(self.project, cmd.changes, "new")
+            self.undo_stack = [*self.undo_stack, cmd][-HISTORY_LIMIT:]
+            self.redo_stack = []
+            self._persist()
         return self.project
 
     def do(self, label: str, values: dict[str, Any]) -> Project:
-        return self.execute(make(self.project, label, values))
+        with project_lock(self.store.root):
+            self._reload()
+            cmd = make(self.project, label, values)   # eski qiymatlar — so'nggi holatdan
+            self.project = _apply(self.project, cmd.changes, "new")
+            self.undo_stack = [*self.undo_stack, cmd][-HISTORY_LIMIT:]
+            self.redo_stack = []
+            self._persist()
+        return self.project
 
     def undo(self) -> Command | None:
-        if not self.undo_stack:
-            return None
-        cmd = self.undo_stack[-1]
-        self.project = _apply(self.project, list(reversed(cmd.changes)), "old")
-        self.undo_stack.pop()
-        self.redo_stack.append(cmd)
-        self._persist()
+        with project_lock(self.store.root):
+            self._reload()
+            if not self.undo_stack:
+                return None
+            cmd = self.undo_stack[-1]
+            self.project = _apply(self.project, list(reversed(cmd.changes)), "old")
+            self.undo_stack.pop()
+            self.redo_stack.append(cmd)
+            self._persist()
         return cmd
 
     def redo(self) -> Command | None:
-        if not self.redo_stack:
-            return None
-        cmd = self.redo_stack[-1]
-        self.project = _apply(self.project, cmd.changes, "new")
-        self.redo_stack.pop()
-        self.undo_stack.append(cmd)
-        self._persist()
+        with project_lock(self.store.root):
+            self._reload()
+            if not self.redo_stack:
+                return None
+            cmd = self.redo_stack[-1]
+            self.project = _apply(self.project, cmd.changes, "new")
+            self.redo_stack.pop()
+            self.undo_stack.append(cmd)
+            self._persist()
         return cmd
+
+
+STALE_LOCK_S = 60.0
+
+
+@contextlib.contextmanager
+def project_lock(root: Path, timeout: float = 60.0) -> Iterator[None]:
+    """Jarayonlararo qulf: project.lock (O_EXCL). Jarayon o'ldirilib qolgan eski qulf (> 60 s) olib tashlanadi."""
+    lock = Path(root) / "project.lock"
+    t0 = time.monotonic()
+    while True:
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, str(os.getpid()).encode())
+            os.close(fd)
+            break
+        except FileExistsError:
+            try:
+                if time.time() - lock.stat().st_mtime > STALE_LOCK_S:
+                    lock.unlink(missing_ok=True)
+                    continue
+            except FileNotFoundError:
+                continue
+            if time.monotonic() - t0 > timeout:
+                raise TimeoutError(f"Loyiha band (project.lock): {root}") from None
+            time.sleep(0.02)
+    try:
+        yield
+    finally:
+        lock.unlink(missing_ok=True)
