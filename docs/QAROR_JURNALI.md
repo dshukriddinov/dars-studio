@@ -4,6 +4,18 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — HW-1 bajarildi: BIOS yangilandi
+
+**Holat:** ASUS TUF GAMING Z790-PLUS WIFI BIOS 1603 (2023-12-04) -> **1836** (barqaror, 2026-04-16 sanali; "Update Intel microcode"), Intel ME 16.1.40.2765. CPU mikrokod 0x11F -> **0x133** (>= 0x12B/0x12F). `doctor`: mikrokod ok.
+
+**RAM:** 2 x 32 GB KF560C36-32, ConfiguredClockSpeed 6000 MT/s (XMP yoqilgan). HW-3 (1 soat OCCT/MemTest) — hali o'tkazilmagan.
+
+**Render (to'liq namuna, 20 664 kadr):** 127.6 kadr/s (qayta yuklashdan keyingi birinchi, sovuq disk keshi), keyin **144.8 kadr/s** (avval 147.3). VRAM pik 2 656 MB. Xato yo'q.
+
+**Tekshirilmagan:** "Intel Default Settings" BIOS'da yoqilgani Windows'dan aniqlanmaydi — foydalanuvchi tasdig'i kerak.
+
+---
+
 ## 2026-10-26 — B10 portativ paket
 
 `python tools/package.py workdir/DarsStudio --with-models`: 17 GB (runtime/python 3.11.16 + torch 2.11 cu128 va boshqalar, ffmpeg 7.1.1, Maxine, 5 model, UI build). Paket ichidagi Python bilan, `DARS_MAXINE_DIR` siz: doctor — ffmpeg, Maxine, torch paket ichidan; CLI ishlaydi. Boshqa kompyuterga nusxalab sinash — inson.
