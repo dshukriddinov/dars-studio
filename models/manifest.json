@@ -230,6 +230,19 @@
      "size_mb": 0.0
     }
    ]
+  },
+  {
+   "name": "deep-filter-cli",
+   "version": "0.5.6",
+   "source": "gh:Rikorose/DeepFilterNet@v0.5.6",
+   "license": "MIT",
+   "kind": "denoise-cli",
+   "vram_mb": 0,
+   "size_mb": 25.7,
+   "file": "deep-filter/deep-filter-0.5.6-x86_64-pc-windows-msvc.exe",
+   "sha256": "75e11fa16445f560cb6b021521ddb89e89270d13b83089705d98776f58fd7915",
+   "source_url": "https://github.com/Rikorose/DeepFilterNet/releases/download/v0.5.6/deep-filter-0.5.6-x86_64-pc-windows-msvc.exe",
+   "_note": "DeepFilterNet3 modeli ichida; GitHub reliz sha256 e'lon qilmagan, hajm 26912256 bayt reliz bilan mos (2026-10-26); litsenziya MIT OR Apache-2.0 (dual), MIT tanlandi"
   }
  ]
 }

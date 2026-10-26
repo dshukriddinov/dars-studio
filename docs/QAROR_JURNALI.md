@@ -4,6 +4,22 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — Denoise: DeepFilterNet3 rasmiy CLI
+
+- Foydalanuvchi ruxsati bilan `deep-filter-0.5.6-x86_64-pc-windows-msvc.exe` (GitHub Rikorose/DeepFilterNet v0.5.6,
+  MIT OR Apache-2.0, 26 912 256 bayt — reliz hajmi bilan mos; GitHub sha256 e'lon qilmagan, o'zimiz hisobladik
+  `75e11fa1...7915`) `models/deep-filter/` ga, manifestga `deep-filter-cli` sifatida yozildi.
+- `audio/denoise.py`: "auto" tartibi — CLI -> Python paket -> afftdn. CLI `-D -a <dB> -o <dir>`; chiqish manbaga
+  FFT korrelyatsiya bilan namuna aniqligida tekislanadi va uzunligi manbaga tenglanadi (A/V qoidasi), so'ng HPF 80 Hz.
+  Test: soxta CLI 480 namuna kechiktirib, 0.2 s uzun yozadi — natija lag 0, uzunlik teng.
+- **Tekshirilmagan:** exe bu sessiyada ishga tushirilmadi (avto-rejim xavfsizlik filtri tashqi binarni bajarishni
+  blokladi). CLI flaglari v0.5.6 manba kodidan (`enhance_wav.rs`) olingan. Haqiqiy natija (shovqin p5 o'lchovi,
+  kechikish, tezlik) foydalanuvchi `audio` + `export` ni ishga tushirgandan keyin o'lchanadi.
+- Kuzatildi: `test_scheduler.py::test_interrupted_jobs_requeued` to'liq to'plamda 1/3 marta yiqildi, alohida 6/6 o'tdi
+  (yuklama ostida vaqt) — denoise o'zgarishiga aloqasiz, keyin ko'riladi.
+
+---
+
 ## 2026-10-26 — Dars boshi/oxirini kesish; shovqin o'lchovi
 
 - `cuts.trim_cuts`: birinchi salomlashish so'zidan ("assalomu", "salom", "hurmatli"...; boshidagi 60 s ichida)
