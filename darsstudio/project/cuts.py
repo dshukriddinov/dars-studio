@@ -6,11 +6,40 @@ import math
 from collections.abc import Sequence
 from fractions import Fraction
 
+from darsstudio.asr import uz_text
 from darsstudio.media.timemap import TimeMap
 from darsstudio.project.model import CutProposal, LayoutSpan, Project, Word
 
 MIN_PAUSE_S = 1.2
 KEEP_PAUSE_S = 0.35
+# Dars boshi/oxiri: salomlashishdan oldingi ("boshlasangiz bo'ladi") va xayrlashishdan keyingi qism kesiladi
+GREETINGS = ("assalomu", "assalom", "salom", "hurmatli", "aziz", "qadrli")
+FAREWELLS = ("ko'rishguncha", "ko'rishgunimizcha", "xayr", "salomat", "rahmat")
+TRIM_SEARCH_S = 60      # signal dars boshidagi/oxiridagi shuncha soniya ichida izlanadi
+TRIM_PAD_S = (0.3, 0.6)  # salomdan oldin / xayrdan keyin qoldiriladigan bo'shliq
+
+
+def trim_cuts(words: Sequence[Word], fps: Fraction, total: int) -> list[CutProposal]:
+    """Bosh (birinchi salomlashish so'zigacha) va oxir (oxirgi xayrlashish so'zidan keyin) kesishlari."""
+    if not words:
+        return []
+    norm = [uz_text.normalize(w.text) for w in words]
+    greet, bye = tuple(map(uz_text.normalize, GREETINGS)), tuple(map(uz_text.normalize, FAREWELLS))
+    total_ms = int(Fraction(total) / fps * 1000)
+    out = []
+    head = next((i for i, n in enumerate(norm) if n.startswith(greet) and words[i].start_ms < TRIM_SEARCH_S * 1000),
+                None)
+    if head:  # 0 — salomdan oldin hech narsa yo'q
+        end = math.floor(Fraction(max(0, words[head].start_ms - int(TRIM_PAD_S[0] * 1000)), 1000) * fps)
+        if end > 0:
+            out.append(CutProposal(start=0, end=end, reason="bosh", status="tasdiqlangan"))
+    tail = next((i for i in range(len(norm) - 1, -1, -1) if norm[i].startswith(bye)
+                 and words[i].end_ms > total_ms - TRIM_SEARCH_S * 1000), None)
+    if tail is not None:
+        start = math.ceil(Fraction(words[tail].end_ms + int(TRIM_PAD_S[1] * 1000), 1000) * fps)
+        if start < total:
+            out.append(CutProposal(start=start, end=total, reason="oxir", status="tasdiqlangan"))
+    return out
 
 
 def _intersect(a: list[tuple[int, int]], b: list[tuple[int, int]]) -> list[tuple[int, int]]:
@@ -67,7 +96,7 @@ def check_no_word_cut(cuts: Sequence[CutProposal], words: Sequence[Word], fps: F
     """Tasdiqlangan kesishlardan so'z ichiga tushganlari (TZ 8.2 invarianti). Bo'sh ro'yxat — hammasi to'g'ri."""
     bad = []
     for c in cuts:
-        if c.status != "tasdiqlangan":
+        if c.status != "tasdiqlangan" or c.reason in ("bosh", "oxir"):  # bosh/oxir so'zlarni ataylab kesadi
             continue
         cs_ms, ce_ms = Fraction(c.start) / fps * 1000, Fraction(c.end) / fps * 1000
         if any(w.start_ms < ce_ms and cs_ms < w.end_ms for w in words):

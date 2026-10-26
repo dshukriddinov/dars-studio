@@ -4,6 +4,21 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — Dars boshi/oxirini kesish; shovqin o'lchovi
+
+- `cuts.trim_cuts`: birinchi salomlashish so'zidan ("assalomu", "salom", "hurmatli"...; boshidagi 60 s ichida)
+  0.3 s oldingacha va oxirgi xayrlashish so'zidan ("ko'rishguncha", "xayr", "rahmat"...; oxirgi 60 s) 0.6 s keyindan
+  oxirigacha kesiladi. Avtomatik tasdiqlanadi (`reason` "bosh"/"oxir", inson rad etishi mumkin); so'z invarianti
+  (TZ 8.2) ularga qo'llanmaydi. Namuna: 0–3.84 s (montajchi 3.94 s kesgan) va 824.76 s dan oxirigacha.
+  Eksport v8: 831.64 s, A/V 0 ms.
+- Shovqin: manba (src_48k) 50 ms freymlar p5 -39 dBFS, nutq median -17 dBFS. Joriy `afftdn` (nr 15, nf -50)
+  p5 ni 0.3 dB ga, eng kuchli sozlama (nr 25, nf -36) 2.7 dB ga pasaytiradi — statsionar filtr bu shovqinni olmaydi.
+  Neyron denoiser kerak: DeepFilterNet3 (MIT/Apache-2.0). `deepfilternet` pip paketi numpy'ni 1.26 ga tushiradi va
+  torchaudio talab qiladi (venv'ni buzadi) — rasmiy Rust CLI (`deep-filter-0.5.6-x86_64-pc-windows-msvc.exe`, model
+  ichida) varianti foydalanuvchi ruxsatini kutmoqda. Montajchi namunasi ham denoise qilinmagan (p5 -39 dBFS).
+
+---
+
 ## 2026-10-26 — O'qituvchi tiniqligi, subtitr ixtiyoriy
 
 - Foydalanuvchi: o'qituvchi xira. O'lchov (yuz hududi, Laplacian dispersiyasi, 1080p): v6 1297; o'qituvchi

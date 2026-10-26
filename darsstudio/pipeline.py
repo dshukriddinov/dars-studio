@@ -52,6 +52,8 @@ def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, kee
     new = cuts.propose(words(stack), sil, p.fps_frac, p.total_frames, min_pause_s, keep_pause_s, p.layout_spans,
                        prefer_fullscreen)
     decided = [c for c in p.cuts if c.status != "taklif"]
+    if not any(c.reason in ("bosh", "oxir") for c in decided):  # avtomatik, inson rad etishi mumkin
+        decided += cuts.trim_cuts(words(stack), p.fps_frac, p.total_frames)
     keep = decided + [c for c in new if not any(c.start < d.end and d.start < c.end for d in decided)]
     if approve_all:
         keep = [c.model_copy(update={"status": "tasdiqlangan"}) if c.status == "taklif" else c for c in keep]
