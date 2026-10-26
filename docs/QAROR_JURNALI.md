@@ -12,9 +12,10 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 - `audio/denoise.py`: "auto" tartibi — CLI -> Python paket -> afftdn. CLI `-D -a <dB> -o <dir>`; chiqish manbaga
   FFT korrelyatsiya bilan namuna aniqligida tekislanadi va uzunligi manbaga tenglanadi (A/V qoidasi), so'ng HPF 80 Hz.
   Test: soxta CLI 480 namuna kechiktirib, 0.2 s uzun yozadi — natija lag 0, uzunlik teng.
-- **Tekshirilmagan:** exe bu sessiyada ishga tushirilmadi (avto-rejim xavfsizlik filtri tashqi binarni bajarishni
-  blokladi). CLI flaglari v0.5.6 manba kodidan (`enhance_wav.rs`) olingan. Haqiqiy natija (shovqin p5 o'lchovi,
-  kechikish, tezlik) foydalanuvchi `audio` + `export` ni ishga tushirgandan keyin o'lchanadi.
+- **O'lchandi (foydalanuvchi `.claude/settings.json` da ruxsat berganidan keyin):** namuna, atten 15 dB.
+  Nutqsiz joylar RMS: 0–0.7 s -25.4 -> -40.8, 2.2–3.7 s -19.4 -> -34.4, 825–826.4 s -26.0 -> -41.2 dBFS (= 15 dB,
+  chegara); 50 ms freymlar p5 -39.3 -> -42.9; nutq median -17.3 -> -17.7 dBFS. Tekislashdan keyin qoldiq siljish
+  1 namuna (0.02 ms), uzunlik teng. Eksport v9: A/V 0 ms, QA faqat tasdiqlanmagan shubhali joylar.
 - Kuzatildi: `test_scheduler.py::test_interrupted_jobs_requeued` to'liq to'plamda 1/3 marta yiqildi, alohida 6/6 o'tdi
   (yuklama ostida vaqt) — denoise o'zgarishiga aloqasiz, keyin ko'riladi.
 
