@@ -4,6 +4,54 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — B4/B5/B6/B8: audio, ASR, sinxron, kesish, Eye Contact, UI — o'lchovlar
+
+**ASR benchmark (G2 — qaror inson tomonidan).** 3 x 5 min namuna (bitta dars, bitta fan — TZ 3 fan talab qiladi),
+CTC alignment `sarahai-uzbek-stt-3`. **Qo'lda tuzatilgan referens matn yo'q (O-06), shuning uchun WER/CER
+o'lchanmadi.** Model litsenziyalari HF kartasida va asos modelgacha tekshirildi; revision va har fayl sha256
+`models/manifest.json` da.
+
+| model (litsenziya) | RTF | GPU xotira pik | VRAM (vram_probe) | o'zaro "WER" vs rubaistt / kotib |
+|---|---|---|---|---|
+| whisper-large-v3-ct2 (MIT) | 0.060–0.064 | 4.2–4.3 GB | 3.6 GB | 0.730 / 0.728 (turkcha/ozarbayjoncha harflar) |
+| rubaistt-v2-medium-ct2 (Apache-2.0) | 0.048–0.051 | 2.2–2.3 GB | 2.1 GB | — / 0.061 |
+| kotib-uzbek-stt-v1-ct2 (Apache-2.0) | 0.060–0.078 | 2.4–2.9 GB | 2.1 GB | 0.063 / — |
+| sarahai-uzbek-stt-3, CTC (Apache-2.0) | 0.015–0.020 | 1.9–2.3 GB | 1.9 GB | 0.407 / 0.427 (so'zlar qo'shilib ketadi) |
+| xlsr-uzbek-cv8, CTC (Apache-2.0) | 0.016–0.020 | 1.9–2.9 GB | 1.7 GB | 0.424 / 0.444 |
+
+"O'zaro WER" — referens emas, ikki kuchli model bilan kelishuv (sifat taxmini). **Tavsiya:** ASR —
+rubaistt-v2-medium (eng tez, eng kam xotira, kotib bilan 94% kelishuv), so'z vaqtlari — sarahai CTC.
+To'liq 13.8 min dars: ASR + CTC alignment 53 s, 32/32 segment tekislandi. So'z chegarasi xatosi (AC: median <= 60 ms)
+— 100 ta qo'lda belgilangan so'z yo'q, o'lchanmadi (`tools/asr_bench.py --boundaries`).
+
+**Topilmalar va qarorlar (B4):**
+- Whisper o'zbekcha so'zni apostrof joyidan bo'ladi ("o" + "'zbekiston") — bo'laklar birlashtiriladi.
+- CTC tokenizer lug'ati model chiqishidan katta (qo'shimcha tokenlar) — model `vocab_size` bilan cheklanadi.
+- Segment oynalari (+-400 ms) kesishganda so'z vaqtlari ustma-ust tushardi (16 holat) — tuzatildi.
+- `words.parquet` o'rniga `cache/asr/words.json` (25 min ~ 4 000 so'z, pyarrow bog'liqligi kerak emas).
+- DeepFilterNet3 o'rnatilmagan (Windows g'ildiragi/Rust lib tekshirilmadi) — zaxira `afftdn` (nr 15 dB) ishlatiladi.
+  Tinglash bo'yicha baho (FR-04 AC) — montajchi.
+- Namuna audio: integrated -14.6 LUFS, **true peak +0.51 dBTP (manbada clipping)**. Ma'ruza deyarli uzluksiz:
+  VAD 21 nutq bo'lagi, >= 1.2 s pauza deyarli yo'q (`cuts` 1 ta taklif, dars boshidagi jimlik).
+
+**Slayd sinxroni (B5, G3 — qaror inson tomonidan).** Namunada (ground truth yo'q) AI rejimi 19 slaydni ketma-ket
+topdi; tekshirilgan chegaralar gap boshiga to'g'ri tushgan ("keyingi slaydda dunyo bo'yicha emissiyalar..."), bitta
+14 -> 15 -> 14 qaytish (ishonchlilik 0.505) "shubhali" deb belgilandi. Sintetik testda (5 dars) ±2 s ichida >= 90%.
+Embedding (a = 0.6) hali ishlatilmaydi — model yuklanmagan; leksik qism (char 3–5 gram TF-IDF + kalit so'zlar) +
+so'z darajasidagi change-point chegara. `tools/align_eval.py --grid` qo'lda belgilangan GT bilan parametr tanlaydi.
+- **TZ FR-12 sahna qoidasi (>= 60 so'z -> B):** namuna slaydlarida 65–139 so'z, qoida bo'yicha deyarli butun dars B
+  (o'qituvchi yashirin). Chegara loyiha meta `b_scene_words` ga chiqarildi (default 60); ko'rgazmali eksportda 120.
+  Qaror — inson.
+
+**Eye Contact (B6):** to'liq 13.8 min namuna — patchlar 21 MB; 2 min bo'lak (3001 kadr) 32 s (ishga tushish bilan).
+TZ taxmini 100–300 MB / 25 min — amalda ~40 MB.
+
+**UI (B8):** `npm --prefix ui run build` toza, Vitest 25 passed. Brauzerda haqiqiy `namuna` bilan tekshirildi:
+Bosh sahifa (doctor bannerlari, loyihalar, navbat), Tekshirish (proxy + slayd, 5 yo'lak timeline, transkript,
+shubhali joylar), Key kalibrlash (keyed kadr). Playwright [T] — yo'q.
+
+---
+
 ## 2026-10-26 — B7, backend API, navbat, rejalashtiruvchi, to'liq doctor
 
 **Natijalar:** `pytest -m "unit or media or windows"` — barchasi o'tdi (rejalashtiruvchi: 3 loyiha x 6 vazifa

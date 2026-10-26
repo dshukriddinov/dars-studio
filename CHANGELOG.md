@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### B4–B6, B8 — o'lchovlar va tuzatishlar (2026-10-26)
+- ASR benchmark (5 model x 3 namuna), vram_probe; tavsiya: rubaistt-v2-medium + sarahai CTC.
+- `ui/`: React UI (Tekshirish, Bosh sahifa, Yangi loyiha, Key/Shablon kalibrlash, Eksport, Sozlamalar).
+
 ### B7 — API, navbat, rejalashtiruvchi (2026-10-26)
 - `jobs/`: resources (FR-20 qoidasi), queue_db (SQLite WAL), scheduler (resurs, bog'liqlik, to'xtatish, resume,
   qayta urinish), tasks (vazifa turlari + resurslar), worker (keep-awake); `power.py`.

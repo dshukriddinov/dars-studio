@@ -8,7 +8,7 @@
    "source": "hf:Systran/faster-whisper-large-v3",
    "license": "MIT",
    "kind": "asr-ct2",
-   "vram_mb": null,
+   "vram_mb": 3559,
    "size_mb": 2947.7,
    "files": [
     {
@@ -49,7 +49,7 @@
    "source": "hf:AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2",
    "license": "Apache-2.0",
    "kind": "asr-ct2",
-   "vram_mb": null,
+   "vram_mb": 2082,
    "size_mb": 1461.8,
    "files": [
     {
@@ -96,7 +96,7 @@
    "source": "hf:yuldashev222/uzbek_stt_v1-ct2",
    "license": "Apache-2.0",
    "kind": "asr-ct2",
-   "vram_mb": null,
+   "vram_mb": 2077,
    "size_mb": 2918.9,
    "files": [
     {
@@ -128,6 +128,106 @@
      "sha256": "5ad28279db5e546349708b9a74736e2c018737ac5a600f1048f1f26c99b85b47",
      "source_url": "https://huggingface.co/yuldashev222/uzbek_stt_v1-ct2/resolve/58e65df776e16f2eae01a483266ef05b17e4588d/vocabulary.json",
      "size_mb": 1.0
+    }
+   ]
+  },
+  {
+   "name": "sarahai-uzbek-stt-3",
+   "version": "1dd15c1ab04f851bda3e2978760fa1cd9299d413",
+   "source": "hf:sarahai/uzbek-stt-3",
+   "license": "Apache-2.0",
+   "kind": "asr-ctc",
+   "vram_mb": 1907,
+   "size_mb": 1203.5,
+   "files": [
+    {
+     "file": "sarahai-uzbek-stt-3/added_tokens.json",
+     "sha256": "224d293cbde0080e2e42d893dbe65862b179e0d4ff51dc92e25fb80013414e0b",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/added_tokens.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "sarahai-uzbek-stt-3/config.json",
+     "sha256": "5a858f8cbae07e1f88deedbe8195ef24eeb608055a1416ad058ceaf1229e4709",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "sarahai-uzbek-stt-3/model.safetensors",
+     "sha256": "54acee783d16533e1a4ddeb3244fdeae6838e54aabc6df5a6de128478345d152",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/model.safetensors",
+     "size_mb": 1203.5
+    },
+    {
+     "file": "sarahai-uzbek-stt-3/preprocessor_config.json",
+     "sha256": "f724fdad65341e79bd9741888fe4e8ce1bb2e7b44fc8216c28c591afb1e202f4",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/preprocessor_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "sarahai-uzbek-stt-3/special_tokens_map.json",
+     "sha256": "f17f705b191ddb9aef0b42e40869d325d79b2a1e229e0d51d72698b5d3e4fc90",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/special_tokens_map.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "sarahai-uzbek-stt-3/tokenizer_config.json",
+     "sha256": "ef37c7a1b3e090502da3e49d72f86aa50d405af5cbbb7ba3525232e61ee6e1e6",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/tokenizer_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "sarahai-uzbek-stt-3/vocab.json",
+     "sha256": "cbd0cad033157a6b32fd190518273377cd941f18b40125c055996ac448d84ccf",
+     "source_url": "https://huggingface.co/sarahai/uzbek-stt-3/resolve/1dd15c1ab04f851bda3e2978760fa1cd9299d413/vocab.json",
+     "size_mb": 0.0
+    }
+   ]
+  },
+  {
+   "name": "xlsr-uzbek-cv8",
+   "version": "1700405babad45ba4b669b597b96c28284289ffe",
+   "source": "hf:AlexAnoshka/wav2vec2-xls-r-uzbek-cv8",
+   "license": "Apache-2.0",
+   "kind": "asr-ctc",
+   "vram_mb": 1745,
+   "size_mb": 1203.5,
+   "files": [
+    {
+     "file": "xlsr-uzbek-cv8/config.json",
+     "sha256": "3412b6613cd87f4a3cb247c80075439825206bcccab1014dcfe3aa842cda34eb",
+     "source_url": "https://huggingface.co/AlexAnoshka/wav2vec2-xls-r-uzbek-cv8/resolve/1700405babad45ba4b669b597b96c28284289ffe/config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "xlsr-uzbek-cv8/model.safetensors",
+     "sha256": "38ec9d2c746fbd495c5a508da8461ce42f59b5140b0ff4f8939a6bbce1a507f9",
+     "source_url": "https://huggingface.co/AlexAnoshka/wav2vec2-xls-r-uzbek-cv8/resolve/1700405babad45ba4b669b597b96c28284289ffe/model.safetensors",
+     "size_mb": 1203.5
+    },
+    {
+     "file": "xlsr-uzbek-cv8/preprocessor_config.json",
+     "sha256": "8f9f560daa144e525174a9ce159ac4d168e010006d6c3e46cad02cae72a6c5ad",
+     "source_url": "https://huggingface.co/AlexAnoshka/wav2vec2-xls-r-uzbek-cv8/resolve/1700405babad45ba4b669b597b96c28284289ffe/preprocessor_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "xlsr-uzbek-cv8/special_tokens_map.json",
+     "sha256": "5f3800bd049d030a285e742eef4123d70bfb78c05a8555107d91a661c56d3f0b",
+     "source_url": "https://huggingface.co/AlexAnoshka/wav2vec2-xls-r-uzbek-cv8/resolve/1700405babad45ba4b669b597b96c28284289ffe/special_tokens_map.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "xlsr-uzbek-cv8/tokenizer_config.json",
+     "sha256": "7e53e5856f56a7a26ce775325cd96c811dc8b4f4acf2736b1ebe73648420acb8",
+     "source_url": "https://huggingface.co/AlexAnoshka/wav2vec2-xls-r-uzbek-cv8/resolve/1700405babad45ba4b669b597b96c28284289ffe/tokenizer_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "xlsr-uzbek-cv8/vocab.json",
+     "sha256": "17ac4dd947b4706d68a88ae77236798de977e92c2ab98338e2b8dad538f3cce4",
+     "source_url": "https://huggingface.co/AlexAnoshka/wav2vec2-xls-r-uzbek-cv8/resolve/1700405babad45ba4b669b597b96c28284289ffe/vocab.json",
+     "size_mb": 0.0
     }
    ]
   }
