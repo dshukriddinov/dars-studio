@@ -4,6 +4,16 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — HW-3 bajarildi: RAM barqarorlik sinovi
+
+**Sinov:** OCCT Personal 17.1.10, Stability Test -> Memory, preset "Heat" (DDR5), 80% xotira (band: ~59.7 GB / 64 GB, 91%), Threads Auto, **1 soat**. XMP 6000 MT/s (2 x 32 GB KF560C36-32), BIOS 1836, mikrokod 0x133, Intel Default Settings.
+
+**Natija: 0 xato ("No errors detected", Schedule - Completed).** RAM harorati 44 -> ~68.5 °C (kuzatilgan pik; Kingston chegarasi 85 °C). CPU: ~188-190 W, Vcore 1.53-1.55 V (yangi mikrokod chegarasida), yadrolar pik 90 °C, o'rtacha ~70 °C.
+
+**Xulosa:** XMP 6000 barqaror, 5600 ga tushirish shart emas. Dars renderida Python jarayonlari ~6.6 GB ishlatadi — RAM bu sinovdagidek qizimaydi. HW-1..HW-4 hammasi yopildi.
+
+---
+
 ## 2026-10-26 — HW-4: drayver qotirildi, Intel Default Settings tasdiqlandi
 
 - `driver_pin.txt` = **610.88** (NVIDIA Studio/Game drayveri; shu versiya bilan render 144.8 kadr/s, Eye Contact, ASR, NVENC sinalgan). Versiya o'zgarsa `doctor` ogohlantiradi.
