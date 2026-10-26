@@ -76,3 +76,21 @@ def run(args: Sequence[str], tool: Tool = "ffmpeg", check: bool = True,
         tail = (r.stderr or "").strip()[-800:]
         raise FfmpegError(f"{tool} xato bilan tugadi (kod {r.returncode}): {tail}")
     return r
+
+
+def popen(args: Sequence[str], tool: Tool = "ffmpeg", *, stdin: bool = False,
+          stdout: bool = False, bufsize: int = -1) -> "subprocess.Popen[bytes]":
+    """rawvideo pipe'lar uchun. stderr faylga emas, PIPE'ga: xato bo'lsa chaqiruvchi o'qiydi."""
+    cmd = [str(find(tool)), *args]
+    log.debug("popen: %s", cmd)
+    return subprocess.Popen(cmd, stdin=subprocess.PIPE if stdin else subprocess.DEVNULL,
+                            stdout=subprocess.PIPE if stdout else subprocess.DEVNULL, stderr=subprocess.PIPE,
+                            creationflags=_CREATIONFLAGS, bufsize=bufsize)
+
+
+@functools.cache
+def nvenc_ok(encoder: str = "h264_nvenc") -> bool:
+    """NVENC shu drayver bilan ishlaydimi (1 kadr sinov). Natija jarayon davomida keshlanadi."""
+    r = run(["-v", "error", "-nostdin", "-f", "lavfi", "-i", "color=c=gray:s=256x256:r=25:d=0.04",
+             "-c:v", encoder, "-f", "null", "-"], check=False)
+    return r.returncode == 0

@@ -4,6 +4,28 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — B2, media qatlami, TimeMap, loyiha modeli
+
+**O'lchovlar:** haqiqiy namuna (`namuna/video.MOV`, 13 min 46 s, 1080p25 yuvj420p, PCM 48 kHz, 20 664 kadr) +
+`Taqdimot.pptx` (19 slayd): `python -m darsstudio.cli import` — 20.2 s (probe 0.6 s, NVENC proxy 540p 101 MB).
+TZ 3.8 maqsadi 25 min uchun <= 3 min — bajarildi (~37 s ga ekstrapolyatsiya, o'lchanmagan).
+Testlar: `pytest -m "unit or media"` 53 passed (TimeMap: 3 x 500 hypothesis misoli).
+
+**Qarorlar:**
+- VFR aniqlash paket vaqtlari bo'yicha (`detect_vfr`: kadrlar orasi nominaldan yarim kadrdan ko'p farq qilsa).
+- VFR -> CFR: `fps` filtri (Eye Contact EC-2 bilan bir xil to'r), libx264 crf 12 GOP 25, MKV. Audio != 48 kHz ->
+  soxr, PCM s24le. Normallashtirish kerak bo'lmasa nusxa yozilmaydi.
+- FrameReader manba pix_fmt (yuv420p/yuvj420p) da o'qiydi — diapazon konvertatsiyasi yo'q; yuvj420p FFV1 orqali
+  bayt-aniq qaytishi testda.
+- Buyruqlar: har amal = maydon yo'li bo'yicha {old, new} (JSON), tarix `history/history.json` (oxirgi 500), avval
+  tarix, keyin project.json yoziladi. Invariant buzilsa amal rad etiladi, holat o'zgarmaydi.
+- Asset ID = `file_id` (hajm, mtime_ns, bosh/oxir 1 MB xxhash64) — Eye Contact EC-3 bilan bir xil formula.
+- Import xatoda yarim loyiha papkasi o'chiriladi.
+- Yangi bog'liqliklar: pydantic (MIT), xxhash (BSD-2), numpy (BSD-3), pypdfium2 (Apache-2.0/BSD-3), hypothesis
+  (MPL-2.0, faqat dev).
+
+---
+
 ## 2026-10-26 — B1, Eye Contact EC-1..EC-5
 
 **Joy:** `engines/eye-contact`, branch `studio-ec` (`cfb8288` dan 8 commit, oxirgisi `00db238`). Remote'ga push

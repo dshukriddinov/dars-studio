@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### B2 — media qatlami, TimeMap, loyiha modeli (2026-10-26)
+- `media/probe.py` (FR-02, Fraction fps, paket bo'yicha VFR, validatsiya, `file_id`), `media/normalize.py`
+  (VFR->CFR, 48 kHz), `media/frames.py` (FrameReader/Writer, aniq seek), `media/proxy.py` (540p, GOP 12).
+- `media/timemap.py` (TZ 9.5) + hypothesis property testlari.
+- `project/model.py` (TZ 8.2 + invariantlar), `store.py` (atomik), `migrations.py`, `commands.py` (undo/redo diskda).
+- FR-01: `project/importer.py`, `python -m darsstudio.cli import|import-dir|info`.
+
 ### B1 — Eye Contact EC-1..EC-5 (2026-10-26)
 - `engines/eye-contact` -> `studio-ec` branch (`00db238`): A/V start_time farqi saqlanadi (EC-1, haqiqiy klipdagi
   80 ms xato ham tuzatildi), VFR (EC-2), resume kalitida fayl identifikatori (EC-3), `--patches-out` va

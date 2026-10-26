@@ -14,7 +14,7 @@ from typing import Any
 from darsstudio.media import ffmpeg
 
 # Generator o'zgarsa oshiriladi: conftest eski to'plamni qayta yaratadi
-VERSION = 1
+VERSION = 2
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "generated"
 
 HD = "1920x1080"
@@ -72,10 +72,11 @@ def ntsc(out: Path) -> dict[str, Any]:
 def vfr(out: Path) -> dict[str, Any]:
     """4. VFR: 25 fps manbadan har 50-kadrdan keyin bitta kadr tushirilgan (300 -> 294), pts o'zgarmagan."""
     src, fps = 300, 25
-    _ff("-f", "lavfi", "-i", f"testsrc2=s={HD}:r={fps}",
-        "-vf", "select=not(eq(mod(n\\,50)\\,49))", "-frames:v", str(src - src // 50),
-        "-fps_mode", "passthrough", *X264, str(out))
-    return {"fps": "25/1", "nb_frames": src - src // 50, "cfr_frames": src, "dropped_every": 50}
+    _ff("-f", "lavfi", "-i", f"testsrc2=s={HD}:r={fps}", "-f", "lavfi", "-i", "sine=f=440:r=48000:d=12",
+        "-map", "0:v", "-map", "1:a", "-vf", "select=not(eq(mod(n\\,50)\\,49))", "-frames:v", str(src - src // 50),
+        "-fps_mode", "passthrough", *X264, "-c:a", "aac", str(out))
+    # oxirgi kadr (299) ham tushgan: video 11.96 s -> CFR'da 299 kadr
+    return {"fps": "25/1", "nb_frames": src - src // 50, "cfr_frames": src - 1, "dropped_every": 50}
 
 
 def beep(out: Path) -> dict[str, Any]:
