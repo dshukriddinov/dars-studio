@@ -4,6 +4,14 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — HW-4: drayver qotirildi, Intel Default Settings tasdiqlandi
+
+- `driver_pin.txt` = **610.88** (NVIDIA Studio/Game drayveri; shu versiya bilan render 144.8 kadr/s, Eye Contact, ASR, NVENC sinalgan). Versiya o'zgarsa `doctor` ogohlantiradi.
+- BIOS 1836 da "Intel Default Settings" yoqilgan (foydalanuvchi tasdiqladi).
+- HW-3 (RAM barqarorlik sinovi) — foydalanuvchi o'tkazadi.
+
+---
+
 ## 2026-10-26 — HW-1 bajarildi: BIOS yangilandi
 
 **Holat:** ASUS TUF GAMING Z790-PLUS WIFI BIOS 1603 (2023-12-04) -> **1836** (barqaror, 2026-04-16 sanali; "Update Intel microcode"), Intel ME 16.1.40.2765. CPU mikrokod 0x11F -> **0x133** (>= 0x12B/0x12F). `doctor`: mikrokod ok.

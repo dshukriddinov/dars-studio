@@ -29,5 +29,5 @@ bilan isbotlanganlar; qolgani "Qisman" yoki "Kutilmoqda" (sababi bilan).
 - **G2 (ASR modeli):** tavsiya rubaistt-v2-medium + sarahai CTC; CER uchun 3 x 5 min qo'lda tuzatilgan matn kerak.
 - **G3 (AI sinxron):** 3 dars uchun qo'lda belgilangan chegaralar (`time,slide` CSV) -> `tools/align_eval.py --grid`.
 - **Sahna qoidasi:** TZ ">= 60 so'z -> B" namunada deyarli butun darsni B qiladi; `meta.b_scene_words` (ko'rgazmada 120).
-- **HW-1:** bajarildi — BIOS 1836, mikrokod 0x133. **HW-3:** RAM sinovi kutilmoqda. **HW-4:** `driver_pin.txt` (610.88?).
+- **HW-1:** bajarildi — BIOS 1836, mikrokod 0x133. **HW-3:** RAM sinovi kutilmoqda. **HW-4:** bajarildi — `driver_pin.txt` = 610.88. Intel Default Settings yoqilgan.
 - **O-08:** haqiqiy studiya foni, logo, lower-third uslubi — hozir sintetik `demo` shablon.
