@@ -4,6 +4,38 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — Montajchi tayyorlagan namuna (`namuna/tayyor.mp4`) tahlili: uslub va G3 ground truth
+
+**Vaqt bog'lanishi (audio korrelatsiya):** tayyor = manba + 1.421 s (manba boshidagi 3.94 s — "boshlasangiz bo'ladi"
+kesilgan, o'rniga intro 5.36 s); manba ~622–624 s da yana 1.72 s kesilgan; oxirida outro (o'sha intro).
+
+**Uslub (qo'lda o'lchangan):**
+- Fon: `background.png` 2321x1230, x0.9145 kichraytirilgan, (-4, +1) siljigan; ekran quad kanvasda
+  TL(14,21) TR(1025,141) BR(1026,699) BL(15,743) (fonda TL(20,22) TR(1126,154) BR(1126,763) BL(20,811)).
+- O'qituvchi: SIFT+RANSAC (197 inlier) — masshtab **0.929**, manba (0,0) -> kanvas (692, 79), pastga tekislangan,
+  markaz x ~1584. Logo overlay yo'q.
+- Sahnalar: har slayd almashinuvida B (eski slayd to'liq ekran) -> **zoom blur** (~1.28 s) -> A (yangi slayd ekranda,
+  o'qituvchi) ~5–17 s -> **zoom blur** (~1.0 s) -> B keyingi slaydgacha. A->A almashinuvlar (slayd 2, 3, 13, 15, 18,
+  19): **clock wipe** (~1.0 s). Uzun A bo'laklar: kirish (64 s), 518–588, 627–694, 780–824. A 41%, B 59%.
+- PPTX'da transition/animatsiya yo'q — hammasi NLE'da qo'shilgan.
+- Lower-third: pastki chap ko'k gradient polosa, ism (qalin) + 2 qator unvon, sekin chapga siljiydi, dars boshidan
+  ~8.6 s, fade'siz yo'qoladi. Oxirgi slaydda (~815 s dan) mualliflik huquqi matni (oq kursiv, qora yarim shaffof polosa).
+- Intro -> dars va dars -> outro: hard cut. Loudness normallashtirilmagan: -14.5 LUFS, TP +0.5 dBTP; intro -12 LUFS.
+
+**G3 (AI sinxron) — birinchi haqiqiy ground truth** (`docs/pilot/namuna_gt_slides.csv`, 18 chegara, montajchi
+o'tishlari boshlanishi): ±1 s 22%, ±2 s 83%, median 1.28 s. O'tish **oxiri** (yangi slayd to'liq ko'ringan payt) bilan:
+±1 s 72%, ±2 s 72%, median **0.38 s**. Katta xatolar: slayd 7 (-14.9 s), 10 (-4.1), 13 (-4.6) — uchalasida ma'ruzachi
+aniq signal bergan ("xo'p, keyingi slaydimizda...", "xo'p, parij..."), AI bitta gapga oldin surgan, ishonchliligi
+yuqori (0.96–1.0) — ya'ni xato "shubhali" deb belgilanmagan (AC: xatolarning >= 70% i belgilanishi kerak — bajarilmadi).
+"keyingi/navbatdagi slayd" signallari 7/18 chegarada 0..4 s ichida.
+
+**Takliflar (inson tasdig'idan keyin):** (1) o'tish chegaradan oldin tugasin (montajchi uslubi); (2) "keyingi slayd"
+signal so'zlari chegarani shu gapga bog'lasin; (3) sahna qoidasi "A N s, keyin B" (N~8 s) — so'z soni qoidasi o'rniga;
+(4) zoom blur va clock wipe o'tishlari; (5) `akademiya` shabloni (yuqoridagi o'lchovlar), lower-third va mualliflik
+matni uslubi; (6) intro/outro (loudness -16 LUFS ga moslab).
+
+---
+
 ## 2026-10-26 — HW-3 bajarildi: RAM barqarorlik sinovi
 
 **Sinov:** OCCT Personal 17.1.10, Stability Test -> Memory, preset "Heat" (DDR5), 80% xotira (band: ~59.7 GB / 64 GB, 91%), Threads Auto, **1 soat**. XMP 6000 MT/s (2 x 32 GB KF560C36-32), BIOS 1836, mikrokod 0x133, Intel Default Settings.
