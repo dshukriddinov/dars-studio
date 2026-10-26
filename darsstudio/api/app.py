@@ -28,6 +28,7 @@ from darsstudio.project import importer
 from darsstudio.project.commands import CommandStack
 from darsstudio.project.store import ProjectStore
 
+LOW_CONF, MAX_LOW_WORDS = 0.25, 50
 NAME_RE = re.compile(r"^[\w\-. ]{1,100}$", re.UNICODE)
 
 
@@ -210,10 +211,11 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
                             "text": f"{w['end'] - w['start']} kadr"})
         wf = s.cache("asr") / "words.json"
         if wf.is_file():
-            for w in json.loads(wf.read_text(encoding="utf-8")):
-                if w["conf"] < 0.4:
-                    out.append({"kind": "past_ishonchli_soz", "frame": int(w["start_ms"] / 1000 * fps),
-                                "score": w["conf"], "text": w["text"]})
+            low = sorted((w for w in json.loads(wf.read_text(encoding="utf-8")) if w["conf"] < LOW_CONF),
+                         key=lambda w: w["conf"])[:MAX_LOW_WORDS]   # ro'yxat shovqin bilan to'lib ketmasin
+            for w in low:
+                out.append({"kind": "past_ishonchli_soz", "frame": int(w["start_ms"] / 1000 * fps),
+                            "score": w["conf"], "text": w["text"]})
         return sorted(out, key=lambda x: x["score"])
 
     @app.post("/api/projects/{name}/prepare")
@@ -371,6 +373,11 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
             pass
         finally:
             hub.clients.discard(q)
+
+    @app.api_route("/api/{rest:path}", methods=["GET", "POST", "PUT", "DELETE"])
+    def api_not_found(rest: str) -> None:
+        # /api ostidagi noma'lum yo'l statik UI'ga (index.html, 200) tushib qolmasin
+        raise HTTPException(404, "Bunday API yo'q.")
 
     ui = paths.ROOT / "ui" / "dist"
     if ui.is_dir():
