@@ -1,8 +1,9 @@
-"""Yakuniy render, bitta o'tish (D-01, FR-16 soddalashtirilgan, B3).
+"""Yakuniy render, bitta o'tish (D-01, FR-16).
 
-dekod (yuv420p, CPU, alohida oqim) -> GPU batch: keyer -> rang -> joylashtirish -> kompozit -> yuv420p BT.709 tv
--> NVENC (alohida oqim). Chunk'lar: cache/render/<kalit>/seg_XXXXX.mp4 + .json checkpoint; oxirida concat -c copy
-va audio manbadan (AAC 192k). Video/audio boshlanish munosabati saqlanadi (Eye Contact EC-1 bilan bir xil tamoyil).
+dekod (yuv420p, CPU, alohida oqim; TimeMap bo'yicha saqlanadigan oraliqlar) -> ko'z patchi (YUV, rampa bilan)
+-> GPU batch: keyer -> rang -> joylashtirish -> kompozit -> lower-third -> yuv420p BT.709 tv -> NVENC (alohida oqim).
+Chunk'lar chiqish kadrlarida: cache/render/<kalit>/seg_XXXXX.mp4 + .json checkpoint; oxirida concat -c copy.
+Audio: tayyor WAV (kesilgan + loudnorm, chiqish vaqt o'qida) yoki (kesishsiz bo'lsa) manbadan.
 """
 
 import hashlib
@@ -24,15 +25,17 @@ import torch
 from darsstudio.media import ffmpeg
 from darsstudio.media.frames import FrameReader, FrameWriter
 from darsstudio.media.probe import ProbeResult
+from darsstudio.media.timemap import TimeMap
 from darsstudio.project.model import LayoutSpan, Project, SlideSpan
 from darsstudio.project.store import atomic_write_json
-from darsstudio.render.compositor import Compositor, Timeline, rgb_to_yuv420
+from darsstudio.render import eyepatch, overlays
+from darsstudio.render.compositor import Compositor, Timeline, over, premult, rgb_to_yuv420
 from darsstudio.render.keyer import Keyer
 from darsstudio.render.templates import Template
 
 log = logging.getLogger(__name__)
 
-RENDER_VERSION = 1  # render natijasiga ta'sir qiluvchi kod o'zgarsa oshiriladi (checkpoint kaliti)
+RENDER_VERSION = 2  # render natijasiga ta'sir qiluvchi kod o'zgarsa oshiriladi (checkpoint kaliti)
 BT709_TAGS = ["-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709"]
 PROFILES = {
     # TZ FR-16
@@ -55,12 +58,21 @@ class RenderOptions:
     preset: str = "p7"
     batch: int = 8
     chunk_sec: int = 60
-    start: int = 0                    # asl kadr (bo'lak render uchun)
-    frames: int | None = None
-    device: str | None = None         # None: cuda bo'lsa cuda
+    start: int = 0                    # chiqish kadri (bo'lak render uchun)
+    frames: int | None = None         # chiqish kadrlari soni
+    device: str | None = None
     dtype: torch.dtype = torch.float16
     on_progress: Callable[[int, int], None] | None = None
-    workdir: Path | None = None
+
+
+@dataclass
+class RenderInputs:
+    """Ixtiyoriy kirishlar (B6): kesishlar, ko'z patchlari, tayyor audio, lower-third."""
+    timemap: TimeMap | None = None
+    eyepatch_dir: Path | None = None
+    audio_wav: Path | None = None     # chiqish vaqt o'qidagi WAV (audio.mix.final_audio)
+    lower_third: np.ndarray | None = None
+    lower_third_s: float = 6.0
 
 
 @dataclass
@@ -85,7 +97,7 @@ def color_correct(rgb: torch.Tensor, alpha: torch.Tensor, c: dict[str, float]) -
 
 
 def spans_to_warnings(flags: dict[str, list[int]], min_len: int = 5) -> list[dict[str, Any]]:
-    """Kadr raqamlari ro'yxati -> ketma-ket >= min_len kadrli oraliqlar (TZ 9.3 ogohlantirishlari)."""
+    """Asl kadr raqamlari -> ketma-ket >= min_len kadrli oraliqlar (TZ 9.3 ogohlantirishlari)."""
     out = []
     for kind, frames in flags.items():
         run: list[int] = []
@@ -100,31 +112,55 @@ def spans_to_warnings(flags: dict[str, list[int]], min_len: int = 5) -> list[dic
 
 
 def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spans: tuple[Any, Any],
-               opts: RenderOptions, probe: ProbeResult) -> str:
+               opts: RenderOptions, probe: ProbeResult, tm: TimeMap, extra: RenderInputs) -> str:
     h = hashlib.sha256()
+    ep = ""
+    if extra.eyepatch_dir and (extra.eyepatch_dir / "meta.json").is_file():
+        ep = json.loads((extra.eyepatch_dir / "meta.json").read_text(encoding="utf-8")).get("cfg_key", "")
     h.update(json.dumps({"v": RENDER_VERSION, "key": project.key.model_dump(mode="json"),
                          "placement": project.placement.model_dump(mode="json"), "tpl": tpl.content_hash(),
                          "slides": [str(p) + str(p.stat().st_mtime_ns) for p in slide_files],
                          "spans": [[s.model_dump(mode="json") for s in g] for g in spans],
-                         "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
+                         "eye_off": [s.model_dump(mode="json") for s in project.eye_off], "eyepatch": ep,
+                         "lt": None if extra.lower_third is None else hashlib.md5(extra.lower_third).hexdigest(),
+                         "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
                          "src": probe.path, "start": opts.start}, sort_keys=True).encode())
     return h.hexdigest()[:16]
 
 
-def _reader(p: ProbeResult, start: int, count: int, batch: int, q: "queue.Queue[Any]") -> None:
+def src_ranges(tm: TimeMap, g0: int, n: int) -> list[tuple[int, int]]:
+    """Chiqish [g0, g0+n) -> asl kadrlarning uzluksiz oraliqlari."""
+    out: list[tuple[int, int]] = []
+    for s, e in tm.ranges:
+        o = tm.src_to_out(s)
+        assert o is not None
+        a, b = max(g0, o), min(g0 + n, o + (e - s))
+        if a < b:
+            out.append((s + a - o, s + b - o))
+    return out
+
+
+def _reader(p: ProbeResult, ranges: list[tuple[int, int]], batch: int, q: "queue.Queue[Any]",
+            patches: eyepatch.EyePatches | None, eye_off: Sequence[Any]) -> None:
     try:
         buf, idx = [], []
-        with FrameReader(p, start=start, count=count) as r:
-            for i, f in enumerate(r):
-                buf.append(f)
-                idx.append(start + i)
-                if len(buf) == batch:
-                    q.put((idx, np.stack(buf)))
-                    buf, idx = [], []
+        for s, e in ranges:
+            with FrameReader(p, start=s, count=e - s) as r:
+                for i, f in enumerate(r):
+                    fi = s + i
+                    if patches is not None:
+                        rec = patches.get(fi)
+                        if rec is not None:
+                            eyepatch.apply(f, rec, eyepatch.weight(fi, eye_off))
+                    buf.append(f)
+                    idx.append(fi)
+                    if len(buf) == batch:
+                        q.put((idx, np.stack(buf)))
+                        buf, idx = [], []
         if buf:
             q.put((idx, np.stack(buf)))
         q.put(None)
-    except BaseException as e:  # asosiy oqimga yetkazamiz
+    except BaseException as e:
         q.put(e)
 
 
@@ -136,34 +172,36 @@ def _writer(wr: FrameWriter, q: "queue.Queue[Any]", err: list[BaseException]) ->
         wr.close()
     except BaseException as e:
         err.append(e)
-        while q.get() is not None:  # ishlab chiqaruvchi bloklanmasin
+        while q.get() is not None:
             pass
 
 
 def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Path], slides_4k: list[Path],
            slide_spans: list[SlideSpan], layout_spans: list[LayoutSpan], out: Path, work_root: Path,
-           opts: RenderOptions | None = None) -> RenderReport:
+           opts: RenderOptions | None = None, extra: RenderInputs | None = None) -> RenderReport:
     opts = opts or RenderOptions()
+    extra = extra or RenderInputs()
     dev = torch.device(opts.device or ("cuda" if torch.cuda.is_available() else "cpu"))
     dtype = opts.dtype if dev.type == "cuda" else torch.float32
     v = probe.video
     w, h, fps = v.width, v.height, v.fps
-    total = (opts.frames if opts.frames is not None else project.total_frames - opts.start)
-    total = min(total, project.total_frames - opts.start)
+    tm = extra.timemap or TimeMap([(0, project.total_frames)], fps)
+    total = tm.out_total - opts.start if opts.frames is None else min(opts.frames, tm.out_total - opts.start)
     if dev.type == "cuda":
         torch.cuda.reset_peak_memory_stats(dev)
 
     keyer = Keyer(project.key, w, h, probe.full_range, dev)
     comp = Compositor(tpl, warped, slides_4k, project.placement, (w, h), dev, dtype)
     tl = Timeline.build(slide_spans, layout_spans, tpl)
-    key = render_key(project, tpl, slides_4k, (slide_spans, layout_spans), opts, probe)
+    patches = eyepatch.EyePatches(extra.eyepatch_dir) if extra.eyepatch_dir else None
+    lt = premult(extra.lower_third, dev, dtype) if extra.lower_third is not None else None
+    key = render_key(project, tpl, slides_4k, (slide_spans, layout_spans), opts, probe, tm, extra)
     wd = work_root / key
     wd.mkdir(parents=True, exist_ok=True)
     chunk = max(1, int(opts.chunk_sec * fps))
     nchunks = math.ceil(total / chunk)
     enc = encoder_args(opts.profile, opts.preset)
     cw, ch = tpl.canvas
-    # ogohlantirish zonalari (TZ 9.3, FR-12): bosh yuqori chetga 2% dan yaqin; anchor yoki garbage chegarasi
     ax0, ay0, ax1, ay1 = tpl.teacher_anchor
     top_zone = max(1, int(0.02 * ch))
     gmask = keyer.garbage.float()
@@ -174,14 +212,13 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
     done = 0
     segments = []
     for k in range(nchunks):
-        s = opts.start + k * chunk
-        n = min(chunk, opts.start + total - s)
+        g0 = opts.start + k * chunk
+        n = min(chunk, opts.start + total - g0)
         seg = wd / f"seg_{k:05d}.mp4"
         mark = seg.with_suffix(".json")
         segments.append(seg)
         if seg.is_file() and mark.is_file() and json.loads(mark.read_text())["frames"] == n:
-            st = json.loads(mark.read_text())
-            for kind, fr in st.get("flags", {}).items():
+            for kind, fr in json.loads(mark.read_text()).get("flags", {}).items():
                 flags[kind] += fr
             done += n
             continue
@@ -190,7 +227,8 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
         qout: queue.Queue[Any] = queue.Queue(maxsize=4)
         werr: list[BaseException] = []
         wr = FrameWriter(seg, cw, ch, fps, None, enc, tags=BT709_TAGS)
-        threading.Thread(target=_reader, args=(probe, s, n, opts.batch, qin), daemon=True).start()
+        threading.Thread(target=_reader, args=(probe, src_ranges(tm, g0, n), opts.batch, qin, patches,
+                                               project.eye_off), daemon=True).start()
         tw = threading.Thread(target=_writer, args=(wr, qout, werr), daemon=True)
         tw.start()
         got = 0
@@ -208,8 +246,13 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
                 rgb = color_correct(kr.rgb, kr.alpha, project.placement.color)
                 teacher = comp.teacher_layer(rgb, kr.alpha)
                 img = comp.compose(idx, tl, teacher)
+                if lt is not None:
+                    gs = range(g0 + got, g0 + got + len(idx))
+                    al = [overlays.lower_third_alpha(g, fps, extra.lower_third_s) for g in gs]
+                    for j, a in enumerate(al):
+                        if a > 0:
+                            img[j] = over(lt * a, img[j])
                 qout.put(rgb_to_yuv420(img).cpu().numpy())
-                # ogohlantirishlar (faqat A sahnada mazmunli, lekin kadr bo'yicha belgilaymiz)
                 ta = teacher[:, 3] > 0.5
                 top = ta[:, :top_zone].flatten(1).any(1)
                 outside = ta.clone()
@@ -237,7 +280,7 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
             flags[kind] += fr
         done += n
 
-    _mux(segments, probe, opts.start, total, out, wd)
+    _mux(segments, probe, tm, opts.start, total, out, wd, extra.audio_wav)
     secs = time.time() - t0
     vram = torch.cuda.max_memory_allocated(dev) / 2**20 if dev.type == "cuda" else 0.0
     rep = RenderReport(output=str(out), frames=total, seconds=round(secs, 1), fps=round(total / max(secs, 1e-9), 1),
@@ -246,20 +289,28 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
     return rep
 
 
-def _mux(segments: list[Path], p: ProbeResult, start: int, frames: int, out: Path, wd: Path) -> None:
-    """Segmentlar (-c copy) + manba audio (AAC 192k). Audio videoning `start` kadridan boshlab kesiladi:
-    -ss fayl boshiga nisbatan, shuning uchun audio va video munosabati manbadagidek (A/V siljish saqlanadi)."""
+def _mux(segments: list[Path], p: ProbeResult, tm: TimeMap, start: int, frames: int, out: Path, wd: Path,
+         audio_wav: Path | None) -> None:
+    """Segmentlar (-c copy) + audio (AAC 192k).
+    audio_wav (chiqish vaqt o'qida) bo'lsa — undan [start, start+frames). Aks holda manbadan: kesishlar yo'q deb
+    hisoblanadi, -ss fayl boshiga nisbatan (lab-sync manbadagidek)."""
     lst = wd / "concat.txt"
     lst.write_text("".join(f"file '{s.name}'\n" for s in segments), encoding="utf-8")
     fps = p.video.fps
-    t0 = p.video.start_time - p.format_start_time + Fraction(start) / fps
     dur = Fraction(frames) / fps
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_name(out.stem + ".tmp" + out.suffix)
     args = ["-v", "error", "-nostdin", "-y", "-f", "concat", "-safe", "0", "-i", str(lst)]
-    if p.audio:
-        args += ["-ss", f"{float(t0):.6f}", "-t", f"{float(dur):.6f}", "-i", p.path,
-                 "-map", "0:v:0", "-map", "1:a:0", "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
+    if audio_wav is not None:
+        args += ["-ss", f"{float(Fraction(start) / fps):.6f}", "-t", f"{float(dur):.6f}", "-i", str(audio_wav)]
+    elif p.audio:
+        if len(tm.ranges) > 1:
+            raise ValueError("kesishlar bor: audio_wav (audio.mix.final_audio) berilishi kerak")
+        src0 = tm.ranges[0][0] if tm.ranges else 0
+        t0 = p.video.start_time - p.format_start_time + Fraction(src0 + start) / fps
+        args += ["-ss", f"{float(t0):.6f}", "-t", f"{float(dur):.6f}", "-i", p.path]
+    if audio_wav is not None or p.audio:
+        args += ["-map", "0:v:0", "-map", "1:a:0", "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
     args += ["-c:v", "copy", *BT709_TAGS, "-movflags", "+faststart", str(tmp)]
     ffmpeg.run(args)
     tmp.replace(out)

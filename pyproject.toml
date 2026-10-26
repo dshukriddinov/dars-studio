@@ -7,6 +7,7 @@ dependencies = [
     "numpy>=2",
     "pydantic>=2.7",
     "pypdfium2>=4.30",
+    "rapidfuzz>=3",
     "python-pptx>=1.0",
     "xxhash>=3",
     # GPU: torch cu128 build — https://download.pytorch.org/whl/cu128 (TZ 3.3)
@@ -59,10 +60,10 @@ plugins = ["pydantic.mypy"]
 
 # TZ 10.1: asosiy modullar strict. Numerik kod (cv2/torch/numpy stub'lari noaniq) uchun yumshatilgan.
 [[tool.mypy.overrides]]
-module = ["darsstudio.render.*", "darsstudio.slides.*", "darsstudio.cli"]
+module = ["darsstudio.render.*", "darsstudio.slides.*", "darsstudio.cli", "darsstudio.asr.engines.*"]
 disallow_untyped_calls = false
 disable_error_code = ["arg-type", "call-overload", "assignment", "list-item", "no-any-return"]
 
 [[tool.mypy.overrides]]
-module = ["lxml.*", "pythoncom", "win32com.*", "pypdfium2.*"]
+module = ["lxml.*", "pythoncom", "win32com.*", "pypdfium2.*", "df.*", "df", "silero_vad", "faster_whisper", "sklearn.*", "scipy.*"]
 ignore_missing_imports = true

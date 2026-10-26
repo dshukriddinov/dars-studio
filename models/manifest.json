@@ -1,5 +1,135 @@
 {
-  "schema_version": 1,
-  "_fields": "name, version, file (models/ ga nisbatan), source_url, sha256, license, vram_mb, size_mb",
-  "models": []
+ "schema_version": 1,
+ "_fields": "name, version, file (models/ ga nisbatan), source_url, sha256, license, vram_mb, size_mb",
+ "models": [
+  {
+   "name": "whisper-large-v3-ct2",
+   "version": "edaa852ec7e145841d8ffdb056a99866b5f0a478",
+   "source": "hf:Systran/faster-whisper-large-v3",
+   "license": "MIT",
+   "kind": "asr-ct2",
+   "vram_mb": null,
+   "size_mb": 2947.7,
+   "files": [
+    {
+     "file": "whisper-large-v3-ct2/config.json",
+     "sha256": "a9306624f5ec14270a014b647e5c316b6e03a662c369758d1b90697a7b0655b9",
+     "source_url": "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/edaa852ec7e145841d8ffdb056a99866b5f0a478/config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "whisper-large-v3-ct2/model.bin",
+     "sha256": "69f74147e3334731bc3a76048724833325d2ec74642fb52620eda87352e3d4f1",
+     "source_url": "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/edaa852ec7e145841d8ffdb056a99866b5f0a478/model.bin",
+     "size_mb": 2944.3
+    },
+    {
+     "file": "whisper-large-v3-ct2/preprocessor_config.json",
+     "sha256": "7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711",
+     "source_url": "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/edaa852ec7e145841d8ffdb056a99866b5f0a478/preprocessor_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "whisper-large-v3-ct2/tokenizer.json",
+     "sha256": "6d8cbd7cd0d8d5815e478dac67b85a26bbe77c1f5e0c6d76d1ce2abc0e5f21ca",
+     "source_url": "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/edaa852ec7e145841d8ffdb056a99866b5f0a478/tokenizer.json",
+     "size_mb": 2.4
+    },
+    {
+     "file": "whisper-large-v3-ct2/vocabulary.json",
+     "sha256": "c69260f2ab26d659b7c398f9a2b2b48ed0df16c3b47d7326782fd9cba71690c1",
+     "source_url": "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/edaa852ec7e145841d8ffdb056a99866b5f0a478/vocabulary.json",
+     "size_mb": 1.0
+    }
+   ]
+  },
+  {
+   "name": "rubaistt-v2-medium-ct2",
+   "version": "a38c89604615d6c3fc6f10692375ecbf89502bdb",
+   "source": "hf:AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2",
+   "license": "Apache-2.0",
+   "kind": "asr-ct2",
+   "vram_mb": null,
+   "size_mb": 1461.8,
+   "files": [
+    {
+     "file": "rubaistt-v2-medium-ct2/config.json",
+     "sha256": "3622a2ddc41ec0e0fd4e68c13c6830f03b90c38d89aaad184de02c8c642cf807",
+     "source_url": "https://huggingface.co/AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2/resolve/a38c89604615d6c3fc6f10692375ecbf89502bdb/config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "rubaistt-v2-medium-ct2/model.bin",
+     "sha256": "7c247983182b6eee58ab48e94183e6079fdb68d5a621ab50e69a714b45b191f0",
+     "source_url": "https://huggingface.co/AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2/resolve/a38c89604615d6c3fc6f10692375ecbf89502bdb/model.bin",
+     "size_mb": 1457.1
+    },
+    {
+     "file": "rubaistt-v2-medium-ct2/preprocessor_config.json",
+     "sha256": "a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d",
+     "source_url": "https://huggingface.co/AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2/resolve/a38c89604615d6c3fc6f10692375ecbf89502bdb/preprocessor_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "rubaistt-v2-medium-ct2/tokenizer.json",
+     "sha256": "7b469ff15eb7816315aa45eec391f5943d639b9d73d110f5c003df5192fd54e3",
+     "source_url": "https://huggingface.co/AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2/resolve/a38c89604615d6c3fc6f10692375ecbf89502bdb/tokenizer.json",
+     "size_mb": 3.7
+    },
+    {
+     "file": "rubaistt-v2-medium-ct2/tokenizer_config.json",
+     "sha256": "c69d976ff29079b75759c8afcbd5a03e055d805c6aa91be0fb5e89a5d8321d19",
+     "source_url": "https://huggingface.co/AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2/resolve/a38c89604615d6c3fc6f10692375ecbf89502bdb/tokenizer_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "rubaistt-v2-medium-ct2/vocabulary.json",
+     "sha256": "5ad28279db5e546349708b9a74736e2c018737ac5a600f1048f1f26c99b85b47",
+     "source_url": "https://huggingface.co/AlexAnoshka/fast-whisper-uz-rubaistt-v2-medium-ct2/resolve/a38c89604615d6c3fc6f10692375ecbf89502bdb/vocabulary.json",
+     "size_mb": 1.0
+    }
+   ]
+  },
+  {
+   "name": "kotib-uzbek-stt-v1-ct2",
+   "version": "58e65df776e16f2eae01a483266ef05b17e4588d",
+   "source": "hf:yuldashev222/uzbek_stt_v1-ct2",
+   "license": "Apache-2.0",
+   "kind": "asr-ct2",
+   "vram_mb": null,
+   "size_mb": 2918.9,
+   "files": [
+    {
+     "file": "kotib-uzbek-stt-v1-ct2/config.json",
+     "sha256": "3622a2ddc41ec0e0fd4e68c13c6830f03b90c38d89aaad184de02c8c642cf807",
+     "source_url": "https://huggingface.co/yuldashev222/uzbek_stt_v1-ct2/resolve/58e65df776e16f2eae01a483266ef05b17e4588d/config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "kotib-uzbek-stt-v1-ct2/model.bin",
+     "sha256": "ea3cb9ee1c8685b4e348bc07aef2853947f1a439d341c97884c60da94611f7fa",
+     "source_url": "https://huggingface.co/yuldashev222/uzbek_stt_v1-ct2/resolve/58e65df776e16f2eae01a483266ef05b17e4588d/model.bin",
+     "size_mb": 2914.2
+    },
+    {
+     "file": "kotib-uzbek-stt-v1-ct2/preprocessor_config.json",
+     "sha256": "994838f1fa6462c8b9b3c90edada831f11f3dd8b4664634e18f4694d005c9dbf",
+     "source_url": "https://huggingface.co/yuldashev222/uzbek_stt_v1-ct2/resolve/58e65df776e16f2eae01a483266ef05b17e4588d/preprocessor_config.json",
+     "size_mb": 0.0
+    },
+    {
+     "file": "kotib-uzbek-stt-v1-ct2/tokenizer.json",
+     "sha256": "7b469ff15eb7816315aa45eec391f5943d639b9d73d110f5c003df5192fd54e3",
+     "source_url": "https://huggingface.co/yuldashev222/uzbek_stt_v1-ct2/resolve/58e65df776e16f2eae01a483266ef05b17e4588d/tokenizer.json",
+     "size_mb": 3.7
+    },
+    {
+     "file": "kotib-uzbek-stt-v1-ct2/vocabulary.json",
+     "sha256": "5ad28279db5e546349708b9a74736e2c018737ac5a600f1048f1f26c99b85b47",
+     "source_url": "https://huggingface.co/yuldashev222/uzbek_stt_v1-ct2/resolve/58e65df776e16f2eae01a483266ef05b17e4588d/vocabulary.json",
+     "size_mb": 1.0
+    }
+   ]
+  }
+ ]
 }

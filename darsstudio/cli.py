@@ -63,37 +63,56 @@ def _stack(project: str) -> "CommandStack":
     return CommandStack(ProjectStore(Path(project)))
 
 
+def _progress(d: int, t: int) -> None:
+    if d % 200 < 8 or d == t:
+        print(f"\r{d}/{t} kadr ({100 * d // max(t, 1)}%)", end="", file=sys.stderr, flush=True)
+
+
 def cmd_render(a: argparse.Namespace) -> int:
-    from darsstudio.render import prepare, renderer, templates
+    from darsstudio import pipeline
+    from darsstudio.render import prepare
     st = _stack(a.project)
     p = st.project
-    tpl = templates.load(a.template or p.template_id)
-    pr = prepare.work_probe(p)
-    pngs = prepare.ensure_slides(st)
-    warped = prepare.ensure_warped(st, tpl, pngs)
-    prepare.ensure_key(st, pr)
-    prepare.ensure_placement(st, pr, tpl)
     if a.slides_csv:
         ss, ls = prepare.read_slides_csv(Path(a.slides_csv), p.fps_frac, p.total_frames, len(p.slides))
         st.do("slayd vaqtlari (CSV)", {"slide_spans": [s.model_dump(mode="json") for s in ss],
                                        "layout_spans": [s.model_dump(mode="json") for s in ls]})
-    p = st.project
-    if not p.slide_spans:
-        raise MediaError("Slayd vaqtlari yo'q: --slides-csv bering.")
     fps = p.fps_frac
     start = round(prepare.parse_time(a.start) * fps) if a.start else 0
     frames = round(prepare.parse_time(a.duration) * fps) if a.duration else None
-    out = Path(a.out)
+    r = pipeline.render_project(st, Path(a.out), template=a.template, profile=a.profile, preset=a.preset,
+                                chunk_sec=a.chunk_sec, start=start, frames=frames, eye=not a.no_eye,
+                                on_progress=_progress)
+    rep = r["report"]
+    eye = "ha" if r["eye_contact"] else "yoʻq"
+    lines = [f"\nTayyor: {a.out}",
+             f"  {rep['frames']} kadr, {rep['seconds']} s ({rep['fps']} kadr/s), VRAM pik {rep['vram_peak_mb']} MB",
+             f"  kesishlar {r['cuts']}, Eye Contact {eye}, ogohlantirishlar {len(rep['warnings'])}"]
+    if r["srt"]:
+        lines.append(f"  SRT: {r['srt']}")
+    if r["audio"]:
+        lines.append(f"  Loudness: {r['audio']['integrated']} LUFS, TP {r['audio']['true_peak']} dBTP")
+    print("\n".join(lines))
+    return 0
 
-    def progress(d: int, t: int) -> None:
-        print(f"\r{d}/{t} kadr ({100 * d // max(t, 1)}%)", end="", file=sys.stderr, flush=True)
 
-    opts = renderer.RenderOptions(profile=a.profile, preset=a.preset, chunk_sec=a.chunk_sec, start=start,
-                                  frames=frames, on_progress=progress)
-    rep = renderer.render(p, pr, tpl, warped, pngs, p.slide_spans, p.layout_spans, out,
-                          st.store.cache("render"), opts)
-    print(f"\nTayyor: {out}\n  {rep.frames} kadr, {rep.seconds} s ({rep.fps} kadr/s), "
-          f"VRAM pik {rep.vram_peak_mb} MB, ogohlantirishlar {len(rep.warnings)}")
+def cmd_cuts(a: argparse.Namespace) -> int:
+    from darsstudio import pipeline
+    st = _stack(a.project)
+    n = pipeline.propose_cuts(st, a.min_pause, a.keep_pause, a.prefer_fullscreen, a.approve_all)
+    c = st.project.cuts
+    secs = sum(x.end - x.start for x in c if x.status == "tasdiqlangan") / st.project.fps_frac
+    print(f"Pauza takliflari: {n} ta yangi; jami {len(c)}, tasdiqlangan "
+          f"{sum(x.status == 'tasdiqlangan' for x in c)} ({float(secs):.1f} s qisqaradi)")
+    return 0
+
+
+def cmd_eyecontact(a: argparse.Namespace) -> int:
+    from darsstudio import pipeline
+    from darsstudio.render import prepare
+    st = _stack(a.project)
+    out = pipeline.run_eye_contact(st, prepare.work_probe(st.project), on_progress=_progress)
+    print(f"\nEye Contact patchlari: {out}")
     return 0
 
 
@@ -138,6 +157,57 @@ def cmd_calibrate_screen(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_audio(a: argparse.Namespace) -> int:
+    """FR-04: 48 kHz + 16 kHz WAV (video 0-kadriga tekislangan), VAD, loudness o'lchovi, denoise."""
+    import json as _json
+
+    from darsstudio.audio import denoise, extract, loudness, vad
+    from darsstudio.render import prepare
+    store = ProjectStore(Path(a.project))
+    pr = prepare.work_probe(store.load())
+    d = store.cache("audio")
+    a48, a16 = extract.extract_all(pr, d)
+    sp = vad.detect(extract.read_pcm(a16))
+    (d / "vad.json").write_text(_json.dumps([[s.start_ms, s.end_ms] for s in sp]), encoding="utf-8")
+    m = loudness.measure(a48)
+    method = denoise.denoise(a48, d / "denoised_48k.wav", a.atten_db)
+    (d / "loudness.json").write_text(_json.dumps({**m.__dict__, "denoise": method}), encoding="utf-8")
+    print(f"Audio tayyor: {d}\n  nutq bo'laklari {len(sp)}, loudness {m.integrated} LUFS, "
+          f"true peak {m.true_peak} dBTP, denoise: {method}")
+    return 0
+
+
+def cmd_asr(a: argparse.Namespace) -> int:
+    """FR-05: transkripsiya + CTC so'z vaqtlari, alohida jarayonda."""
+    from darsstudio.asr import glossary
+    from darsstudio.jobs.worker import run_isolated
+    store = ProjectStore(Path(a.project))
+    wav = store.cache("audio") / "asr_16k.wav"
+    if not wav.is_file():
+        raise MediaError("Avval audio tayyorlang: python -m darsstudio.cli audio LOYIHA")
+    terms = glossary.load(paths.ROOT / "glossary.json", store.root / "glossary.json")
+    st = run_isolated("asr", {"wav16k": str(wav), "engine": a.engine, "align": a.align,
+                              "hotwords": glossary.hotwords(terms) if terms else None,
+                              "out_dir": str(store.cache("asr"))},
+                      on_progress=lambda x: print(f"\r{100 * x:.0f}%", end="", file=sys.stderr, flush=True))
+    print(f"\nASR tayyor: {st['words']} so'z, RTF {st['rtf']}, CTC bilan tekislangan segmentlar "
+          f"{st['aligned_segments']}/{st['segments']}")
+    return 0
+
+
+def cmd_sync(a: argparse.Namespace) -> int:
+    """FR-07/08: slayd vaqtlari (jurnal yoki AI) + sahna tavsiyasi."""
+    from darsstudio.sync.run import sync_project
+    st = _stack(a.project)
+    out = sync_project(st)
+    p = st.project
+    print(f"Sinxron ({out['mode']}): {len(p.slide_spans)} oraliq, shubhali {len(out['suspicious'])}, "
+          f"B sahna {sum(1 for s in p.layout_spans if s.layout == 'B')} ta")
+    if out.get("warning"):
+        print("ogohlantirish: " + out["warning"])
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="darsstudio")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -175,7 +245,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--chunk-sec", type=int, default=60)
     s.add_argument("--start", help="bo'lak boshi (soniya yoki m:ss)")
     s.add_argument("--duration", help="bo'lak uzunligi (soniya yoki m:ss)")
+    s.add_argument("--no-eye", action="store_true", help="Eye Contact patchlarini qo'llamaslik")
     s.set_defaults(fn=cmd_render)
+
+    s = sub.add_parser("cuts", help="pauza kesish takliflari (FR-09)")
+    s.add_argument("project")
+    s.add_argument("--min-pause", type=float, default=1.2)
+    s.add_argument("--keep-pause", type=float, default=0.35)
+    s.add_argument("--prefer-fullscreen", action="store_true")
+    s.add_argument("--approve-all", action="store_true", help="barcha takliflarni tasdiqlash")
+    s.set_defaults(fn=cmd_cuts)
+
+    s = sub.add_parser("eyecontact", help="Eye Contact patchlari (FR-10, engines/eye-contact CLI)")
+    s.add_argument("project")
+    s.set_defaults(fn=cmd_eyecontact)
 
     s = sub.add_parser("calibrate-key", help="kadrdan key rangi va garbage taklifi + oldin/keyin PNG")
     s.add_argument("project")
@@ -186,6 +269,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--template", required=True)
     s.add_argument("--points", required=True, help="JSON fayl yoki '[[x,y],[x,y],[x,y],[x,y]]'")
     s.set_defaults(fn=cmd_calibrate_screen)
+    s = sub.add_parser("audio", help="audio tayyorlash: WAV, VAD, loudness, denoise (FR-04)")
+    s.add_argument("project")
+    s.add_argument("--atten-db", type=float, default=15.0, help="denoise susaytirish chegarasi, dB (12-18)")
+    s.set_defaults(fn=cmd_audio)
+
+    s = sub.add_parser("asr", help="transkripsiya + so'z vaqtlari (FR-05)")
+    s.add_argument("project")
+    s.add_argument("--engine", default="whisper-large-v3-ct2", help="models/manifest.json dagi nom")
+    s.add_argument("--align", default="sarahai-uzbek-stt-3", help="CTC model (so'z vaqtlari)")
+    s.set_defaults(fn=cmd_asr)
+
+    s = sub.add_parser("sync", help="slayd vaqtlari: jurnal (bo'lsa) yoki AI + sahna tavsiyasi (FR-07/08)")
+    s.add_argument("project")
+    s.set_defaults(fn=cmd_sync)
     return ap
 
 

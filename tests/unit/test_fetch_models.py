@@ -22,7 +22,8 @@ def _write(tmp_path: Path, *models: dict[str, object]) -> Path:
 
 
 def test_repo_manifest_loads() -> None:
-    assert fetch_models.load_manifest(paths.ROOT / "models" / "manifest.json") == []
+    for m in fetch_models.load_manifest(paths.ROOT / "models" / "manifest.json"):  # litsenziyalar ruxsat etilgan
+        assert m["license"] in fetch_models.ALLOWED_LICENSES and fetch_models.files_of(m)
 
 
 @pytest.mark.parametrize("lic", ["AGPL-3.0", "CC-BY-NC-4.0", "unknown"])
