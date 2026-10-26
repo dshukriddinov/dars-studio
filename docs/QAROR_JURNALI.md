@@ -4,6 +4,12 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — B10 portativ paket
+
+`python tools/package.py workdir/DarsStudio --with-models`: 17 GB (runtime/python 3.11.16 + torch 2.11 cu128 va boshqalar, ffmpeg 7.1.1, Maxine, 5 model, UI build). Paket ichidagi Python bilan, `DARS_MAXINE_DIR` siz: doctor — ffmpeg, Maxine, torch paket ichidan; CLI ishlaydi. Boshqa kompyuterga nusxalab sinash — inson.
+
+---
+
 ## 2026-10-26 — B9–B11: eksport, QA, paket, offline va barqarorlik sinovlari
 
 **End-to-end (haqiqiy namuna):** `export` — 13.8 min dars, Eye Contact patchlari bilan, `b_scene_words=120`:
