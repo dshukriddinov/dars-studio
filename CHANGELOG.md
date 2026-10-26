@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### B1 — Eye Contact EC-1..EC-5 (2026-10-26)
+- `engines/eye-contact` -> `studio-ec` branch (`00db238`): A/V start_time farqi saqlanadi (EC-1, haqiqiy klipdagi
+  80 ms xato ham tuzatildi), VFR (EC-2), resume kalitida fayl identifikatori (EC-3), `--patches-out` va
+  `eyecontact/patches.py` (EC-4), GPU'siz stub testlari (EC-5).
+
 ### B0 — repo skeleti (2026-10-26)
 - `darsstudio` paket tuzilmasi (TZ 11), `pyproject.toml` (ruff, mypy strict, pytest belgilari).
 - `paths.py`: runtime, ffmpeg, maxine, models, ishchi papka; `DARS_*` muhit o'zgaruvchilari.
