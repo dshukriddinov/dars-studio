@@ -38,6 +38,7 @@ class Params:
     seg_max_s: float = 12.0
     suspicious_below: float = 0.6
     short_back_s: float = 10.0
+    cue_window_s: float = 25.0   # "keyingi slayd" signali chegaradan shuncha uzoqlikkacha izlanadi
 
 
 @dataclass
@@ -246,6 +247,7 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
             lo, hi = max(0, i - 2), min(len(segs), i + 2)
             conf = float(min(post[t, path[t]] for t in range(lo, hi)))
             bounds.append(Boundary(round(Fraction(ms, 1000) * fps), path[i - 1] + 1, path[i] + 1, round(conf, 3)))
+    snap_to_cues(bounds, list(words), fps, p.cue_window_s)
     spans: list[SlideSpan] = []
     pos, cur = 0, path[0] + 1
     for b in bounds:
@@ -265,6 +267,46 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
                 b.reason = "qisqa orqaga qaytish"
                 susp.append(b)
     return AlignResult(spans, bounds, susp)
+
+
+CUE_NEXT = re.compile(r"^(keyingi|navbatdagi|keyinggi)$")
+CUE_SLIDE = re.compile(r"^slayd")
+CUE_LEAD = re.compile(r"^(xo.p|xo.sh|endi|demak)$")
+
+
+def cue_starts(words: list[Word]) -> list[int]:
+    """"keyingi/navbatdagi slayd..." iborasi bilan boshlangan gaplar boshi (ms). Oldidan 1.5 s ichida "xo'p," kabi
+    kirish so'zi bo'lsa — o'sha so'z boshi (ma'ruzachi slaydni almashtirayotgan payt)."""
+    toks = [uz_text.normalize(w.text) for w in words]
+    out = []
+    for i in range(len(words) - 1):
+        if CUE_NEXT.match(toks[i]) and CUE_SLIDE.match(toks[i + 1]):
+            j = i
+            while j > 0 and CUE_LEAD.match(toks[j - 1]) and words[i].start_ms - words[j - 1].start_ms <= 1500:
+                j -= 1
+            out.append(words[j].start_ms)
+    return out
+
+
+def snap_to_cues(bounds: list[Boundary], words: list[Word], fps: Fraction, window_s: float) -> None:
+    """Oldinga (n -> n+1) chegarani eng yaqin og'zaki signal gapiga ko'chiradi: signal qo'shni chegaralar orasida va
+    +-window_s ichida bo'lishi kerak; bitta signal bitta chegaraga. Leksik o'xshashlik chegarani butun gapga surib
+    yuborganda (namunada slayd 7: -15 s) shu tuzatadi."""
+    cues = [round(Fraction(ms, 1000) * fps) for ms in cue_starts(words)]
+    used: set[int] = set()
+    win = round(Fraction(window_s).limit_denominator(1000) * fps)
+    for k, b in enumerate(bounds):
+        if b.slide != b.prev_slide + 1:
+            continue
+        lo = bounds[k - 1].frame + 1 if k else 0
+        hi = bounds[k + 1].frame - 1 if k + 1 < len(bounds) else 1 << 62
+        cand = [c for c in cues if lo <= c <= hi and abs(c - b.frame) <= win and c not in used]
+        if cand:
+            c = min(cand, key=lambda c: abs(c - b.frame))
+            used.add(c)
+            b.frame = c
+            b.reason = "og'zaki signal"
+            b.confidence = max(b.confidence, 0.95)
 
 
 def _runs(path: list[int]) -> list[tuple[int, int, int]]:

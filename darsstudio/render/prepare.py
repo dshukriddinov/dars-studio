@@ -117,6 +117,11 @@ def ensure_key(stack: CommandStack, pr: ProbeResult, frame: int | None = None) -
 def ensure_placement(stack: CommandStack, pr: ProbeResult, tpl: Template, force: bool = False) -> None:
     if stack.project.placement != TeacherPlacement() and not force:
         return
+    if tpl.teacher_placement is not None:  # kamera qotirilgan studiya: joy shablonda (namunadan o'lchangan)
+        fp = tpl.teacher_placement
+        stack.do("o'qituvchi joyi (shablon)", {"placement": TeacherPlacement(scale=fp.scale, x=fp.x, y=fp.y)
+                                                .model_dump(mode="json")})
+        return
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     alphas = placement.sample_alphas(pr, stack.project.key, dev)
     bb = placement.union_bbox(alphas)

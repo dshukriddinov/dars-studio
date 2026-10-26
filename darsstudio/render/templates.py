@@ -3,7 +3,7 @@
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -24,9 +24,34 @@ class LowerThird(BaseModel):
     duration_s: float = 6.0
 
 
+TransitionKind = Literal["crossfade", "cut", "clock_wipe", "zoom_blur"]
+
+
 class Transitions(BaseModel):
     slide_frames: int = Field(default=8, ge=0)
     layout_frames: int = Field(default=12, ge=0)
+    slide: TransitionKind = "crossfade"     # A sahna ichida slayd -> slayd
+    layout: TransitionKind = "crossfade"    # A <-> B (B -> A da yangi slayd bilan birga)
+
+
+class ScenePolicy(BaseModel):
+    """Sahna tavsiyasi. words: TZ FR-12 (>= N so'z -> B). a_then_b: slayd almashganda a_seconds A (o'qituvchi
+    yangi slayd bilan), keyin B; slayd qolgan qismi min_b_seconds dan qisqa bo'lsa A qoladi (montajchi uslubi)."""
+    mode: Literal["words", "a_then_b"] = "words"
+    a_seconds: float = 10.0
+    min_b_seconds: float = 10.0
+
+
+class FixedPlacement(BaseModel):
+    """Studiyada kamera qotirilgan bo'lsa: o'qituvchi joyi shablondan (namunadan o'lchangan)."""
+    scale: float
+    x: int
+    y: int
+
+
+class Copyright(BaseModel):
+    text: str
+    on: Literal["last_slide", "always"] = "last_slide"
 
 
 class Fullscreen(BaseModel):
@@ -48,6 +73,11 @@ class Template(BaseModel):
     transitions: Transitions = Transitions()
     fullscreen: Fullscreen = Fullscreen()
     key_defaults: dict[str, Any] = {}
+    scene_policy: ScenePolicy = ScenePolicy()
+    teacher_placement: FixedPlacement | None = None
+    intro: str | None = None                         # intro video (shablon papkasida)
+    outro: str | None = None
+    copyright: Copyright | None = None
     dir: str = ""                                    # yuklanganda to'ldiriladi (JSON'da yo'q)
 
     @field_validator("teacher_anchor")
@@ -63,7 +93,9 @@ class Template(BaseModel):
     def content_hash(self) -> str:
         """Warp keshi kaliti: shablon JSON + fon/logo fayllari."""
         h = hashlib.sha256(self.model_dump_json(exclude={"dir"}).encode())
-        for f in (self.background, *([self.logo.file] if self.logo else [])):
+        extra = [x for x in (self.intro, self.outro) if x]
+        assets = (self.background, *([self.logo.file] if self.logo else []), *extra)
+        for f in assets:
             h.update(self.asset(f).read_bytes())
         return h.hexdigest()[:16]
 
@@ -78,7 +110,7 @@ def load(template_id: str, root: Path | None = None) -> Template:
     if not f.is_file():
         raise MediaError(f"'{template_id}' shabloni topilmadi ({f}). templates/ papkasini tekshiring.")
     t = Template.model_validate({**json.loads(f.read_text(encoding="utf-8")), "dir": str(d)})
-    for name in (t.background, *([t.logo.file] if t.logo else [])):
+    for name in (t.background, *([t.logo.file] if t.logo else []), *(x for x in (t.intro, t.outro) if x)):
         if not t.asset(name).is_file():
             raise MediaError(f"'{template_id}' shablonida {name} fayli yo'q.")
     return t

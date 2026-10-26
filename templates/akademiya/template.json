@@ -1,0 +1,66 @@
+{
+ "id": "akademiya",
+ "canvas": [
+  1920,
+  1080
+ ],
+ "background": "background.png",
+ "screen_quad": [
+  [
+   15.0,
+   20.0
+  ],
+  [
+   1026.0,
+   141.0
+  ],
+  [
+   1026.0,
+   698.0
+  ],
+  [
+   15.0,
+   742.0
+  ]
+ ],
+ "screen_aspect": "16:9",
+ "teacher_anchor": [
+  1240,
+  245,
+  1840,
+  1080
+ ],
+ "safe_margin_px": 24,
+ "logo": null,
+ "lower_third": {
+  "style": "akademiya",
+  "duration_s": 8.6
+ },
+ "transitions": {
+  "slide_frames": 25,
+  "layout_frames": 30,
+  "slide": "clock_wipe",
+  "layout": "zoom_blur"
+ },
+ "fullscreen": {
+  "fit": "contain",
+  "pillarbox_color": "#000000"
+ },
+ "key_defaults": {},
+ "scene_policy": {
+  "mode": "a_then_b",
+  "a_seconds": 10.0,
+  "min_b_seconds": 10.0
+ },
+ "teacher_placement": {
+  "scale": 0.929,
+  "x": 692,
+  "y": 79
+ },
+ "intro": "intro.mp4",
+ "outro": "intro.mp4",
+ "copyright": {
+  "text": "Mazkur taqdimot akademiya mahsuloti hisoblanadi hamda Oʻzbekiston Respublikasi “Mualliflik huquqi va turdosh huquqlar toʻgʻrisida”gi qonuni bilan himoyalanadi.",
+  "on": "last_slide"
+ }
+}

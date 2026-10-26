@@ -104,3 +104,21 @@ def test_slide_log_to_spans(tmp_path: Path) -> None:
     assert [(s.start, s.end, s.slide) for s in spans] == [(0, 538, 1), (538, 1038, 2), (1038, 1050, 3),
                                                           (1050, 2000, 2)]
     assert short == [(1038, 1050)]   # 0.5 s — qisqa oraliq foydalanuvchiga ko'rsatiladi
+
+
+def test_cue_phrase_snaps_boundary() -> None:
+    """Leksik o'xshashlik chegarani oldingi gapga surgan bo'lsa, "xo'p, keyingi slaydimizda" signali uni tuzatadi."""
+    fps = Fraction(25)
+    words = [Word(text=t, start_ms=s, end_ms=s + 300, conf=0.9) for t, s in
+             [("suv", 10000), ("resurslari.", 10400), ("xo'p,", 30000), ("keyingi", 30400), ("slaydimizda", 30800),
+              ("energetika", 31300), ("navbatdagi", 50000), ("slaydda", 50400)]]
+    bounds = [ai_align.Boundary(frame=int(15 * 25), prev_slide=1, slide=2, confidence=0.9),
+              ai_align.Boundary(frame=int(52 * 25), prev_slide=2, slide=3, confidence=0.9),
+              ai_align.Boundary(frame=int(80 * 25), prev_slide=3, slide=2, confidence=0.9)]   # orqaga — tegilmaydi
+    ai_align.snap_to_cues(bounds, words, fps, window_s=25)
+    assert [b.frame for b in bounds] == [30 * 25, 50 * 25, 80 * 25]
+    assert bounds[0].reason == "og'zaki signal" and bounds[2].reason == ""
+    # oyna tashqarisidagi signal ishlatilmaydi
+    far = [ai_align.Boundary(frame=int(2 * 25), prev_slide=1, slide=2, confidence=0.9)]
+    ai_align.snap_to_cues(far, words, fps, window_s=10)
+    assert far[0].frame == 50

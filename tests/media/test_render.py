@@ -87,14 +87,17 @@ def test_timeline_transition_lengths() -> None:
           LayoutSpan(start=250, end=300, layout="A")]
     tl = Timeline.build(ss, ls, tpl)
     n_s, n_l = tpl.transitions.slide_frames, tpl.transitions.layout_frames
+    # o'tish chegaradan OLDIN n kadr va chegarada tugaydi (yangi slayd gap boshida to'liq ko'rinadi)
     mixing = [f for f in range(300) if tl.slide(f)[2] < 1]
-    assert mixing == list(range(100, 100 + n_s))
+    assert mixing == list(range(100 - n_s, 100))
+    assert tl.slide(100) == (2, 2, 1.0) and tl.slide(99)[:2] == (2, 1)
     for start in (150, 250):  # A->B va B->A
-        mix = [f for f in range(start - 5, start + 30) if tl.layout(f)[2] < 1]
-        assert mix == list(range(start, start + n_l))
+        mix = [f for f in range(start - 30, start + 30) if tl.layout(f)[2] < 1]
+        assert mix == list(range(start - n_l, start))
         ws = [tl.layout(f)[2] for f in mix]
         assert ws == sorted(ws) and 0 < ws[0] < ws[-1] < 1
-    assert tl.layout(149)[0] == "A" and tl.layout(150)[0] == "B" and tl.layout(250)[:2] == ("A", "B")
+    assert tl.layout(150 - n_l - 1) == ("A", "A", 1.0) and tl.layout(150) == ("B", "B", 1.0)
+    assert tl.layout(249)[:2] == ("A", "B") and tl.layout(250) == ("A", "A", 1.0)
 
 
 def make_slides(n: int, d: Path) -> list[Path]:

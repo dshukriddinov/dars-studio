@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from darsstudio.audio.extract import read_pcm
+from darsstudio.media.probe import MediaError
 from darsstudio.project.commands import CommandStack
 from darsstudio.project.model import LayoutSpan, Word
 from darsstudio.sync import ai_align, beep, slide_log
@@ -14,19 +15,39 @@ B_SCENE_WORDS = 60  # TZ FR-12: slayd matni >= 60 so'z yoki jadval -> B tavsiya
 
 
 def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
-    """Sahna tavsiyasi: matni ko'p yoki jadvalli slaydlar B, qolgani A (inson tasdiqlaydi)."""
+    """Sahna tavsiyasi (inson tasdiqlaydi). Shablondagi scene_policy bo'yicha:
+    - words (TZ FR-12): matni >= N so'z yoki jadvalli slaydlar B, qolgani A;
+    - a_then_b (montajchi uslubi): slayd almashganda a_seconds A (o'qituvchi yangi slayd bilan), keyin B; slayd qolgan
+      qismi min_b_seconds dan qisqa bo'lsa A qoladi. Birinchi va oxirgi slayd A (ikkala namunada shunday)."""
+    from fractions import Fraction
+
+    from darsstudio.render import templates
     p = stack.project
-    # TZ FR-12 qoidasi; chegara loyiha meta'sida sozlanadi ("b_scene_words"): zich slaydli darslarda 60 da deyarli
-    # hamma slayd B bo'lib qoladi (namunada 65-139 so'z) — qaror inson tomonidan
-    limit = int(p.meta.get("b_scene_words", B_SCENE_WORDS))
-    heavy = {s.index for s in p.slides if len(s.body.split()) >= limit or " | " in s.body}
+    try:
+        policy = templates.load(p.template_id).scene_policy
+    except MediaError:  # shablon yo'q (sinov/import holati) — TZ qoidasi
+        policy = templates.ScenePolicy()
+    spans: list[tuple[int, int, str]] = []
+    if policy.mode == "a_then_b":
+        a_fr, min_b = round(Fraction(policy.a_seconds) * p.fps_frac), round(Fraction(policy.min_b_seconds) * p.fps_frac)
+        last = p.slide_spans[-1].slide if p.slide_spans else 0
+        first = p.slide_spans[0].slide if p.slide_spans else 0
+        for sp in p.slide_spans:
+            if sp.slide in (first, last) or sp.end - sp.start - a_fr < min_b:
+                spans.append((sp.start, sp.end, "A"))
+            else:
+                spans += [(sp.start, sp.start + a_fr, "A"), (sp.start + a_fr, sp.end, "B")]
+    else:
+        # TZ FR-12; chegara loyiha meta'sida sozlanadi ("b_scene_words")
+        limit = int(p.meta.get("b_scene_words", B_SCENE_WORDS))
+        heavy = {s.index for s in p.slides if len(s.body.split()) >= limit or " | " in s.body}
+        spans = [(sp.start, sp.end, "B" if sp.slide in heavy else "A") for sp in p.slide_spans]
     out: list[LayoutSpan] = []
-    for sp in p.slide_spans:
-        lay = "B" if sp.slide in heavy else "A"
+    for s0, s1, lay in spans:
         if out and out[-1].layout == lay:
-            out[-1] = out[-1].model_copy(update={"end": sp.end})
+            out[-1] = out[-1].model_copy(update={"end": s1})
         else:
-            out.append(LayoutSpan(start=sp.start, end=sp.end, layout=lay, suggested=True))
+            out.append(LayoutSpan(start=s0, end=s1, layout=lay, suggested=True))
     return out
 
 

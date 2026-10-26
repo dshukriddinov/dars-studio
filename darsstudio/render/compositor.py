@@ -17,6 +17,7 @@ import torch
 import torch.nn.functional as F
 
 from darsstudio.project.model import LayoutSpan, SlideSpan, TeacherPlacement
+from darsstudio.render import transitions
 from darsstudio.render.templates import Template
 from darsstudio.slides.warp import fit_contain, hex_rgb, read_rgb
 
@@ -64,11 +65,14 @@ class Timeline:
 
     @staticmethod
     def _at(starts: list[int], vals: list[object], f: int, n: int) -> tuple[object, object, float]:
+        """(yangi, eski, w). O'tish chegaradan OLDIN n kadr davom etadi va chegarada tugaydi: yangi slayd ma'ruzachi
+        yangi gapni boshlaganda to'liq ko'rinadi (montajchi uslubi). O'tishdan tashqarida (joriy, joriy, 1)."""
         i = max(0, bisect.bisect_right(starts, f) - 1)
         cur = vals[i]
-        if i == 0 or n <= 0 or f - starts[i] >= n or vals[i - 1] == cur:
+        if n <= 0 or i + 1 >= len(starts) or vals[i + 1] == cur or starts[i + 1] - f > n:
             return cur, cur, 1.0
-        return cur, vals[i - 1], (f - starts[i] + 1) / (n + 1)
+        nxt = starts[i + 1]
+        return vals[i + 1], cur, (f - (nxt - n) + 1) / (n + 1)
 
     def slide(self, f: int) -> tuple[int, int, float]:
         c, p, w = self._at(self.slide_starts, self.slides, f, self.slide_frames)
@@ -108,6 +112,10 @@ class Compositor:
         x0, y0 = placement.x, placement.y
         self.dst = (max(0, x0), max(0, y0), min(cw, x0 + self.tw), min(ch, y0 + self.th))
         self.src = (self.dst[0] - x0, self.dst[1] - y0, self.dst[2] - x0, self.dst[3] - y0)
+        q = np.array(tpl.screen_quad, np.float32)
+        self.screen_center = (float(q[:, 0].mean()), float(q[:, 1].mean()))
+        self.frame_center = ((cw - 1) / 2, (ch - 1) / 2)
+        self.clock = transitions.ClockWipe(self.canvas, self.screen_center, device)
 
     def teacher_layer(self, rgb: Tensor, alpha: Tensor) -> Tensor:
         """[B,3,H,W] premult + [B,1,H,W] -> kanvas [B,4,ch,cw]."""
@@ -128,9 +136,31 @@ class Compositor:
 
     def scene(self, layout: str, slide: tuple[int, int, float], teacher: Tensor) -> Tensor:
         cur, prev, ws = slide
-        layers = self.full if layout == "B" else self.warped
-        sl = layers[cur - 1] if ws >= 1 else (1 - ws) * layers[prev - 1] + ws * layers[cur - 1]
-        return sl if layout == "B" else self.scene_a(sl, teacher)
+        if layout == "B":   # to'liq ekranda slayd almashishi: crossfade (montajchida bunday holat yo'q)
+            return self.full[cur - 1] if ws >= 1 else transitions.crossfade(self.full[prev - 1], self.full[cur - 1], ws)
+        if ws >= 1:
+            sl = self.warped[cur - 1]
+        elif self.tpl.transitions.slide == "clock_wipe":
+            sl = self.clock(self.warped[prev - 1], self.warped[cur - 1], ws)
+        elif self.tpl.transitions.slide == "cut":
+            sl = self.warped[cur - 1]
+        else:
+            sl = transitions.crossfade(self.warped[prev - 1], self.warped[cur - 1], ws)
+        return self.scene_a(sl, teacher)
+
+    def layout_transition(self, lp: str, lc: str, slide: tuple[int, int, float], teacher: Tensor, wl: float) -> Tensor:
+        """A <-> B. Slayd ham shu chegarada almashsa: chiquvchi sahna eski slayd bilan, kiruvchi yangisi bilan."""
+        cur, prev, ws = slide
+        s_from, s_to = ((prev, prev, 1.0), (cur, cur, 1.0)) if ws < 1 else (slide, slide)
+        a, b = self.scene(lp, s_from, teacher), self.scene(lc, s_to, teacher)
+        kind = self.tpl.transitions.layout
+        if kind == "zoom_blur":
+            # A->B: ekranga "kirib ketish" (A ekran markazi atrofida kattalashadi); B->A: A ekran markazidan chiqadi
+            center = lambda lay: self.screen_center if lay == "A" else self.frame_center  # noqa: E731
+            return transitions.zoom_blur(a, b, wl, center(lp), center(lc))
+        if kind == "cut":
+            return b if wl >= 0.5 else a
+        return transitions.crossfade(a, b, wl)
 
     def compose(self, frames: Sequence[int], tl: Timeline, teacher: Tensor) -> Tensor:
         """frames: asl kadr indekslari; teacher: teacher_layer() natijasi. -> [B,3,ch,cw] RGB [0,1]."""
@@ -138,9 +168,10 @@ class Compositor:
         for i, f in enumerate(frames):
             slide = tl.slide(f)
             lc, lp, wl = tl.layout(f)
-            img = self.scene(lc, slide, teacher[i])
             if wl < 1:
-                img = (1 - wl) * self.scene(lp, slide, teacher[i]) + wl * img
+                img = self.layout_transition(lp, lc, slide, teacher[i], wl)
+            else:
+                img = self.scene(lc, slide, teacher[i])
             if self.logo is not None:
                 img = over(self.logo, img)
             outs.append(img)
