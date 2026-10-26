@@ -13,7 +13,7 @@ from collections.abc import Callable
 from typing import Any
 
 TASKS = {
-    "asr": "darsstudio.asr.run:task",
+    "asr_raw": "darsstudio.asr.run:task",   # WAV yo'li bilan; navbatdagi "asr" (loyiha) — jobs/tasks.py
     "vram_probe": "darsstudio.asr.run:vram_task",
 }
 

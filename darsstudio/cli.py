@@ -191,7 +191,7 @@ def cmd_asr(a: argparse.Namespace) -> int:
     if not wav.is_file():
         raise MediaError("Avval audio tayyorlang: python -m darsstudio.cli audio LOYIHA")
     terms = glossary.load(paths.ROOT / "glossary.json", store.root / "glossary.json")
-    st = run_isolated("asr", {"wav16k": str(wav), "engine": a.engine, "align": a.align,
+    st = run_isolated("asr_raw", {"wav16k": str(wav), "engine": a.engine, "align": a.align,
                               "hotwords": glossary.hotwords(terms) if terms else None,
                               "out_dir": str(store.cache("asr"))},
                       on_progress=lambda x: print(f"\r{100 * x:.0f}%", end="", file=sys.stderr, flush=True))

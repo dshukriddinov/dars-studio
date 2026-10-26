@@ -72,7 +72,7 @@ def main() -> int:
             od = paths.workdir() / "asr_bench" / name / eng
             print(f"... {name} / {eng}", file=sys.stderr, flush=True)
             try:
-                st = run_isolated("asr", {"wav16k": wav, "engine": eng, "align": a.align,
+                st = run_isolated("asr_raw", {"wav16k": wav, "engine": eng, "align": a.align,
                                           "hotwords": glossary.hotwords(terms) if terms else None,
                                           "out_dir": str(od)})
             except WorkerError as e:

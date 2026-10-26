@@ -55,8 +55,8 @@ def test_word_tokens_okina_alias() -> None:
 
 def test_worker_error_is_reported() -> None:
     try:
-        worker.run_isolated("asr", {"wav16k": "yoq.wav", "engine": "yoq", "out_dir": "x"})
+        worker.run_isolated("asr_raw", {"wav16k": "yoq.wav", "engine": "yoq", "out_dir": "x"})
     except worker.WorkerError as e:
-        assert "asr" in str(e)
+        assert "asr_raw" in str(e)
     else:
         raise AssertionError("xato kutilgan edi")
