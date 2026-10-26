@@ -22,6 +22,20 @@ def words(stack: CommandStack) -> list[Word]:
     return [Word(**w) for w in json.loads(f.read_text(encoding="utf-8"))] if f.is_file() else []
 
 
+def prepare_audio(stack: CommandStack, atten_db: float = 15.0) -> dict[str, Any]:
+    """FR-04: 48 kHz + 16 kHz WAV (video 0-kadriga tekislangan), VAD, loudness o'lchovi, denoise."""
+    from darsstudio.audio import denoise, extract, loudness, vad
+    pr = prepare.work_probe(stack.project)
+    d = stack.store.cache("audio")
+    a48, a16 = extract.extract_all(pr, d)
+    sp = vad.detect(extract.read_pcm(a16))
+    (d / "vad.json").write_text(json.dumps([[s.start_ms, s.end_ms] for s in sp]), encoding="utf-8")
+    m = loudness.measure(a48)
+    method = denoise.denoise(a48, d / "denoised_48k.wav", atten_db)
+    info = {**m.__dict__, "denoise": method, "speech_segments": len(sp)}
+    (d / "loudness.json").write_text(json.dumps(info), encoding="utf-8")
+    return info
+
 def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, keep_pause_s: float = cuts.KEEP_PAUSE_S,
                  prefer_fullscreen: bool = False, approve_all: bool = False) -> int:
     """FR-09: VAD + so'z bo'shliqlari bo'yicha takliflar (eski "taklif"lar almashtiriladi, qarorlar saqlanadi)."""

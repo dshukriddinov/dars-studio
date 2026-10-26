@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### B7 — API, navbat, rejalashtiruvchi (2026-10-26)
+- `jobs/`: resources (FR-20 qoidasi), queue_db (SQLite WAL), scheduler (resurs, bog'liqlik, to'xtatish, resume,
+  qayta urinish), tasks (vazifa turlari + resurslar), worker (keep-awake); `power.py`.
+- `api/app.py`: FastAPI 127.0.0.1, loyihalar, buyruqlar/undo/redo, proxy/slayd fayllari, shubhali joylar,
+  vazifalar, WebSocket progress.
+- doctor: drayver pin, torch CUDA, NVENC, Maxine, modellar, PowerPoint/LibreOffice, CPU mikrokod (HW-2).
+
 ### B3 — vertikal kesim, birinchi MP4 (2026-10-26)
 - `slides/`: `extract.py` (matn, jadval, eslatmalar, animatsiya/media/shrift ogohlantirishlari), `render.py`
   (PowerPoint COM / LibreOffice / pypdfium2, 4K, kesh), `warp.py` (TZ 9.2, supersampling).

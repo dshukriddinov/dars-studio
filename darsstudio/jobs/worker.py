@@ -51,10 +51,19 @@ def run_isolated(task: str, args: dict[str, Any], on_progress: Callable[[float],
     return result
 
 
+def resolve(task: str) -> Callable[[dict[str, Any], Emit], dict[str, Any]]:
+    if task in TASKS:
+        mod, fn = TASKS[task].split(":")
+        return getattr(importlib.import_module(mod), fn)  # type: ignore[no-any-return]
+    from darsstudio.jobs import tasks
+    return getattr(tasks, tasks.TASKS[task][0])  # type: ignore[no-any-return]
+
+
 def main(argv: list[str]) -> int:
+    from darsstudio import power
     task, args = argv[0], json.loads(argv[1])
-    mod, fn = TASKS[task].split(":")
-    out = getattr(importlib.import_module(mod), fn)(args, Emit())
+    power.keep_awake(True)  # HW-6: vazifa davomida tizim uxlamasin (jarayon tugashi bilan bekor bo'ladi)
+    out = resolve(task)(args, Emit())
     print("RESULT " + json.dumps(out, ensure_ascii=False), flush=True)
     return 0
 

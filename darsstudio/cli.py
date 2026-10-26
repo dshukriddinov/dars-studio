@@ -159,21 +159,12 @@ def cmd_calibrate_screen(a: argparse.Namespace) -> int:
 
 def cmd_audio(a: argparse.Namespace) -> int:
     """FR-04: 48 kHz + 16 kHz WAV (video 0-kadriga tekislangan), VAD, loudness o'lchovi, denoise."""
-    import json as _json
-
-    from darsstudio.audio import denoise, extract, loudness, vad
-    from darsstudio.render import prepare
-    store = ProjectStore(Path(a.project))
-    pr = prepare.work_probe(store.load())
-    d = store.cache("audio")
-    a48, a16 = extract.extract_all(pr, d)
-    sp = vad.detect(extract.read_pcm(a16))
-    (d / "vad.json").write_text(_json.dumps([[s.start_ms, s.end_ms] for s in sp]), encoding="utf-8")
-    m = loudness.measure(a48)
-    method = denoise.denoise(a48, d / "denoised_48k.wav", a.atten_db)
-    (d / "loudness.json").write_text(_json.dumps({**m.__dict__, "denoise": method}), encoding="utf-8")
-    print(f"Audio tayyor: {d}\n  nutq bo'laklari {len(sp)}, loudness {m.integrated} LUFS, "
-          f"true peak {m.true_peak} dBTP, denoise: {method}")
+    from darsstudio import pipeline
+    st = _stack(a.project)
+    i = pipeline.prepare_audio(st, a.atten_db)
+    print(f"Audio tayyor: {st.store.cache('audio')}")
+    print(f"  nutq bo'laklari {i['speech_segments']}, loudness {i['integrated']} LUFS, "
+          f"true peak {i['true_peak']} dBTP, denoise: {i['denoise']}")
     return 0
 
 

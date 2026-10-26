@@ -1,6 +1,7 @@
 """Muhit tekshiruvi (FR-21 skeleti). `python -m darsstudio.doctor`."""
 
 import ctypes
+import json
 import os
 import platform
 import shutil
@@ -8,6 +9,7 @@ import subprocess
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 from darsstudio import paths
@@ -123,8 +125,104 @@ def check_ram() -> Check:
     return Check("RAM", "ok", f"{gb:.0f} GB")
 
 
+PINNED_DRIVER_FILE = paths.ROOT / "driver_pin.txt"   # HW-4: sinalgan drayver versiyasi (bir qator)
+MIN_MICROCODE = 0x12B                                # HW-2: Raptor Lake Vmin Shift tuzatishi
+
+
+def check_driver_pin() -> Check:
+    q = _nvidia_smi()
+    if q is None or not PINNED_DRIVER_FILE.is_file():
+        return Check("Drayver pin", "ogohlantirish", "pin yozilmagan",
+                     f"Sinalgan drayver versiyasini {PINNED_DRIVER_FILE.name} fayliga yozing (HW-4).")
+    pin = PINNED_DRIVER_FILE.read_text(encoding="utf-8").strip()
+    if q[1] != pin:
+        return Check("Drayver pin", "ogohlantirish", f"o'rnatilgan {q[1]}, sinalgan {pin}",
+                     "Drayver o'zgargan: render va Eye Contact sinovini qayta o'tkazing yoki eski versiyani qaytaring.")
+    return Check("Drayver pin", "ok", pin)
+
+
+def check_torch() -> Check:
+    import torch
+    if not torch.cuda.is_available():
+        return Check("PyTorch CUDA", "xato", f"torch {torch.__version__}, CUDA yo'q",
+                     "PyTorch cu128 build o'rnating (runtime/python).")
+    cap = torch.cuda.get_device_capability(0)
+    st: Status = "ok" if cap >= (12, 0) or cap >= (8, 0) else "ogohlantirish"
+    return Check("PyTorch CUDA", st, f"torch {torch.__version__}, capability {cap[0]}.{cap[1]}")
+
+
+def check_nvenc() -> Check:
+    if ffmpeg.nvenc_ok():
+        return Check("NVENC", "ok", "h264_nvenc 1 kadr sinovi o'tdi")
+    return Check("NVENC", "ogohlantirish", "ishlamadi", "Drayverni yangilang; render CPU'da (sekin) bo'ladi.")
+
+
+def check_maxine() -> Check:
+    cands = [paths.maxine_dir(), paths.ROOT / "engines" / "eye-contact" / "runtime" / "maxine",
+             Path(r"C:\Program Files\NVIDIA Corporation\NVIDIA AR SDK")]
+    for d in cands:
+        if (d / "nvARPose.dll").is_file():
+            return Check("Maxine (Eye Contact)", "ok", str(d))
+    return Check("Maxine (Eye Contact)", "ogohlantirish", "nvARPose.dll topilmadi",
+                 "runtime/maxine ga Maxine AR SDK ni joylang yoki DARS_MAXINE_DIR ni bering.")
+
+
+def check_models() -> list[Check]:
+    mf = paths.models_dir() / "manifest.json"
+    if not mf.is_file():
+        return [Check("Modellar", "xato", "manifest.json yo'q", "python tools/fetch_models.py")]
+    out = []
+    for m in json.loads(mf.read_text(encoding="utf-8"))["models"]:
+        files = m.get("files") or [{"file": m["file"], "size_mb": m.get("size_mb")}]
+        missing = [f["file"] for f in files if not (paths.models_dir() / f["file"]).is_file()]
+        if missing:
+            out.append(Check(f"Model {m['name']}", "ogohlantirish", f"{len(missing)} fayl yo'q",
+                             "python tools/fetch_models.py (internet kerak, bir marta)"))
+        else:
+            out.append(Check(f"Model {m['name']}", "ok", f"{m.get('size_mb')} MB, {m['license']}"))
+    return out
+
+
+def check_office() -> Check:
+    from darsstudio.slides.render import powerpoint_available, soffice_path
+    if powerpoint_available():
+        return Check("Slayd render", "ok", "PowerPoint")
+    if soffice_path():
+        return Check("Slayd render", "ok", "LibreOffice")
+    return Check("Slayd render", "ogohlantirish", "PowerPoint ham, LibreOffice ham yo'q",
+                 "PPTX uchun ulardan birini o'rnating yoki slaydlarni PDF qilib bering.")
+
+
+def microcode_revision() -> int | None:
+    if sys.platform != "win32":
+        return None
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
+            raw = winreg.QueryValueEx(k, "Update Revision")[0]
+    except OSError:
+        return None
+    if not isinstance(raw, (bytes, bytearray)):
+        return None
+    # REG_BINARY little-endian: 4 bayt — revision o'zi; 8 bayt (eski Windows) — revision yuqori 32 bitda
+    v = int.from_bytes(bytes(raw), "little")
+    return v >> 32 if len(raw) >= 8 else v
+
+
+def check_microcode() -> Check:
+    rev = microcode_revision()
+    cpu = platform.processor()
+    if rev is None:
+        return Check("CPU mikrokod", "ogohlantirish", "o'qib bo'lmadi", "BIOS versiyasini qo'lda tekshiring (HW-1).")
+    if "Intel" in cpu and rev < MIN_MICROCODE:
+        return Check("CPU mikrokod", "ogohlantirish", f"0x{rev:X} ({cpu})",
+                     "BIOS'ni yangilang (mikrokod 0x12B yoki yangiroq), keyin 'Intel Default Settings' (HW-1).")
+    return Check("CPU mikrokod", "ok", f"0x{rev:X}")
+
+
 CHECKS: list[Callable[[], Check | list[Check]]] = [
-    check_os, check_python, check_ffmpeg, check_gpu, check_disk, check_ram,
+    check_os, check_python, check_ffmpeg, check_gpu, check_driver_pin, check_torch, check_nvenc, check_maxine,
+    check_models, check_office, check_disk, check_ram, check_microcode,
 ]
 
 

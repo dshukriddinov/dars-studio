@@ -4,6 +4,29 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-26 — B7, backend API, navbat, rejalashtiruvchi, to'liq doctor
+
+**Natijalar:** `pytest -m "unit or media or windows"` — barchasi o'tdi (rejalashtiruvchi: 3 loyiha x 6 vazifa
+aralash resurslar bilan — har tick'da Σvram <= 13 000, NVENC <= 2, NVDEC <= 1, cpu_heavy <= 2, pptx <= 1,
+exclusive yolg'iz; to'xtatish -> 'toʻxtatildi', jarayon daraxti o'ldirilgan; resume checkpoint'dan; 1 marta
+qayta urinish, "out of memory" bo'lsa GPU bo'shashini kutadi; dastur qayta ochilganda 'ishlanmoqda' -> navbat).
+
+**Doctor (bu mashina):** hammasi ok, ikki ogohlantirish:
+- **CPU mikrokod 0x11F** (registry `Update Revision`, 4 bayt LE) — 0x12B dan eski: **HW-1 (BIOS yangilash) zarur**.
+- Drayver pin yozilmagan (`driver_pin.txt`, HW-4) — qaysi versiya sinalgan deb qotirilishi inson qarori.
+
+**Qarorlar:**
+- Navbat SQLite WAL (`workdir/queue.db`), vazifa = `python -m darsstudio.jobs.worker <tur> <json>`, protokol
+  `PROGRESS/LOG/RESULT`, worker `SetThreadExecutionState` bilan uyquni bloklaydi (HW-6).
+- Vazifa resurslari: asr — manifest `vram_mb` x 1.1 (o'lchanmagan bo'lsa 4500), eyecontact 1100 + cpu_heavy,
+  render 3200 + NVENC, slides pptx + cpu_heavy, audio cpu_heavy, proxy NVENC.
+- "Tekshiruvgacha tayyorlash" zanjiri: slides ‖ audio -> asr ‖ eyecontact ‖ proxy -> sync -> cuts.
+- API: FastAPI, faqat 127.0.0.1; o'zgarishlar faqat buyruqlar orqali (undo/redo serverda); proxy/slaydlar
+  FileResponse (Range 206); WebSocket `/ws` — vazifa yangilanishlari; `ui/dist` bo'lsa statik.
+- `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1` server va ASR worker'da (FR-22).
+
+---
+
 ## 2026-10-26 — B3, vertikal kesim: birinchi haqiqiy MP4
 
 **O'lchovlar (RTX 5070 Ti, torch 2.11+cu128, ffmpeg 7.1.1, NVENC p7, profil `web`):**
