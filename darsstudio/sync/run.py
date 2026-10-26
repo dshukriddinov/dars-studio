@@ -30,7 +30,21 @@ def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
     return out
 
 
+def ensure_slide_text(stack: CommandStack) -> None:
+    """AI moslashtirish slayd matnisiz ishlamaydi: importda faqat sarlavhalar o'qiladi, matn shu yerda ajratiladi."""
+    p = stack.project
+    src = p.asset("pptx")
+    if src is None or any(s.body or s.notes for s in p.slides):
+        return
+    from darsstudio.slides import extract
+    slides, _ = extract.extract_pptx(src.path)
+    for s, old in zip(slides, p.slides, strict=False):
+        s.png_4k = old.png_4k
+    stack.do("slaydlar matni", {"slides": [s.model_dump(mode="json") for s in slides]})
+
+
 def sync_project(stack: CommandStack, params: ai_align.Params | None = None) -> dict[str, Any]:
+    ensure_slide_text(stack)
     p = stack.project
     store = stack.store
     log_asset = p.asset("slide_log")

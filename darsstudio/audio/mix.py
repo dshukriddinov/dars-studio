@@ -14,6 +14,7 @@ from darsstudio.media.timemap import TimeMap
 
 SR = 48000
 XFADE = 480  # 10 ms
+LIMIT_LIN = 0.708  # -3 dBFS (192 kHz da): AAC dan keyin true peak <= -1.5 dBTP zaxira bilan
 
 
 def assemble(src: npt.NDArray[np.float32], tm: TimeMap, xfade: int = XFADE) -> npt.NDArray[np.float32]:
@@ -66,8 +67,11 @@ def final_audio(denoised: Path, tm: TimeMap, out: Path, profile: str = "standart
     write_wav(cut, assemble(x, tm))
     m = loudness.measure(cut)
     tmp = out.with_name(out.stem + ".tmp.wav")
+    # loudnorm 192 kHz da chiqaradi: shu yerda limiter (4x oversampling ~ true peak). Manba clipping qilingan
+    # bo'lsa (namunada +0.5 dBTP) loudnorm yolg'iz AAC dan keyin TP <= -1.5 ni ushlab turolmadi (QA ushladi)
     ffmpeg.run(["-v", "error", "-nostdin", "-y", "-i", str(cut), "-af", loudness.loudnorm_filter(m, profile)
-                + f",aresample={SR}", "-c:a", "pcm_f32le", str(tmp)])
+                + f",alimiter=limit={LIMIT_LIN}:attack=1:release=50:level=0,aresample={SR}:resampler=soxr",
+                "-c:a", "pcm_f32le", str(tmp)])
     tmp.replace(out)
     cut.unlink()
     return loudness.ebur128(out)

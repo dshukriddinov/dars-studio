@@ -74,6 +74,10 @@ def build_cues(words: Sequence[Word], tm: TimeMap) -> list[Cue]:
         if (c.end_ms - c.start_ms) < MIN_S * 1000:
             nxt = cues[i + 1].start_ms if i + 1 < len(cues) else c.start_ms + int(MIN_S * 1000)
             c.end_ms = min(c.start_ms + int(MIN_S * 1000), nxt)
+    end_ms = int(Fraction(tm.out_total) / tm.fps * 1000)   # titr videodan uzun bo'lmasin (QA)
+    cues = [c for c in cues if c.start_ms < end_ms]
+    for c in cues:
+        c.end_ms = min(c.end_ms, end_ms)
     return cues
 
 

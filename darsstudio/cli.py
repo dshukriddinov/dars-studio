@@ -287,7 +287,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("asr", help="transkripsiya + so'z vaqtlari (FR-05)")
     s.add_argument("project")
-    s.add_argument("--engine", default="whisper-large-v3-ct2", help="models/manifest.json dagi nom")
+    s.add_argument("--engine", default="rubaistt-v2-medium-ct2", help="models/manifest.json dagi nom")
     s.add_argument("--align", default="sarahai-uzbek-stt-3", help="CTC model (so'z vaqtlari)")
     s.set_defaults(fn=cmd_asr)
 
