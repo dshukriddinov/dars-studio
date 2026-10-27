@@ -143,3 +143,21 @@ def test_repeat_false_positives() -> None:
              "demak, biz koʻrib chiqamiz: mahalliy davlat hokimiyati vakillik organlarini shakllantirishning "
              "asoslarini.", 0, 350)
     assert cuts.repeat_cuts(a, Fraction(25)) == [] and cuts.repeat_cuts(b, Fraction(25)) == []
+
+
+def test_reread_after_cue_two_sentences_back() -> None:
+    """"…qaytadan aytaman" deb 2 gap orqaga qaytgan: eski ikki gap + signal kesiladi, yangi o'qish qoladi."""
+    ws = _seq("mavzuga oʻtamiz. soliq kodeksi soliqlarning toʻqqiz turini belgilaydi. bular davlat byudjetiga tushadi. "
+              "mahalliy byudjetga esa yer soligʻi va mol mulk. yoʻq, qaytadan aytaman. soliq kodeksi soliqlarning "
+              "toʻqqiz turini belgilaydi. bular respublika byudjetiga tushadi. mahalliy byudjetga yer soligʻi tushadi.",
+              0, 450)
+    assert _kept(ws, cuts.reread_cuts(ws, Fraction(25))) == (
+        "mavzuga oʻtamiz. soliq kodeksi soliqlarning toʻqqiz turini belgilaydi. bular respublika byudjetiga tushadi. "
+        "mahalliy byudjetga yer soligʻi tushadi.")
+
+
+def test_reread_needs_strong_match_without_cue() -> None:
+    # signal yo'q, pauzadan keyin o'xshash mavzu — lekin aynan qayta o'qish emas: kesilmaydi
+    ws = _seq("soliq kodeksi soliqlarning toʻqqiz turini belgilaydi.", 0, 450) + \
+        _seq("soliq kodeksi mahalliy soliqlarni ham alohida tartibga soladi.", 8000, 450)
+    assert cuts.reread_cuts(ws, Fraction(25)) == []

@@ -110,13 +110,22 @@ NUMBER_ROOTS = tuple(uz_text.normalize(x) for x in (
     "ellik", "oltmish", "yetmish", "sakson", "to'qson", "yuz", "ming", "million", "milliard", "trillion"))
 
 
+NUMBER_RE = re.compile("^(" + "|".join(re.escape(r) for r in NUMBER_ROOTS) + ")"
+                       r"(inchi|nchi|ta|tasi|tadan|i|ni|da|dan|ga|ning|lab|lik|dagi)?$")
+
+
+def _is_number(w: str) -> bool:
+    """Son so'zi (ildiz + son qo'shimchasi): "oltinchi", "uchta", "birinchi" — ha; "uchast" (uchastka) — yo'q."""
+    return bool(NUMBER_RE.match(w))
+
+
 def _alike(a: str, b: str) -> bool:
     """O'xshash so'z (ASR xatolari, qo'shimchalar). Sonlar aynan teng bo'lishi shart: "to'rtinchi" ~ "oltinchi"
     (difflib 0.7+) yilni almashtirib, haqiqiy gapni takror deb kesardi (DSBA9359, 324 s)."""
     import difflib
     if a == b:
         return True
-    if a.startswith(NUMBER_ROOTS) or b.startswith(NUMBER_ROOTS):
+    if _is_number(a) or _is_number(b):
         return False
     return min(len(a), len(b)) >= 3 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.7
 
@@ -174,7 +183,7 @@ def repeat_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
             m = next((x for x in range(q, min(j, q + 3)) if _alike(k[x], k[b])), None)
             if m is not None:
                 hits, q = hits + 1, m + 1
-            elif k[b].startswith(NUMBER_ROOTS):   # boshqa son ("2026-yilda 372 / 2028-yilda 484") — takror emas
+            elif _is_number(k[b]):   # boshqa son ("2026-yilda 372 / 2028-yilda 484") — takror emas
                 return 0
         return hits
 
@@ -386,6 +395,93 @@ def _part_overlap(before: Sequence[Word], after: Sequence[Word]) -> tuple[Word, 
             if hits >= OVERLAP_MIN:
                 return tail[_sentence_start(tail, i)], after[_sentence_start(after, j)]
     return None
+
+
+REREAD_CUES = re.compile(r"^(qayta(dan|tdan)|boshqa(tdan|ttan)|boshidan|yangidan|adash\w*|kechirasiz|uzr)$")
+REREAD_LOOKBACK_S = 90.0
+REREAD_PAUSE_MS = 1500     # signal so'zsiz: shundan uzun pauzadan keyin qayta boshlash
+REREAD_HITS = (5, 7)       # 8 so'zlik oynada tartibli mos so'zlar: signal bilan / signalsiz
+
+
+def _ordered_hits(k: list[str], a: int, a_end: int, j: int, n: int, strict_numbers: bool = True) -> int:
+    """strict_numbers: boshqa son — takror emas (yillar). Tuzatish signali bo'lsa son farqi tuzatishning o'zi."""
+    hits, q = 0, a
+    for b in range(j, min(n, j + 8)):
+        m = next((x for x in range(q, min(a_end, q + 3)) if _alike(k[x], k[b])), None)
+        if m is not None:
+            hits, q = hits + 1, m + 1
+        elif strict_numbers and _is_number(k[b]):
+            return 0
+    return hits
+
+
+def _loose_tail(k: list[str], a0: int, a1: int, b0: int, b1: int) -> int | None:
+    """[b0, b1) iborasi eski matnning [a0, a1) qismiga tartib bilan mos kelsa — eski matndagi birinchi mos so'z indeksi.
+    Faqat son bo'lmagan so'zlar hisoblanadi (>= 3 va >= 40%): "ikki ming," umumiy so'zlari bilan haqiqiy gap
+    takror deb olinardi (DSBA9359, 610 s)."""
+    hits, q, first = 0, a0, None
+    for b in range(b0, b1):
+        m = next((x for x in range(q, a1) if _alike(k[x], k[b])), None)
+        if m is not None:
+            hits, q = hits + (not _is_number(k[b])), m + 1
+            first = m if first is None else first
+    return first if hits >= max(3, 0.4 * (b1 - b0)) else None
+
+
+def reread_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
+    """Ma'ruzachi 1–3 gap orqaga qaytib qayta aytgan joy: "qaytadan", "boshqatdan", "boshidan", "adashdim…" signalidan
+    keyingi 15 s ichidagi ibora boshi (oraliqda "demak", xodimlar bilan gaplashuv bo'lishi mumkin) yoki uzun
+    pauzadan keyingi ibora. Undan keyingi 8 so'z oldingi 90 s dagi nutq bilan tartibli moslanadi; mos kelgan eng
+    yaqin joyning gap boshidan qayta boshlash gapi boshigacha kesiladi. Signalsiz holatda moslik talabi qattiqroq."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    k = [_key(w.text) for w in ws]
+    n = len(ws)
+
+    def phrase(j: int) -> bool:
+        return (_ends_sentence(ws[j - 1]) or ws[j - 1].text.rstrip()[-1:] == ","
+                or ws[j].start_ms - ws[j - 1].end_ms >= PHRASE_GAP_MS)
+
+    def match(j: int, end: int, need: int) -> int | None:
+        lo_t = ws[j].start_ms - REREAD_LOOKBACK_S * 1000
+        for a in range(end - 2, -1, -1):               # eng yaqin moslik (1–3 gap orqaga)
+            if ws[a].start_ms < lo_t:
+                return None
+            # birinchi so'z + tartibli moslik ("bu demak, birinchi uchast saylov…" / "bu uchta saylov…")
+            if _alike(k[a], k[j]) and _ordered_hits(k, a, end, j, n, strict_numbers=need > REREAD_HITS[0]) >= need:
+                return a
+        return None
+
+    out: list[CutProposal] = []
+    j = 1
+    while j < n - 1:
+        hit = None
+        if REREAD_CUES.match(k[j - 1]) or (ws[j].start_ms - ws[j - 1].end_ms >= REREAD_PAUSE_MS and phrase(j)):
+            cue = j - 1 if REREAD_CUES.match(k[j - 1]) else None
+            cands = [x for x in range(j, min(n - 1, j + 16)) if phrase(x)
+                     and ws[x].start_ms - ws[j - 1].end_ms <= 15000] if cue is not None else [j]
+            for x in cands:
+                a = match(x, cue if cue is not None else x, REREAD_HITS[0] if cue is not None else REREAD_HITS[1])
+                if a is not None:
+                    hit = (_sentence_start(ws, a), x)
+                    break
+        if hit:
+            s, x = hit
+            for _ in range(3):   # yangi urinish ertaroq boshlangan bo'lishi mumkin (ASR uni boshqacha yozgan)
+                p = next((y for y in range(x - 1, s, -1) if phrase(y)), None)
+                if p is None or ws[x].start_ms - ws[p].start_ms > 8000:
+                    break
+                m = _loose_tail(k, max(0, s - 15), s, p, x)
+                if m is None:
+                    break
+                s, x = _sentence_start(ws, m), p
+            lo = ws[s - 1].end_ms if s else ws[s].start_ms
+            cs, ce = _mid_frame(lo, ws[s].start_ms, fps, True), _mid_frame(ws[x - 1].end_ms, ws[x].start_ms, fps, False)
+            if ce > cs:
+                out.append(CutProposal(start=cs, end=ce, reason="takror"))
+            j = x + 8
+        else:
+            j += 1
+    return out
 
 
 def _intersect(a: list[tuple[int, int]], b: list[tuple[int, int]]) -> list[tuple[int, int]]:

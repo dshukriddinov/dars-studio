@@ -4,6 +4,22 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Ortga qaytib qayta aytish ("qaytadan", "boshqatdan", 2–3 gap oldidan)
+
+- `cuts.reread_cuts` (sabab "takror", taklif): qayta boshlash nuqtasi — signal so'zdan ("qaytadan", "boshqatdan",
+  "boshidan", "yangidan", "adashdim…", "kechirasiz") keyingi 15 s ichidagi ibora boshi (oraliqda "demak", xodimlar
+  bilan gaplashuv bo'lishi mumkin) yoki >= 1.5 s pauzadan keyingi ibora. Undan keyingi 8 so'z oldingi 90 s bilan
+  tartibli moslanadi (birinchi so'z + >= 5 mos so'z signal bilan, >= 7 signalsiz); eng yaqin mos joyning gap
+  boshidan qayta boshlash nuqtasigacha kesiladi. ASR yangi urinish boshini boshqacha yozgan bo'lsa, nuqta oldingi
+  iboraga suriladi (>= 3 son bo'lmagan so'z mos kelsa).
+- Sonlar: `_is_number` (ildiz + son qo'shimchasi) — "uchast" (uchastka) son emas; signalsiz moslikda boshqa son —
+  takror emas (yillar), signal bilan son farqi tuzatishning o'zi ("birinchi uchastka" -> "uchta").
+- Kalibrlash (3 ma'ruza): DSBA 3 (614, 974 — qismlar ulanishi bilan bir xil, 1051), Asadov 1 ("yo'q, adashdim" —
+  retake bilan bir xil), Dalmuradova 0. Oraliq xatolar va tuzatishlar: "okrug" gacha cho'zilgan kesish (qisqa so'z
+  talabi, ikki so'zli juftlik), "ikki ming," bilan haqiqiy gapni olish (sonlar hisobga olinmaydi).
+
+---
+
 ## 2026-10-27 — Oq chiziq (garbage chegarasi) va uzun takrorlar (xulosa, xayrlashuv)
 
 - Foydalanuvchi (DSBA9359 v5): slayd ekrani ostidan pastgacha oq chiziq. Sabab: yashil mato chekkasi qiyshiq —
