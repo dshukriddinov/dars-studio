@@ -103,3 +103,13 @@ ni ishga tushiring (boshida qisqa "beep" chaladi) va importda `--slide-log dars0
 
 Jurnallar: `workdir\logs\` (vazifalar), loyiha papkasidagi `logs\`. Texnik tafsilotlar: `docs\TEXNIK_TOPSHIRIQ.md`,
 qarorlar va oʻlchovlar: `docs\QAROR_JURNALI.md`.
+
+## Uchinchi tomon modellari va litsenziyalar
+
+Toʻliq roʻyxat: `models/manifest.json` (har fayl sha256 bilan).
+
+- **PANNs Cnn14 (16 kHz)** — yoʻtal, aksa, tomoq qirish kabi tovushlarni aniqlash. Q. Kong va b., "PANNs: Large-Scale
+  Pretrained Audio Neural Networks for Audio Pattern Recognition" (2020). Ogʻirliklar: Zenodo 3987831, CC-BY-4.0.
+  AudioSet sinflari roʻyxati: CC-BY-4.0. Arxitektura kodi (MIT) Studio ichida qayta yozilgan.
+- **DeepFilterNet3** (`deep-filter` 0.5.6) — shovqin tozalash. H. Schröter va b. MIT / Apache-2.0.
+- Shriftlar: Noto Sans, Noto Serif (OFL), Roboto Slab (Apache-2.0) — `templates/fonts/`.

@@ -2,9 +2,11 @@
 oraliq, uzunligi >= min_pause. Kesiladigan qism: pauza o'rtasidan keep_pause qoldirib (har tomonda yarmi).
 Kesish nuqtalari kadr chegarasiga (ichkariga) tekislanadi, shuning uchun so'z ichiga hech qachon tushmaydi."""
 
+import bisect
 import math
 from collections.abc import Sequence
 from fractions import Fraction
+from typing import Any
 
 from darsstudio.asr import uz_text
 from darsstudio.media.timemap import TimeMap
@@ -15,6 +17,9 @@ KEEP_PAUSE_S = 0.35
 # Dars boshi/oxiri: salomlashishdan oldingi ("boshlasangiz bo'ladi") va xayrlashishdan keyingi qism kesiladi
 GREETINGS = ("assalomu", "assalom", "salom", "hurmatli", "aziz", "qadrli")
 FAREWELLS = ("ko'rishguncha", "ko'rishgunimizcha", "xayr", "salomat", "rahmat")
+EVENT_MIN_PROB = 0.6     # yo'tal/aksa ehtimoli (PANNs); pastrog'i ko'pincha oddiy nafas
+EVENT_MIN_GAP_MS = 300
+WORD_CUT_REASONS = ("bosh", "oxir", "takror")   # so'zni ataylab kesadigan sabablar (TZ 8.2 istisno)
 TRIM_SEARCH_S = 60      # signal dars boshidagi/oxiridagi shuncha soniya ichida izlanadi
 TRIM_PAD_S = (0.3, 0.6)  # salomdan oldin / xayrdan keyin qoldiriladigan bo'shliq
 
@@ -39,6 +44,50 @@ def trim_cuts(words: Sequence[Word], fps: Fraction, total: int) -> list[CutPropo
         start = math.ceil(Fraction(words[tail].end_ms + int(TRIM_PAD_S[1] * 1000), 1000) * fps)
         if start < total:
             out.append(CutProposal(start=start, end=total, reason="oxir", status="tasdiqlangan"))
+    return out
+
+
+def event_cuts(events: Sequence[dict[str, Any]], words: Sequence[Word], fps: Fraction, total: int,
+               min_prob: float = EVENT_MIN_PROB, keep_s: float = KEEP_PAUSE_S) -> list[CutProposal]:
+    """Yo'tal/aksa kabi hodisalar (audio/events.py) -> kesish takliflari. Kesish hodisa joylashgan so'zlar orasidagi
+    bo'shliqni (har tomonda keep_s/2 qoldirib) qamraydi; bo'shliq so'zlarga tegmaydi (TZ 8.2). Hodisa so'z ustida
+    bo'lsa (bo'shliq < EVENT_MIN_GAP_MS) — taklif yo'q (kesish nutqni buzadi)."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    starts = [w.start_ms for w in ws]
+    out: list[CutProposal] = []
+    for e in events:
+        if e["prob"] < min_prob:
+            continue
+        c = (e["start_ms"] + e["end_ms"]) // 2
+        i = bisect.bisect_right(starts, c)                     # ws[i-1] — markazdan oldin boshlangan so'z
+        lo = ws[i - 1].end_ms if i else 0
+        hi = ws[i].start_ms if i < len(ws) else int(Fraction(total) / fps * 1000)
+        if hi - lo < EVENT_MIN_GAP_MS or c < lo:
+            continue
+        half = int(keep_s * 500)
+        cs, ce = math.ceil(Fraction(lo + half, 1000) * fps), math.floor(Fraction(hi - half, 1000) * fps)
+        if ce - cs >= 1 and not any(cs < o.end and o.start < ce for o in out):
+            out.append(CutProposal(start=cs, end=min(ce, total), reason=e["kind"]))
+    return out
+
+
+def stutter_cuts(words: Sequence[Word], fps: Fraction, max_gap_ms: int = 700) -> list[CutProposal]:
+    """Ketma-ket takrorlangan so'z ("yaʼni yaʼni"): birinchisi kesiladi (oldingi so'z oxiridan ikkinchisi boshigacha).
+    Matn bo'yicha — aniqlik past (ma'ruzada atamalar ataylab takrorlanadi), faqat taklif."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    norm = [uz_text.normalize(w.text) for w in ws]
+    out = []
+    for i in range(1, len(ws)):
+        a, b = ws[i - 1], ws[i]
+        # yolg'on takrorlar (sinov videosi): nol uzunlikli so'z — CTC tekislash artefakti; ".uch" — kasr (93.3);
+        # "rais, rais o'rinbosari" — tinish belgisidan keyingi takror ro'yxat
+        artefact = (min(a.end_ms - a.start_ms, b.end_ms - b.start_ms) < 60 or b.text.startswith(".")
+                    or a.text.rstrip()[-1:] in ",.;:")
+        if norm[i] == norm[i - 1] and len(norm[i]) > 1 and b.start_ms - a.end_ms <= max_gap_ms and not artefact:
+            lo = ws[i - 2].end_ms if i >= 2 else ws[i - 1].start_ms
+            cs, ce = math.ceil(Fraction(lo, 1000) * fps), math.floor(Fraction(ws[i].start_ms, 1000) * fps)
+            if ce > cs:
+                out.append(CutProposal(start=cs, end=ce, reason="takror"))
     return out
 
 
@@ -96,7 +145,7 @@ def check_no_word_cut(cuts: Sequence[CutProposal], words: Sequence[Word], fps: F
     """Tasdiqlangan kesishlardan so'z ichiga tushganlari (TZ 8.2 invarianti). Bo'sh ro'yxat — hammasi to'g'ri."""
     bad = []
     for c in cuts:
-        if c.status != "tasdiqlangan" or c.reason in ("bosh", "oxir"):  # bosh/oxir so'zlarni ataylab kesadi
+        if c.status != "tasdiqlangan" or c.reason in WORD_CUT_REASONS:  # so'zlarni ataylab kesadi
             continue
         cs_ms, ce_ms = Fraction(c.start) / fps * 1000, Fraction(c.end) / fps * 1000
         if any(w.start_ms < ce_ms and cs_ms < w.end_ms for w in words):

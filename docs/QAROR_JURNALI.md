@@ -4,6 +4,37 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Nutq kamchiliklari (yo'tal, aksa, takror); sinov videosi `0Z1A1253.MP4` (Eshankulov)
+
+**Sinov materiali:** `namuna/0Z1A1253.MP4` (1168.36 s, 1080p25, green screen, yon tomonda oq devor) + `yangi35.pptx`
+(42 slayd). tayyor2.mp4 (o'sha o'qituvchi) bu xom videodan **emas**: audio konvert korrelyatsiyasi r ~0.3, joylar
+tasodifiy — montajchi ground truth'i yo'q.
+
+**Qarorlar:**
+- `audio/events.py`: PANNs Cnn14 16 kHz (og'irliklar Zenodo 3987831 CC-BY-4.0, md5 Zenodo bilan mos; kod MIT —
+  arxitektura o'zimizda qayta yozildi, `torchlibrosa`/`panns_inference` yo'q). Checkpoint numpy obyektli: faqat
+  numpy turlari ruxsat etilgan `weights_only=True` bilan yuklanadi. 1 s oyna, 0.1 s qadam. Butun video GPU'da **3.6 s**.
+  Audio bosqichida (`events.json`), denoise'dan oldingi audio'da.
+- Sinflar: Cough, Throat clearing, Sneeze, Hiccup, Burping, Humming. **Sniff/Gasp chiqarildi**: sinov videosida
+  0.3+ ehtimolli 74 hodisaning ko'pi shular, kadrlar bo'yicha — gaplar orasidagi oddiy nafas.
+- `cuts.event_cuts`: ehtimol >= 0.6; kesish hodisa joylashgan so'zlar orasidagi bo'shliq (har tomonda 0.175 s qoldirib),
+  so'zga tegmaydi; bo'shliq < 300 ms bo'lsa taklif yo'q. `cuts.stutter_cuts`: ketma-ket bir xil so'z, birinchisi
+  kesiladi. Yolg'on takrorlar filtrlandi (sinovda 8 dan 6 tasi): nol uzunlikli so'z (CTC artefakti), ".uch" (93.3 kasr),
+  "rais, rais o'rinbosari" (tinish belgisidan keyin). Hammasi **taklif**, inson tasdiqlaydi.
+- QA: freezedetect `n` 0.002 -> 0.0005 — qimirlamay turgan o'qituvchi (kadrning ~1/4 qismi) "muzlagan" chiqardi
+  (sinov v1: 4 soxta ogohlantirish -> 0; B oraliqlari baribir chiqarib tashlanadi).
+- Model sabablari `CutProposal.reason`: bosh, oxir, yo'tal, aksa, to'ldiruvchi, takror (UI'da yorliqlar).
+
+**Sinov natijasi (barcha takliflar tasdiqlangan, `exports/v1`):** bosh 0–4.44 s ("uch, ikki, bir, boshlasangiz
+bo'ladi"), oxir 1168.04 s dan ("e'tiboringiz uchun rahmat" dan keyin); pauza 8, aksa 2 (463.0, 1004.6), yo'tal 2
+(774.4–776.9, 1088.9–1090.2), takror 2 (558, 692); 84 s dagi aksa (0.96) pauza kesishi ichida. Jami -25.3 s.
+1153.8 s, A/V 0 ms, -16.2 LUFS, QA faqat 4 tasdiqlanmagan sinxron chegarasi bo'yicha.
+**Tekshirilmagan:** hodisa kesishlarining to'g'riligi — kadrlarda aniq yo'tal/aksa harakati ko'rinmadi; foydalanuvchi
+`workdir/eshankulov/tekshiruv/` kliplarini eshitib baholashi kerak (aniqlik shundan keyin o'lchanadi).
+"eee/mmm" to'ldiruvchilar: ASR ularni yozmaydi, PANNs "Humming" sinovda chiqmadi — hali yechim yo'q.
+
+---
+
 ## 2026-10-26 — Denoise: DeepFilterNet3 rasmiy CLI
 
 - Foydalanuvchi ruxsati bilan `deep-filter-0.5.6-x86_64-pc-windows-msvc.exe` (GitHub Rikorose/DeepFilterNet v0.5.6,

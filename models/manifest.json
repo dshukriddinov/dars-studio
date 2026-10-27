@@ -243,6 +243,30 @@
    "sha256": "75e11fa16445f560cb6b021521ddb89e89270d13b83089705d98776f58fd7915",
    "source_url": "https://github.com/Rikorose/DeepFilterNet/releases/download/v0.5.6/deep-filter-0.5.6-x86_64-pc-windows-msvc.exe",
    "_note": "DeepFilterNet3 modeli ichida; GitHub reliz sha256 e'lon qilmagan, hajm 26912256 bayt reliz bilan mos (2026-10-26); litsenziya MIT OR Apache-2.0 (dual), MIT tanlandi"
+  },
+  {
+   "name": "panns-cnn14-16k",
+   "version": "zenodo-3987831",
+   "source": "zenodo:3987831",
+   "license": "CC-BY-4.0",
+   "kind": "audio-events",
+   "vram_mb": 600,
+   "size_mb": 342.1,
+   "_note": "PANNs (Kong va b., 2020): og'irliklar CC-BY-4.0 (atribusiya README'da), kod MIT (o'zimizda qayta yozilgan); AudioSet sinflari CC-BY-4.0",
+   "files": [
+    {
+     "file": "panns/Cnn14_16k_mAP=0.438.pth",
+     "sha256": "e2ee543a27919542c2ea03eabaa70b24dcd4e6c8e05621de6b67a94e4c5058e6",
+     "source_url": "https://zenodo.org/records/3987831/files/Cnn14_16k_mAP%3D0.438.pth?download=1",
+     "size_mb": 342.1
+    },
+    {
+     "file": "panns/class_labels_indices.csv",
+     "sha256": "cdd1049833c4b86127c2773ac0d14a2754b6a6d0d1798002ed5c66e699708429",
+     "source_url": "https://raw.githubusercontent.com/qiuqiangkong/audioset_tagging_cnn/master/metadata/class_labels_indices.csv",
+     "size_mb": 0.0
+    }
+   ]
   }
  ]
 }

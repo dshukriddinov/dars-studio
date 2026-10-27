@@ -22,6 +22,7 @@ Status = Literal["ok", "ogohlantirish", "xato"]
 LUFS_TOL = 1.0
 TP_MAX = -1.5
 FREEZE_S = 4.0     # A sahnada o'qituvchi harakatlanadi: shundan uzun muzlash — shubhali
+FREEZE_NOISE = 0.0005  # 0.002 da qimirlamay turgan o'qituvchi "muzlagan" chiqardi (2026-10-27)
 BLACK_S = 0.5
 
 
@@ -65,7 +66,8 @@ def _intervals(stderr: str, start_key: str, end_key: str) -> list[tuple[float, f
 
 def check_black_frozen(out: Path, b_ranges_s: Sequence[tuple[float, float]] = ()) -> list[QaCheck]:
     r = ffmpeg.run(["-v", "info", "-nostdin", "-i", str(out), "-map", "0:v:0", "-vf",
-                    f"blackdetect=d={BLACK_S}:pix_th=0.10,freezedetect=n=0.002:d={FREEZE_S}", "-f", "null", "-"])
+                    f"blackdetect=d={BLACK_S}:pix_th=0.10,freezedetect=n={FREEZE_NOISE}:d={FREEZE_S}",
+                    "-f", "null", "-"])
     black = _intervals(r.stderr, "black_start", "black_end")
     fz = _intervals(r.stderr, r"lavfi\.freezedetect\.freeze_start", r"lavfi\.freezedetect\.freeze_end")
     # B sahna (statik slayd) muzlash emas: to'liq B oralig'i ichidagilar hisobga olinmaydi

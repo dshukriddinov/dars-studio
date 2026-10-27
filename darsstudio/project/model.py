@@ -62,7 +62,7 @@ class LayoutSpan(Span):
 
 
 class CutProposal(Span):
-    reason: Literal["pause", "manual", "bosh", "oxir"]
+    reason: Literal["pause", "manual", "bosh", "oxir", "yo'tal", "aksa", "to'ldiruvchi", "takror"]
     status: Literal["taklif", "tasdiqlangan", "rad_etilgan"] = "taklif"
 
 

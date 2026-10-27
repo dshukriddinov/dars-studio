@@ -13,8 +13,13 @@ import { Timeline, laneMaxLen, type Item, type Lane } from "../components/Timeli
 import { SuspiciousList } from "../components/SuspiciousList";
 import { Transcript } from "../components/Transcript";
 import { StatusBadge } from "../components/StatusBadge";
-import type { Project } from "../lib/types";
+import type { CutProposal, Project } from "../lib/types";
 
+
+const CUT_LABELS: Record<CutProposal["reason"], string> = {
+  pause: "pauza", manual: "qoʻlda", bosh: "dars boshi", oxir: "dars oxiri", "yo'tal": "yoʻtal", aksa: "aksa",
+  "to'ldiruvchi": "toʻldiruvchi", takror: "takror",
+};
 export function Review() {
   const name = useStore((s) => s.name);
   const view = useStore((s) => s.view);
@@ -69,7 +74,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
       text: String(s.slide), cls: `src-${s.source}${s.confidence < 0.6 ? " low" : ""}`,
     }));
     const scene = items(p.layout_spans, (s) => ({ text: s.layout, cls: `scene-${s.layout}` }));
-    const cuts = items(p.cuts, (c) => ({ cls: `cut-${c.status}`, text: c.reason === "pause" ? "pauza" : "qoʻlda" }));
+    const cuts = items(p.cuts, (c) => ({ cls: `cut-${c.status}`, text: CUT_LABELS[c.reason] }));
     const eye = items(p.eye_off, () => ({ cls: "eye" }));
     const subs = groupWords(words, fps).map((c, i) => ({ ...c, i, cls: "sub" }));
     return [

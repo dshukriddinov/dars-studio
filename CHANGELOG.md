@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Nutq kamchiliklari, shovqin, bosh/oxir (2026-10-27)
+- Yo'tal/aksa/tomoq qirish aniqlash (PANNs Cnn14), takrorlangan so'zlar — kesish takliflari.
+- Dars boshi (salomgacha) va oxiri (xayrlashishdan keyin) avtomatik kesiladi.
+- Denoise: DeepFilterNet3 CLI (shovqin -15 dB); o'qituvchi tiniqligi (bicubic + unsharp); subtitr ixtiyoriy.
+
 ### Montajchi uslubi (2026-10-26)
 - `templates/akademiya`, `tools/make_template.py` (fon joylash, ekran quad'ini avtomatik topish).
 - O'tishlar: zoom blur (A<->B), clock wipe (A ichida); o'tish chegaradan oldin tugaydi.
