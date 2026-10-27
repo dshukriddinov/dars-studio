@@ -26,7 +26,7 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).
 
 export function StepReview({ name, p }: { name: string; p: P }) {
   const words = useStore((s) => s.words);
-  const { command, setTab } = useStore.getState();
+  const { command, setTab, setStep } = useStore.getState();
   const fps = useMemo(() => parseFps(p.fps), [p.fps]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [group, setGroup] = useState<Group>("all");
@@ -109,6 +109,14 @@ export function StepReview({ name, p }: { name: string; p: P }) {
         <CutMap p={p} items={shown.map((x) => x.c)} selected={shown[sel]?.c} />
         <p className="caption dim">Tasdiqlangan kesishlar: {approved.length} ta, video {mmss(savedSec)} ga qisqaradi.
           {unshown.length ? ` Koʻrsatilmagan slaydlar: ${unshown.map((s) => s.index).join(", ")}.` : ""}</p>
+        <div className="rv-done">
+        <div>
+          <div className="strong">Koʻrib chiqib boʻldingizmi?</div>
+          <div className="caption dim">{approved.length} ta joy kesiladi, {items.length - approved.length} ta joy qoladi.
+            Belgilarni keyin ham oʻzgartirish mumkin.</div>
+        </div>
+        <button className="btn-primary big" onClick={() => setStep(4)}>Tasdiqlash va eksportga oʻtish</button>
+      </div>
       </div>
 
       <aside className="rv-list">
@@ -137,6 +145,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
         )}
         <p className="caption dim hint">Probel — oʻynatish, ↑ ↓ — oldingi/keyingi, Enter — kesish yoki qoldirish.</p>
       </aside>
+
     </div>
   );
 }

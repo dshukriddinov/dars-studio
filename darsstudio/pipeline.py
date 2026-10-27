@@ -113,8 +113,10 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
     ws = words(stack)
     bad = cuts.check_no_word_cut(p.cuts, ws, p.fps_frac)
     if bad:
-        raise MediaError(f"{len(bad)} ta tasdiqlangan kesish so'z ichiga tushadi (masalan {bad[0].start}-kadr). "
-                         "Ularni rad eting yoki suring.")
+        sec = int(bad[0].start / p.fps_frac)
+        raise MediaError(f"{len(bad)} ta kesish oʻqituvchi soʻzining ustiga tushadi "
+                         f"(birinchisi {sec // 60}:{sec % 60:02d} da): Koʻrib chiqishda uni “qoldirish” qiling "
+                         "yoki Batafsil tahrirda chegarasini suring.")
     tm = cuts.timemap(p)
     cp_from = None
     if tpl.copyright is not None:

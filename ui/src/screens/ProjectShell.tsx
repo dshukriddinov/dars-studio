@@ -179,7 +179,8 @@ function StepPrepare({ name, p, jobs }: { name: string; p: P; jobs: Job[] }) {
               <span className="prep-mark" aria-hidden />
               <div className="prep-text">
                 <div className="strong">{label}</div>
-                <div className="caption dim">{j?.error ?? (st === "ishlanmoqda" && j ? `${Math.round(j.progress * 100)}%` : hint)}</div>
+                <div className="caption dim">{j?.status === "xato" ? friendlyError(j.error)
+                  : st === "ishlanmoqda" && j ? `${Math.round(j.progress * 100)}%` : hint}</div>
                 {st === "ishlanmoqda" && j ? <div className="bar"><div style={{ width: `${j.progress * 100}%` }} /></div> : null}
               </div>
               {j && (j.status === "xato" || j.status === "toʻxtatildi") ? (
@@ -231,7 +232,7 @@ function StepExport({ name, jobs }: { name: string; jobs: Job[] }) {
           <div><div className="bar"><div style={{ width: `${job.progress * 100}%` }} /></div>
             <p className="caption dim">{Math.round(job.progress * 100)}%</p></div>
         ) : null}
-        {job?.status === "xato" ? <p className="note err">{job.error}</p> : null}
+        {job?.status === "xato" ? <p className="note err">{friendlyError(job.error)}</p> : null}
       </section>
       <section className="block">
         <h2 className="h2">Tayyor videolar</h2>
@@ -256,6 +257,14 @@ function StepExport({ name, jobs }: { name: string; jobs: Job[] }) {
       </section>
     </div>
   );
+}
+
+/** Vazifa xatosidan foydalanuvchiga tushunarli qator: "...Error: xabar" (traceback emas). */
+export function friendlyError(err: string | null | undefined): string {
+  if (!err) return "Nomaʼlum xato. Qayta urinib koʻring.";
+  const lines = err.split(String.fromCharCode(10)).map((l) => l.trim()).filter(Boolean);
+  const msg = [...lines].reverse().find((l) => /^[\w.]+(Error|Exception):/.test(l));
+  return (msg ? msg.replace(/^[\w.]+(Error|Exception):\s*/, "") : lines[lines.length - 1]).slice(0, 400);
 }
 
 function qaVerdict(qa: unknown): string | null {

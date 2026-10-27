@@ -454,6 +454,14 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         # /api ostidagi noma'lum yo'l statik UI'ga (index.html, 200) tushib qolmasin
         raise HTTPException(404, "Bunday API yo'q.")
 
+    @app.middleware("http")
+    async def no_cache_html(request: Any, call_next: Any) -> Any:
+        # index.html keshlanmasin: yangilangan UI'dan keyin eski oyna eski sahifani ko'rsatardi (assets — hash nomli)
+        resp = await call_next(request)
+        if resp.headers.get("content-type", "").startswith("text/html"):
+            resp.headers["Cache-Control"] = "no-store"
+        return resp
+
     ui = paths.ROOT / "ui" / "dist"
     if ui.is_dir():
         app.mount("/", StaticFiles(directory=ui, html=True), name="ui")

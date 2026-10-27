@@ -152,3 +152,5 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
 }
 .tag { font-size: 12px; font-weight: 600; color: var(--accent-strong); background: var(--accent-subtle);
   border-radius: var(--radius-full); padding: 0 var(--space-2); }
+.rv-done { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  background: var(--surface-200); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); }

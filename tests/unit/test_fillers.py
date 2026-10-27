@@ -44,3 +44,10 @@ def test_union_keeps_specific_reason() -> None:
     u = cuts.union([CutProposal(start=10, end=20, reason="pause"), CutProposal(start=18, end=30, reason="to'ldiruvchi"),
                     CutProposal(start=40, end=50, reason="pause")])
     assert [(c.start, c.end, c.reason) for c in u] == [(10, 30, "to'ldiruvchi"), (40, 50, "pause")]
+
+
+def test_union_word_cutting_reason_wins() -> None:
+    """"mmm" + takror birlashmasi takror bo'lib qoladi (so'zlarni ataylab kesadi — eksport to'xtamaydi)."""
+    u = cuts.union([CutProposal(start=10, end=16, reason="to'ldiruvchi"),
+                    CutProposal(start=14, end=40, reason="takror"), CutProposal(start=38, end=50, reason="pause")])
+    assert [(c.start, c.end, c.reason) for c in u] == [(10, 50, "takror")]

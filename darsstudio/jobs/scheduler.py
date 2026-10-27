@@ -118,7 +118,7 @@ class Scheduler:
             if job.status == "toʻxtatildi":
                 continue
             if rc == 0 and job.result is not None:
-                self.q.update(job_id, status="tayyor", progress=1.0, finished=time.time())
+                self.q.update(job_id, status="tayyor", progress=1.0, finished=time.time(), error=None)
             else:
                 err = Path(job.log_path).read_text(encoding="utf-8", errors="replace")[-2000:] if job.log_path else ""
                 vram = any(e in err for e in VRAM_ERRORS)

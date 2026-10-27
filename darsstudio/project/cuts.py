@@ -309,12 +309,18 @@ def filler_cuts(fillers: Sequence[Any], fps: Fraction, keep_s: float = KEEP_PAUS
 
 
 def union(cuts: Sequence[CutProposal]) -> list[CutProposal]:
-    """Ustma-ust tushgan takliflarni birlashtiradi (sabab: pauzadan boshqasi ustun — u kesishning asosiy sababi)."""
+    """Ustma-ust tushgan takliflarni birlashtiradi. Sabab ustunligi: so'zni ataylab kesadigan (takror, bosh/oxir,
+    qism) > boshqa (yo'tal, "mmm"…) > pauza. Aks holda "mmm" + takror birlashmasi "mmm" bo'lib qolib, so'z ustidagi
+    kesish eksportni to'xtatardi (DSBA8971, 726.5 s)."""
+
+    def rank(r: str) -> int:
+        return 2 if r in WORD_CUT_REASONS else 0 if r == "pause" else 1
+
     out: list[CutProposal] = []
     for c in sorted(cuts, key=lambda x: x.start):
         if out and c.start <= out[-1].end:
             last = out[-1]
-            reason = last.reason if last.reason != "pause" else c.reason
+            reason = last.reason if rank(last.reason) >= rank(c.reason) else c.reason
             out[-1] = last.model_copy(update={"end": max(last.end, c.end), "reason": reason})
         else:
             out.append(c)

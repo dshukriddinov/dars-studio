@@ -4,6 +4,21 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — Foydalanuvchi sinovidagi xatolar (DSBA8971)
+
+- Eksport ikki marta to'xtadi: "1 ta tasdiqlangan kesish so'z ichiga tushadi (18163-kadr)". Sabab: `cuts.union`
+  "mmm" (726.52–726.76 s) va takror ("progress formulasi va | progress formulasi") takliflarini birlashtirib "mmm"
+  sababini qoldirgan — so'zni kesishga ruxsatsiz sabab, xavfsizlik tekshiruvi to'xtatgan. Tuzatish: sabab ustunligi
+  so'z kesuvchi (takror/bosh/oxir/qism) > boshqa > pauza; loyihadagi bitta kesish sababi tuzatildi (buyruq, undo
+  bilan); eksport v6 o'tdi (965.84 s, A/V 0 ms). Xabar endi vaqt bilan va nima qilish kerakligi bilan.
+- Proxy vazifasi PermissionError (fayl band): ikkita ilova nusxasi (12:20 va 23:32 da ochilgan) bitta navbatdan bir
+  vazifani bir vaqtda bajargan. `app_window`: bitta nusxa (`workdir/app_instance.txt` + health) — ikkinchi ishga
+  tushirish mavjud serverga oyna ochadi. Muvaffaqiyatda eski xato matni tozalanadi.
+- UI: 3-qadamda "Tasdiqlash va eksportga o'tish" (video ostida, doim ko'rinadi); vazifa xatolari traceback emas,
+  oxirgi xabar qatori; `index.html` no-store (yangilangan UI eski keshdan ko'rinardi — headless sinovda aniqlandi).
+
+---
+
 ## 2026-10-27 — UI qayta qurildi: och mavzu, chap panel, 4 qadam, matnli ko'rib chiqish
 
 - Foydalanuvchi: GUI eski/xira, ish tartibi tushunarsiz, tekshirish ekrani noqulay; tanlov — bosqichma-bosqich,
