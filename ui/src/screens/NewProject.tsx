@@ -1,23 +1,37 @@
+// Yangi loyiha: video + slaydlar (Windows oynasidan tanlash), o'qituvchi ma'lumoti (lower-third) jonli ko'rinish bilan.
 import { useEffect, useState } from "react";
+import { FolderOpen } from "lucide-react";
 import { useStore } from "../store";
 import { api } from "../lib/api";
+import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS } from "../components/TeacherForm";
 
-const META: [string, string][] = [["fan", "Fan"], ["mavzu", "Mavzu"], ["oqituvchi", "Oʻqituvchi"], ["dars", "Dars raqami"]];
+const DEFAULT_TEMPLATE = "akademiya";
 
 export function NewProject() {
   const [video, setVideo] = useState("");
   const [slides, setSlides] = useState("");
   const [name, setName] = useState("");
   const [templates, setTemplates] = useState<string[]>([]);
-  const [template, setTemplate] = useState("demo");
+  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
   const [meta, setMeta] = useState<Record<string, string>>({});
   const [prepare, setPrepare] = useState(true);
   const [busy, setBusy] = useState(false);
   const { open, fail } = useStore.getState();
 
-  useEffect(() => { api.templates().then((t) => { setTemplates(t); if (t.length && !t.includes(template)) setTemplate(t[0]); }).catch(fail); },
+  useEffect(() => {
+    api.templates().then((t) => {
+      setTemplates(t);
+      if (t.length && !t.includes(template)) setTemplate(t.includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : t[0]);
+    }).catch(fail);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []);
+  }, []);
+
+  const pick = async (kind: "video" | "slides") => {
+    try {
+      const { path } = await api.pickFile(kind);
+      if (path) (kind === "video" ? setVideo : setSlides)(path);
+    } catch (e) { fail(e); }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,44 +40,67 @@ export function NewProject() {
       const strip = (s: string) => s.trim().replace(/^"|"$/g, "");
       const r = await api.createProject({
         video: strip(video), slides: strip(slides), template, name: name.trim() || null, prepare,
-        meta: Object.fromEntries(Object.entries(meta).filter(([, v]) => v.trim())),
+        meta: Object.fromEntries(Object.entries(meta).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v)),
       });
-      await open(r.name, prepare ? "home" : "review");
+      await open(r.name, "project");
     } catch (err) { fail(err); } finally { setBusy(false); }
   };
 
   return (
-    <form className="page panel form" onSubmit={submit}>
-      <h2 className="heading">Yangi loyiha</h2>
-      <Field label="Video fayl yoʻli" value={video} onChange={setVideo} placeholder="D:\darslar\dars01.mp4" required />
-      <Field label="Slaydlar (PPTX yoki PDF) yoʻli" value={slides} onChange={setSlides} placeholder="D:\darslar\dars01.pptx" required />
-      <Field label="Loyiha nomi (ixtiyoriy)" value={name} onChange={setName} />
-      <label className="field">
-        <span className="label">Shablon</span>
-        <select value={template} onChange={(e) => setTemplate(e.target.value)}>
-          {templates.map((t) => <option key={t}>{t}</option>)}
-        </select>
-      </label>
-      <div className="grid2">
-        {META.map(([k, l]) => (
-          <Field key={k} label={l} value={meta[k] ?? ""} onChange={(v) => setMeta({ ...meta, [k]: v })} />
-        ))}
-      </div>
-      <label className="check body">
-        <input type="checkbox" checked={prepare} onChange={(e) => setPrepare(e.target.checked)} />
-        Tekshiruvgacha tayyorlash
-      </label>
-      <div><button className="btn-primary" disabled={busy || !video || !slides}>{busy ? "Ishlanmoqda…" : "Boshlash"}</button></div>
+    <form className="page" onSubmit={submit}>
+      <section className="panel form">
+        <h2 className="heading">1. Fayllar</h2>
+        <PathField label="Video (oʻqituvchi, yashil fon)" value={video} onChange={setVideo}
+          onPick={() => void pick("video")} placeholder="D:\darslar\dars01.mp4" />
+        <PathField label="Taqdimot (PPTX yoki PDF)" value={slides} onChange={setSlides}
+          onPick={() => void pick("slides")} placeholder="D:\darslar\dars01.pptx" />
+        <div className="grid2">
+          <label className="field">
+            <span className="label">Shablon (studiya)</span>
+            <select value={template} onChange={(e) => setTemplate(e.target.value)}>
+              {templates.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span className="label">Loyiha nomi (ixtiyoriy)</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Fayl nomidan olinadi" />
+          </label>
+        </div>
+      </section>
+
+      <section className="panel form">
+        <h2 className="heading">2. Oʻqituvchi (dars boshidagi yozuv)</h2>
+        <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} />
+        <LowerThirdPreview template={template} meta={meta} />
+      </section>
+
+      <section className="panel form">
+        <h2 className="heading">3. Dars</h2>
+        <MetaFields fields={LESSON_FIELDS} meta={meta} onChange={setMeta} />
+        <label className="check body">
+          <input type="checkbox" checked={prepare} onChange={(e) => setPrepare(e.target.checked)} />
+          Darhol tayyorlash (shovqin tozalash, nutqni matnga aylantirish, slayd sinxroni, kesish takliflari, Eye Contact)
+        </label>
+        <div>
+          <button className="btn-primary" disabled={busy || !video || !slides || !meta.oqituvchi?.trim()}>
+            {busy ? "Import qilinmoqda…" : "Loyihani yaratish"}
+          </button>
+        </div>
+      </section>
     </form>
   );
 }
 
-function Field({ label, value, onChange, ...rest }: { label: string; value: string; onChange: (v: string) => void } &
-  Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value">) {
+function PathField({ label, value, onChange, onPick, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; onPick: () => void; placeholder: string;
+}) {
   return (
     <label className="field">
-      <span className="label">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} {...rest} />
+      <span className="label">{label} *</span>
+      <span className="pick">
+        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required />
+        <button type="button" className="btn-secondary" onClick={onPick}><FolderOpen size={16} /> Tanlash</button>
+      </span>
     </label>
   );
 }

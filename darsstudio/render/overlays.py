@@ -78,7 +78,12 @@ def _meta(meta: dict[str, str], *keys: str) -> str:
 
 
 def _lines(meta: dict[str, str]) -> tuple[str, list[str]]:
+    """Ism + 2 qator. UI maydonlari: ish_joyi + lavozim (1-qator), ilmiy_unvon (2-qator); eski "unvon" ("a | b")."""
     name = _meta(meta, "oqituvchi", "o'qituvchi", "oʻqituvchi", "teacher")
+    job = " ".join(x for x in (_meta(meta, "ish_joyi"), _meta(meta, "lavozim")) if x)
+    degree = _meta(meta, "ilmiy_unvon")
+    if job or degree:
+        return name, [x for x in (job, degree) if x]
     unvon = _meta(meta, "unvon", "title")
     sub = [x.strip() for x in unvon.split("|") if x.strip()] if unvon else \
         [x for x in (" · ".join(y for y in (_meta(meta, "fan", "subject"), _meta(meta, "mavzu", "topic")) if y),) if x]

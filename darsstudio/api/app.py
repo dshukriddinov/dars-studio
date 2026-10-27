@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -360,6 +360,51 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         t = templates.Template.model_validate({**t.model_dump(), **upd})
         templates.save(t)
         return t.model_dump(mode="json", exclude={"dir"})
+
+    class LowerThirdReq(BaseModel):
+        template: str = "akademiya"
+        meta: dict[str, str] = {}
+
+    @app.post("/api/lower-third-preview")
+    def lower_third_preview(r: LowerThirdReq) -> Response:
+        """Lower-third ko'rinishi (fon ustida, pastki qism) — yangi loyiha formasida jonli."""
+        import io
+
+        from PIL import Image
+
+        from darsstudio.render import overlays, templates
+        if not NAME_RE.match(r.template):
+            raise HTTPException(400, "Noto'g'ri shablon nomi.")
+        t = templates.load(r.template)
+        im = Image.open(t.asset(t.background)).convert("RGBA").resize(t.canvas)
+        if t.lower_third.style == "akademiya":
+            layers = overlays.lower_third_akademiya(r.meta, t.canvas) or ()
+        else:
+            one = overlays.lower_third(r.meta, t.canvas)
+            layers = (one,) if one is not None else ()
+        for layer in layers:
+            im = Image.alpha_composite(im, Image.fromarray(layer))
+        buf = io.BytesIO()
+        im.crop((0, t.canvas[1] - 260, t.canvas[0] // 2 + 200, t.canvas[1])).convert("RGB").save(buf, "PNG")
+        return Response(buf.getvalue(), media_type="image/png")
+
+    @app.post("/api/pick-file")
+    async def pick_file(kind: str = "video") -> dict[str, str]:
+        """Windows fayl tanlash oynasi (tkinter, stdlib). Tanlanmasa bo'sh yo'l."""
+        types = {"video": [("Video", "*.mp4 *.mov *.mxf *.mkv *.MP4 *.MOV"), ("Barchasi", "*.*")],
+                 "slides": [("Slaydlar", "*.pptx *.pdf"), ("Barchasi", "*.*")]}
+
+        def ask() -> str:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            try:
+                return str(filedialog.askopenfilename(parent=root, filetypes=types.get(kind, types["video"])))
+            finally:
+                root.destroy()
+        return {"path": (await asyncio.to_thread(ask)).replace("/", os.sep)}
 
     @app.websocket("/ws")
     async def ws(sock: WebSocket) -> None:

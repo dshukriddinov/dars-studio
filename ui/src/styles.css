@@ -183,3 +183,16 @@ main { flex: 1; min-height: 0; overflow: auto; }
 .tpl-handle { fill: var(--accent); stroke: var(--surface-100); stroke-width: 3; cursor: grab; }
 .tpl-handle.a { fill: var(--success); }
 pre.code { white-space: pre-wrap; background: var(--surface-300); padding: var(--space-2); border-radius: var(--radius-md); }
+
+/* Yangi loyiha / Loyiha sahifasi */
+.lt-preview { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.lt-preview img, .lt-preview .noslide { width: 100%; aspect-ratio: 1160 / 260; border-radius: var(--radius-md); background: #000; object-fit: cover; }
+.pick { display: flex; gap: var(--space-2); }
+.pick input { flex: 1; min-width: 0; }
+.steps { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.slides-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
+.slides-grid figure { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.slides-grid img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #fff; border-radius: var(--radius-sm); border: 2px solid transparent; }
+.slides-grid figure.unshown img { border-color: var(--danger); opacity: .75; }
+.cut-groups { display: flex; flex-direction: column; }
+.cut-group { display: grid; grid-template-columns: 1fr auto auto auto; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-top: 1px solid var(--border); }

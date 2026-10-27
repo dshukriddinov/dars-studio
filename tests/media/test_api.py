@@ -57,3 +57,23 @@ def test_api_range_request(tmp_path: Path, test_media: dict[str, Any]) -> None:
     with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
         r = c.get("/api/projects/d2/proxy", headers={"Range": "bytes=0-99"})
         assert r.status_code == 206 and len(r.content) == 100
+
+
+def test_lower_third_preview_and_export_task(tmp_path: Path) -> None:
+    from darsstudio.jobs.tasks import TASKS
+    with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
+        meta = {"oqituvchi": "Asadov Shavkat Gʻaybullayevich", "ish_joyi": "Gumanitar va ijtimoiy fanlar maktabi",
+                "lavozim": "professori", "ilmiy_unvon": "Yuridik fanlari doktori"}
+        r = c.post("/api/lower-third-preview", json={"template": "akademiya", "meta": meta})
+        assert r.status_code == 200 and r.headers["content-type"] == "image/png" and r.content[:4] == b"\x89PNG"
+        assert c.post("/api/lower-third-preview", json={"template": "../x", "meta": {}}).status_code == 400
+    assert "export" in TASKS
+
+
+def test_lines_from_ui_fields() -> None:
+    from darsstudio.render import overlays
+    name, sub = overlays._lines({"oqituvchi": "A B", "ish_joyi": "Maktab", "lavozim": "dotsenti",
+                                 "ilmiy_unvon": "(PhD)"})
+    assert (name, sub) == ("A B", ["Maktab dotsenti", "(PhD)"])
+    assert overlays._lines({"oqituvchi": "A", "lavozim": "dotsenti"})[1] == ["dotsenti"]
+    assert overlays._lines({"oqituvchi": "A", "unvon": "x | y"})[1] == ["x", "y"]       # eski loyihalar

@@ -45,6 +45,15 @@ export const api = {
   template: (id: string) => req<{ screen_quad: number[][]; teacher_anchor: number[]; [k: string]: unknown }>("GET", `/api/templates/${encodeURIComponent(id)}`),
   saveTemplate: (id: string, body: { screen_quad?: number[][]; teacher_anchor?: number[] }) =>
     req<unknown>("PUT", `/api/templates/${encodeURIComponent(id)}`, body),
+  pickFile: (kind: "video" | "slides") => req<{ path: string }>("POST", `/api/pick-file?kind=${kind}`),
+  /** Lower-third ko'rinishi (PNG) -> object URL; chaqiruvchi eskisini URL.revokeObjectURL qiladi. */
+  lowerThirdPreview: async (template: string, meta: Record<string, string>): Promise<string> => {
+    const r = await fetch("/api/lower-third-preview", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ template, meta }),
+    });
+    if (!r.ok) throw new Error(`Koʻrinish yaratilmadi (${r.status})`);
+    return URL.createObjectURL(await r.blob());
+  },
 };
 
 export const urls = {

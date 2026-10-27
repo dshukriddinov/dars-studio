@@ -32,7 +32,7 @@ export function Home() {
             <ul className="list">
               {projects.map((p) => (
                 <li key={p.name}>
-                  <button className="row-btn" onClick={() => void open(p.name, "review")}>
+                  <button className="row-btn" onClick={() => void open(p.name, "project")}>
                     <span className="body-strong">{p.name}</span>
                     <span className="caption dim">
                       {[p.meta.fan, p.meta.mavzu].filter(Boolean).join(" · ")} {p.slides} slayd · {p.total_frames} kadr

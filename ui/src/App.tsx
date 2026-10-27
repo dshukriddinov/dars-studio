@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { connectJobs, useStore, type Tab } from "./store";
 import { Home } from "./screens/Home";
 import { NewProject } from "./screens/NewProject";
+import { Project } from "./screens/Project";
 import { Review } from "./screens/Review";
 import { KeyCalib } from "./screens/KeyCalib";
 import { TemplateCalib } from "./screens/TemplateCalib";
@@ -11,6 +12,7 @@ import { Settings } from "./screens/Settings";
 const TABS: [Tab, string, () => JSX.Element][] = [
   ["home", "Bosh sahifa", Home],
   ["new", "Yangi loyiha", NewProject],
+  ["project", "Loyiha", Project],
   ["review", "Tekshirish", Review],
   ["key", "Key kalibrlash", KeyCalib],
   ["template", "Shablon kalibrlash", TemplateCalib],

@@ -74,6 +74,16 @@ def t_render(args: dict[str, Any], emit: Any) -> dict[str, Any]:
                                    on_progress=lambda d, t: emit.progress(d / max(t, 1)))
 
 
+def t_export(args: dict[str, Any], emit: Any) -> dict[str, Any]:
+    """To'liq eksport (FR-16..19): MP4 (intro/outro bilan) + jadvallar + QA [+ SRT] [+ Premiere paketi]."""
+    from darsstudio import pipeline
+    st = _stack(args)
+    r = pipeline.export_project(st, args.get("profile", "web"), bool(args.get("premiere")),
+                                on_progress=lambda d, t: emit.progress(d / max(t, 1)),
+                                subtitles=bool(args.get("subtitles")))
+    return {k: r[k] for k in ("version", "path", "qa", "premiere")}
+
+
 def t_sleep(args: dict[str, Any], emit: Any) -> dict[str, Any]:
     """Test va diagnostika: N soniya, progress bilan; fail=True — xato, marker fayl — resume tekshiruvi."""
     n = float(args.get("seconds", 1))
@@ -112,6 +122,7 @@ TASKS: dict[str, tuple[str, Resources]] = {
     "cuts": ("t_cuts", Resources()),
     "proxy": ("t_proxy", Resources(nvenc=1)),
     "render": ("t_render", Resources(vram_mb=3200, nvenc=1)),
+    "export": ("t_export", Resources(vram_mb=3200, nvenc=1, pptx=1)),
     "sleep": ("t_sleep", Resources()),
 }
 

@@ -8,6 +8,8 @@ export function Export() {
   const jobs = useStore((s) => s.jobs);
   const fail = useStore.getState().fail;
   const [profile, setProfile] = useState("web");
+  const [subtitles, setSubtitles] = useState(false);
+  const [premiere, setPremiere] = useState(false);
   const [files, setFiles] = useState<{ file: string; size_mb: number; qa: unknown }[]>([]);
   const [jobId, setJobId] = useState<number | null>(null);
   const job = jobId !== null ? jobs[jobId] : undefined;
@@ -25,10 +27,19 @@ export function Export() {
             <option value="web">web (H.264 8 Mbit/s)</option>
             <option value="arxiv">arxiv (H.264 cq 19)</option>
           </select>
+          <label className="check body">
+            <input type="checkbox" checked={subtitles} onChange={(e) => setSubtitles(e.target.checked)} /> Subtitr (SRT)
+          </label>
+          <label className="check body">
+            <input type="checkbox" checked={premiere} onChange={(e) => setPremiere(e.target.checked)} />
+            Premiere/DaVinci paketi
+          </label>
           <button className="btn-primary" onClick={async () => {
-            try { setJobId((await api.addJob(name, "render", { profile })).id); } catch (e) { fail(e); }
+            try { setJobId((await api.addJob(name, "export", { profile, subtitles, premiere })).id); } catch (e) { fail(e); }
           }}>Boshlash</button>
         </div>
+        <p className="caption dim">Natija: exports/vN/ — MP4 (intro va outro bilan), slaydlar jadvali, QA hisobot.
+          Faqat tasdiqlangan kesishlar qoʻllanadi.</p>
         {job ? <QueueRow job={job} /> : null}
       </section>
       <section className="panel">

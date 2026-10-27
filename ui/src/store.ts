@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api } from "./lib/api";
 import type { Job, ProjectView, Suspicious, Word } from "./lib/types";
 
-export type Tab = "home" | "new" | "review" | "key" | "template" | "export" | "settings";
+export type Tab = "home" | "new" | "project" | "review" | "key" | "template" | "export" | "settings";
 
 interface State {
   tab: Tab;

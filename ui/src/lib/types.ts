@@ -12,7 +12,7 @@ export interface KeySettings {
 
 export interface Project {
   id: string; name: string; meta: Record<string, string>; fps: string; total_frames: number; template_id: string;
-  slides: { index: number; title: string }[];
+  slides: { index: number; title: string; body?: string }[];
   slide_spans: SlideSpan[]; layout_spans: LayoutSpan[]; cuts: CutProposal[]; eye_off: EyeOffSpan[];
   key: KeySettings; eye_contact: { lid_open?: number; [k: string]: unknown };
 }

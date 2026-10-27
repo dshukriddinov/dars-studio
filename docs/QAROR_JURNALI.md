@@ -4,6 +4,26 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — UI: yangi loyiha (o'qituvchi ma'lumoti), Loyiha sahifasi, to'liq eksport
+
+- Yangi loyiha: video/PPTX Windows oynasidan tanlanadi (`/api/pick-file`, tkinter — stdlib), shablon default
+  `akademiya`; o'qituvchi maydonlari: ism familiya (majburiy), ish joyi, lavozim, ilmiy daraja/unvon (ixtiyoriy) +
+  fan, mavzu, dars; lower-third jonli ko'rinishi (`/api/lower-third-preview`, 400 ms kechikish bilan). Kiritishda
+  o'/g' dan keyingi apostrof U+02BB ga almashtiriladi. Lower-third: ism; "ish joyi + lavozim"; ilmiy unvon (eski
+  `unvon` "a | b" ham ishlaydi).
+- "Loyiha" sahifasi: tayyorlash bosqichlari holati (WS), o'qituvchi ma'lumotini tahrirlash (buyruq, undo bilan),
+  kesish takliflari turlari bo'yicha ("Hammasini kesish" / "Qoldirish"), slaydlar (ko'rsatilmaganlari qizil).
+- Eksport: `export` vazifasi (avval UI faqat `render` qilardi — QA, jadval, intro/outro'siz SRT yo'q edi);
+  "Subtitr (SRT)" va "Premiere/DaVinci paketi" katakchalari.
+- `DarsStudio.bat`: ishlab chiqish muhitida Maxine yo'li yonidagi "eye contact" loyihasidan (aks holda UI'dan Eye
+  Contact yiqilardi).
+- Sinov (API, 2 daq klip): import -> 7 vazifa (slides, audio, asr, eyecontact, proxy, sync, cuts) tayyor -> takliflar
+  tasdiqlandi -> export v1: 122.0 s, A/V 0 ms, lower-third UI maydonlaridan. Brauzerda: Loyiha, Yangi loyiha (jonli
+  ko'rinish, Gʻ almashinuvi), Eksport ekranlari, konsol xatosi yo'q. **Tekshirilmagan:** "Tanlash" tugmasi
+  (Windows oynasi) — foydalanuvchi sinab ko'radi.
+
+---
+
 ## 2026-10-27 — Offline sinov qayta (yangi qismlar: DeepFilterNet CLI, PANNs, "mmm", qayta aytish)
 
 - `tools/offline_check.py` (Python jarayonlariga socket qo'riqchisi, faqat 127.0.0.1/::1): `0Z1A1253.MP4` 2 daqiqa +
