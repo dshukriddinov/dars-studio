@@ -77,13 +77,15 @@ def ensure_slides(stack: CommandStack) -> list[Path]:
     pngs, method = render.render_slides(Path(src.path), out)
     if len(pngs) != len(p.slides):
         raise MediaError(f"Slaydlar soni o'zgargan: loyihada {len(p.slides)}, faylda {len(pngs)}.")
-    if src.kind == "pptx" and not any(s.body or s.notes for s in p.slides):
+    if src.kind == "pptx":  # matn yo'q yoki PPTX o'zgargan (masalan 1-slayd almashtirilgan) — yangilanadi
         slides, general = extract.extract_pptx(src.path)
         for s, png in zip(slides, pngs, strict=True):
             s.png_4k = str(png)
-        stack.do("slaydlar matni", {"slides": [s.model_dump(mode="json") for s in slides]})
-        for g in general:
-            log.warning("slaydlar: %s", g)
+        key = lambda xs: [(x.title, x.body, x.notes) for x in xs]  # noqa: E731
+        if key(slides) != key(p.slides):
+            stack.do("slaydlar matni", {"slides": [s.model_dump(mode="json") for s in slides]})
+            for g in general:
+                log.warning("slaydlar: %s", g)
     log.info("slaydlar: %d ta, usul %s", len(pngs), method)
     return pngs
 
