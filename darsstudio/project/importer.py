@@ -26,6 +26,12 @@ def _same_format(a: probe.ProbeResult, b: probe.ProbeResult) -> bool:
     return same_v and au == bu
 
 
+def _decoded_frames(path: Path) -> int:
+    """Haqiqatan dekodlanadigan kadrlar (paketlar soni emas): to'liq dekod, ~400 kadr/s."""
+    r = ffmpeg.run(["-v", "error", "-nostdin", "-i", str(path), "-map", "0:v:0", "-f", "framecrc", "-"])
+    return sum(1 for ln in r.stdout.splitlines() if ln and not ln.startswith("#"))
+
+
 def join_parts(paths: list[Path], out: Path) -> tuple[probe.ProbeResult, list[VideoPart]]:
     """Qismlarni qayta kodlashsiz ketma-ket ulaydi (concat demuxer, -c copy): sifat yo'qolmaydi, kadr indekslari
     qismlar bo'yicha uzluksiz. Format (kodek, o'lcham, fps, audio) bir xil bo'lishi shart."""
@@ -41,18 +47,21 @@ def join_parts(paths: list[Path], out: Path) -> tuple[probe.ProbeResult, list[Vi
     out.parent.mkdir(parents=True, exist_ok=True)
     lst = out.with_suffix(".txt")
     lst.write_text("".join(f"file '{p.resolve().as_posix()}'\n" for p in paths), encoding="utf-8")
+    # MKV: MOV'ga ulashda edit list 1-qismning kalit kadrdan oldingi (ochiq GOP) 2 kadrini yashirardi (Canon,
+    # 2026-10-27: 31102 paket, 31100 kadr) — kadr indekslari va A/V siljiydi
     tmp = out.with_name(out.stem + ".tmp" + out.suffix)
     ffmpeg.run(["-v", "error", "-nostdin", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-map", "0:v:0",
                 *(["-map", "0:a:0"] if probes[0].audio else []), "-c", "copy", str(tmp)])
     tmp.replace(out)
     joined = probe.probe(out)
+    decoded = _decoded_frames(out)
     parts, start = [], 0
     for p, pr in zip(paths, probes, strict=True):
         n = probe.frame_count(pr)
         parts.append(VideoPart(path=str(p.resolve()), start=start, frames=n))
         start += n
-    if abs(probe.frame_count(joined) - start) > 1:
-        raise MediaError(f"Qismlarni ulashda kadrlar soni mos kelmadi ({probe.frame_count(joined)} != {start}).")
+    if decoded != start:
+        raise MediaError(f"Qismlarni ulashda kadrlar soni mos kelmadi (dekod {decoded}, kutilgan {start}).")
     return joined, parts
 
 
@@ -64,7 +73,7 @@ def append_part(store: ProjectStore, video: Path) -> Project:
     v = p.asset("video")
     assert v is not None
     old = [Path(x.path) for x in p.parts] if p.parts else [Path(v.path)]
-    joined, parts = join_parts([*old, Path(video).resolve()], store.cache("media") / "joined.mov")  # uzoq — qulfsiz
+    joined, parts = join_parts([*old, Path(video).resolve()], store.cache("media") / "joined.mkv")  # uzoq — qulfsiz
     total = probe.frame_count(joined)
     with project_lock(store.root):
         p = store.load()
@@ -132,7 +141,7 @@ def import_project(video: Path | list[Path], slides: Path, template_id: str, wor
         parts: list[VideoPart] = []
         if len(videos) > 1:
             on_step("join")
-            work, parts = join_parts(videos, store.cache("media") / "joined.mov")
+            work, parts = join_parts(videos, store.cache("media") / "joined.mkv")
             cfr_path = work.path
         elif normalize.needs_normalize(p):
             on_step("normalize")

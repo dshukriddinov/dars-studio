@@ -129,6 +129,8 @@ def probe(path: str | os.PathLike[str]) -> ProbeResult:
     if rot in (90, 270):
         w, h = h, w
     vstart = _frac(v.get("start_pts"), "0") * tb if v.get("start_pts") is not None else _frac(v.get("start_time"))
+    if pts:   # kalit kadrdan oldin ko'rsatiladigan kadrlar (ochiq GOP, edit list'siz MKV): dekoder birinchi kadrni
+        vstart = min(vstart, min(pts) * tb)   # eng kichik pts da chiqaradi — A/V shu bo'yicha tekislanadi
     video = VideoInfo(
         codec=v["codec_name"], width=w, height=h, rotation=rot, fps=fps,
         avg_fps=_frac(v.get("avg_frame_rate"), "0/1"), pix_fmt=v.get("pix_fmt", "?"),
