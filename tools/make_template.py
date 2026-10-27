@@ -87,7 +87,7 @@ def main() -> int:
             shutil.copy2(f, out / Path(f).name)
             tpl[key] = Path(f).name
     if a.copyright:
-        tpl["copyright"] = {"text": a.copyright, "on": "last_slide"}
+        tpl["copyright"] = {"text": a.copyright, "on": "tail", "seconds": 5.0, "slide_s": 3.0, "slide_px": 640}
     (out / "template.json").write_text(json.dumps(tpl, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"{out}\n  ekran: {quad}")
     return 0

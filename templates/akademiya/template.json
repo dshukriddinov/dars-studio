@@ -56,7 +56,10 @@
  "outro": "intro.mp4",
  "copyright": {
   "text": "Mazkur taqdimot akademiya mahsuloti hisoblanadi hamda Oʻzbekiston Respublikasi “Mualliflik huquqi va turdosh huquqlar toʻgʻrisida”gi qonuni bilan himoyalanadi.",
-  "on": "last_slide"
+  "on": "tail",
+  "seconds": 5.0,
+  "slide_s": 3.0,
+  "slide_px": 640
  },
  "teacher_fit": {
   "head_y": 250,

@@ -58,8 +58,13 @@ class TeacherFit(BaseModel):
 
 
 class Copyright(BaseModel):
+    """tail: dars oxirgi `seconds` soniyasida; o'ngdan chapga `slide_px` sirg'alib kiradi (`slide_s`, chiziqli), polosa
+    o'ng chetidan tashqari ko'rinmaydi, keyin joyida turadi (montajchi namunasi: ~130 px/s, 640 px, 2026-10-27)."""
     text: str
-    on: Literal["last_slide", "always"] = "last_slide"
+    on: Literal["tail", "last_slide", "always"] = "tail"
+    seconds: float = 5.0
+    slide_s: float = 3.0
+    slide_px: int = 640
 
 
 class Fullscreen(BaseModel):

@@ -183,3 +183,12 @@ def test_glyph_safe_okina() -> None:
     f = overlays.slab(700, 44)                       # Roboto Slab: U+02BB yo'q, U+2018 bor
     assert overlays.glyph_safe("Gʻaybullayevich", f) == "G‘aybullayevich"
     assert overlays.glyph_safe("Gʻ", overlays.font(True, 30)) in ("Gʻ", "G‘")
+
+
+def test_copyright_slides_in_from_right() -> None:
+    """Oxirgi 5 s: 640 px o'ngdan 3 s da chiziqli kirib keladi, keyin joyida; polosa o'ng chetidan tashqari yo'q."""
+    ovs = overlays.build({}, "akademiya", 8.6, "Mazkur taqdimot", 875, 1000, FPS, (1920, 1080), cp_slide=(3.0, 640))
+    (cp,) = ovs
+    assert (cp.start, cp.end, cp.slide_frames, cp.clip_x) == (875, 1000, 75, overlays.COPYRIGHT_BOX_X1)
+    assert [cp.shift_at(875 + k) for k in (0, 25, 50, 75, 120)] == [640, 427, 213, 0, 0]
+    assert cp.moves() and not overlays.Overlay(cp.layer, 0, 1).moves()

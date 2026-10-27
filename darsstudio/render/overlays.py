@@ -30,6 +30,9 @@ class Overlay:
     end: int
     fade_frames: int = 0
     drift_px_per_frame: float = 0.0     # manfiy — chapga
+    slide_in_px: int = 0                # boshida shuncha o'ngda, slide_frames davomida chiziqli joyiga keladi
+    slide_frames: int = 0
+    clip_x: int | None = None           # shu ustundan o'ngi ko'rinmaydi (niqob)
 
     def alpha_at(self, g: int) -> float:
         if not self.start <= g < self.end:
@@ -39,7 +42,12 @@ class Overlay:
         return max(0.0, min(1.0, (g - self.start + 1) / self.fade_frames, (self.end - g) / self.fade_frames))
 
     def shift_at(self, g: int) -> int:
-        return int(round(self.drift_px_per_frame * (g - self.start)))
+        k = g - self.start
+        slide = self.slide_in_px * max(0.0, 1 - k / self.slide_frames) if self.slide_frames else 0.0
+        return int(round(self.drift_px_per_frame * k + slide))
+
+    def moves(self) -> bool:
+        return bool(self.drift_px_per_frame or self.slide_frames)
 
 
 def font(bold: bool, size: int) -> ImageFont.FreeTypeFont:
@@ -125,6 +133,9 @@ def lower_third_akademiya(meta: dict[str, str], canvas: tuple[int, int]) -> tupl
     return bar, np.asarray(out).copy()
 
 
+COPYRIGHT_BOX_X1 = 900   # polosa o'ng cheti (sirg'alish niqobi)
+
+
 def copyright_layer(text: str, canvas: tuple[int, int]) -> U8:
     """Mualliflik matni (namunadan): oq kursiv, KATTA harflar, 3 qatorgacha, pastki chap-markazda, qora yarim shaffof
     polosa ustida."""
@@ -143,14 +154,15 @@ def copyright_layer(text: str, canvas: tuple[int, int]) -> U8:
     lines = lines[:3]
     lh, cx = 25, 470
     y0 = ch - 26 - lh * len(lines)
-    d.rectangle([0, y0 - 8, 900, ch - 18], fill=(0, 0, 0, 110))
+    d.rectangle([0, y0 - 8, COPYRIGHT_BOX_X1, ch - 18], fill=(0, 0, 0, 110))
     for i, ln in enumerate(lines):
         d.text((cx - d.textlength(ln, font=f) / 2, y0 + i * lh), ln, font=f, fill=(255, 255, 255, 255))
     return np.asarray(img).copy()
 
 
 def build(meta: dict[str, str], style: str, duration_s: float, copyright_text: str | None,
-          copyright_from: int | None, main_frames: int, fps: Fraction, canvas: tuple[int, int]) -> list[Overlay]:
+          copyright_from: int | None, main_frames: int, fps: Fraction, canvas: tuple[int, int],
+          cp_slide: tuple[float, int] = (0.0, 0)) -> list[Overlay]:
     """Chiqish (asosiy qism) kadrlarida overlay'lar ro'yxati."""
     out: list[Overlay] = []
     dur = min(main_frames, round(Fraction(duration_s).limit_denominator(1000) * fps))
@@ -163,7 +175,9 @@ def build(meta: dict[str, str], style: str, duration_s: float, copyright_text: s
         if layer is not None:
             out.append(Overlay(layer, 0, dur, fade_frames=round(FADE_S * float(fps))))
     if copyright_text and copyright_from is not None and copyright_from < main_frames:
-        out.append(Overlay(copyright_layer(copyright_text, canvas), copyright_from, main_frames))
+        sf = round(Fraction(cp_slide[0]).limit_denominator(1000) * fps)
+        out.append(Overlay(copyright_layer(copyright_text, canvas), copyright_from, main_frames,
+                           slide_in_px=cp_slide[1], slide_frames=sf, clip_x=COPYRIGHT_BOX_X1 if sf else None))
     return out
 
 

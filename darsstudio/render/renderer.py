@@ -125,7 +125,8 @@ def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spa
                          "spans": [[s.model_dump(mode="json") for s in g] for g in spans],
                          "eye_off": [s.model_dump(mode="json") for s in project.eye_off], "eyepatch": ep,
                          "lt": None if extra.lower_third is None else hashlib.md5(extra.lower_third).hexdigest(),
-                         "ov": [[hashlib.md5(o.layer).hexdigest(), o.start, o.end, o.fade_frames, o.drift_px_per_frame]
+                         "ov": [[hashlib.md5(o.layer).hexdigest(), o.start, o.end, o.fade_frames, o.drift_px_per_frame,
+                                 o.slide_in_px, o.slide_frames, o.clip_x]
                                 for o in extra.overlays],
                          "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
                          "src": probe.path, "start": opts.start, "sharpen": compositor.TEACHER_SHARPEN},
@@ -260,7 +261,11 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
                         g = g0 + got + j
                         a = o.alpha_at(g)
                         if a > 0:
-                            layer = ot if not o.drift_px_per_frame else torch.roll(ot, o.shift_at(g), dims=-1)
+                            # roll: qatlam chetlari shaffof (lower-third 16 px/s, mualliflik matni <= 640 px o'ngga)
+                            layer = torch.roll(ot, o.shift_at(g), dims=-1) if o.moves() else ot
+                            if o.clip_x is not None:
+                                layer = layer.clone()
+                                layer[..., o.clip_x:] = 0
                             img[j] = over(layer * a, img[j])
                 qout.put(rgb_to_yuv420(img).cpu().numpy())
                 ta = teacher[:, 3] > 0.5

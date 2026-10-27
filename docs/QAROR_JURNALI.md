@@ -4,6 +4,17 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Mualliflik matni: oxirgi 5 s, o'ngdan sirg'alib kiradi
+
+- Foydalanuvchi: matn statik turibdi, namunada harakatlanadi; oxirgi 5 s da ko'rinsin (sinov videosi qayta
+  ishlanmadi — keyingi eksportlardan).
+- O'lchov (tayyor.mp4, 815–824 s, matn chap cheti har 0.2 s): polosa matn bilan birga o'ngdan chapga **chiziqli**
+  ~130 px/s, ~640 px, 815.2 -> 820.1 s; x~886 dan o'ngi ko'rinmaydi (niqob); keyin outro'gacha joyida.
+- `Copyright.on = "tail"` (default): `seconds` 5, `slide_s` 3 (5 s ichida 2 s o'qish uchun joyida turadi),
+  `slide_px` 640. `Overlay.slide_in_px/slide_frames/clip_x`; render keshi kalitida ham.
+
+---
+
 ## 2026-10-27 — "mmm/eee" o'ylab turish tovushlari; gapirilmagan slaydlar; chegara tartibi
 
 **O'ylab turish tovushlari.** Foydalanuvchi v4 17:47–17:48 ni ko'rsatdi (manba 1112.1–1114.8 s, "tarqatish, …

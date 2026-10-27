@@ -116,13 +116,16 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
     if tpl.copyright is not None:
         if tpl.copyright.on == "always":
             cp_from = 0
+        elif tpl.copyright.on == "tail":
+            cp_from = max(0, tm.out_total - round(Fraction(tpl.copyright.seconds).limit_denominator(1000) * p.fps_frac))
         else:  # oxirgi slayd, lekin oxirgi 15 s dan ko'p emas (namunada shunday)
             last = max(p.slide_spans, key=lambda s: s.start)
             g = next((s0 for s0, _ in tm.map_span(last.start, last.end)), tm.out_total)
             cp_from = max(g, tm.out_total - round(COPYRIGHT_TAIL_S * p.fps_frac))
     extra = renderer.RenderInputs(timemap=tm, overlays=overlays.build(
         p.meta, tpl.lower_third.style, tpl.lower_third.duration_s, tpl.copyright.text if tpl.copyright else None,
-        cp_from, tm.out_total, p.fps_frac, tpl.canvas))
+        cp_from, tm.out_total, p.fps_frac, tpl.canvas,
+        cp_slide=(tpl.copyright.slide_s, tpl.copyright.slide_px) if tpl.copyright else (0.0, 0)))
     den = stack.store.cache("audio") / "denoised_48k.wav"
     audio_info: dict[str, Any] = {}
     if den.is_file():
