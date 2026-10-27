@@ -4,6 +4,18 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Offline sinov qayta (yangi qismlar: DeepFilterNet CLI, PANNs, "mmm", qayta aytish)
+
+- `tools/offline_check.py` (Python jarayonlariga socket qo'riqchisi, faqat 127.0.0.1/::1): `0Z1A1253.MP4` 2 daqiqa +
+  `yangi35.pptx`: import 22.2 s, audio (DeepFilterNet3 CLI + PANNs) 16.6 s, ASR 26.0 s, sinxron 1.5 s, kesish 1.6 s,
+  Eye Contact (Maxine) 34.5 s, eksport 56.6 s — jami 159 s, **tarmoqqa urinishlar: yo'q**.
+- `deep-filter.exe` (Rust, qo'riqchi ko'rmaydi) statik tekshirildi: import DLL'lari advapi32, bcrypt, dbghelp,
+  kernel32, ntdll, vcruntime140, CRT — ws2_32/winhttp/wininet yo'q (tarmoq API'si yo'q); ichidagi URL'lar faqat
+  xato/hujjat matnlari (docs.rs, clap issues).
+- Internet faqat bir martalik o'rnatishda: Python paketlari, `tools/fetch_models.py` (manifest + sha256).
+
+---
+
 ## 2026-10-27 — Mualliflik matni: oxirgi 5 s, o'ngdan sirg'alib kiradi
 
 - Foydalanuvchi: matn statik turibdi, namunada harakatlanadi; oxirgi 5 s da ko'rinsin (sinov videosi qayta
