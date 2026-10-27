@@ -123,7 +123,7 @@ def ensure_placement(stack: CommandStack, pr: ProbeResult, tpl: Template, force:
         f = tpl.teacher_fit
         dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         b = placement.body_landmarks(pr, stack.project.key, dev)
-        pl = placement.fit_body(b, f.head_y, f.hands_y, f.center_x)
+        pl = placement.fit_body(b, f.head_y, f.head_px, f.shoulder_px, f.center_x)
         log.info("joylashtirish (gavda): %s -> %s", b, pl)
         stack.do("o'qituvchi joyi (gavda)", {"placement": pl.model_dump(mode="json")})
         return

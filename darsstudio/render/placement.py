@@ -63,41 +63,45 @@ def sample_alphas(p: ProbeResult, key: KeySettings, device: torch.device, every_
 
 @dataclass
 class Body:
-    head_y: float     # manba px
-    hands_y: float
-    center_x: float
+    head_y: float      # bosh tepasi (manba px)
+    head_h: float      # bosh tepasidan bo'yingacha
+    shoulder_w: float  # yelka kengligi
+    center_x: float    # yelka zonasi markazi
 
 
 def body_landmarks(p: ProbeResult, key: KeySettings, device: torch.device, every_sec: float = 30) -> Body:
-    """Bosh tepasi (alfa birinchi qatori), kaftlar (alfa ichida, yuzdan pastdagi teri rangi pastki cheti) va gavda
-    markazi (yelka zonasi chap/o'ng chetlari o'rtasi). Kadrlar medianasi; o'lchovlar 960x540 da, manbaga x2."""
-    import cv2
-    alphas, frames = sample_alphas(p, key, device, every_sec, with_bgr=True)
-    heads, hands, cxs = [], [], []
-    for a, img in zip(alphas, frames, strict=True):
+    """Alfa siluetidan: bosh tepasi (birinchi qator), bo'yin (bosh ostidagi eng tor qator), yelka kengligi va markazi
+    (bo'yindan 80–120 px pastda). Qo'l holatiga bog'liq emas (qo'llarini beli oldida tutadigan o'qituvchida kaft
+    bo'yicha o'lchov 1.31x kattalashtirib yuborgan, 2026-10-27). Kadrlar medianasi; 960x540 da, manbaga x2."""
+    alphas = sample_alphas(p, key, device, every_sec)
+    heads, necks, shoulders, cxs = [], [], [], []
+    for a in alphas:
         rows = np.flatnonzero(a.any(1))
         if not len(rows):
             continue
         top = int(rows[0])
-        ycc = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
-        skin = (ycc[..., 1] > 135) & (ycc[..., 1] < 180) & (ycc[..., 2] > 85) & (ycc[..., 2] < 135) & a
-        skin[: top + 150] = False                              # yuz va bo'yin (540p da ~150 px)
-        skin = cv2.morphologyEx(skin.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
-        sy = np.flatnonzero(skin.any(1))
-        band = a[top + 60: top + 120]                          # yelka zonasi
-        cols = np.flatnonzero(band.any(0))
+        left = np.where(a.any(1), a.argmax(1), 0)
+        right = np.where(a.any(1), a.shape[1] - 1 - a[:, ::-1].argmax(1), 0)
+        width = np.where(a.any(1), right - left + 1, 0)
+        seg = width[top + 40: top + 140]                  # bo'yin bosh tepasidan ~60–120 px (540p) pastda
+        if len(seg) < 100:
+            continue
+        neck = top + 40 + int(np.argmin(seg))
+        band = slice(neck + 40, neck + 60)                # yelka
         heads.append(top)
-        if len(sy):
-            hands.append(int(sy[-1]))
-        if len(cols):
-            cxs.append((cols[0] + cols[-1]) / 2)
-    if not heads or not hands or not cxs:
-        raise ValueError("o'qituvchi gavdasi (bosh/kaftlar) topilmadi: key sozlamalarini tekshiring")
-    return Body(float(np.median(heads)) * 2, float(np.median(hands)) * 2, float(np.median(cxs)) * 2)
+        necks.append(neck)
+        shoulders.append(float(np.median(width[band])))
+        cxs.append(float(np.median((left[band] + right[band]) / 2)))
+    if not heads:
+        raise ValueError("o'qituvchi gavdasi topilmadi: key sozlamalarini tekshiring")
+    head, neck = float(np.median(heads)), float(np.median(necks))
+    return Body(head * 2, (neck - head) * 2, float(np.median(shoulders)) * 2, float(np.median(cxs)) * 2)
 
 
-def fit_body(b: Body, head_y: int, hands_y: int, center_x: int, max_scale: float = 1.5) -> TeacherPlacement:
-    s = min((hands_y - head_y) / (b.hands_y - b.head_y), max_scale)
+def fit_body(b: Body, head_y: int, head_px: float, shoulder_px: float, center_x: int,
+             max_scale: float = 1.5) -> TeacherPlacement:
+    """Masshtab: bosh balandligi va yelka kengligi bo'yicha (o'rtacha) — kanvasda head_px / shoulder_px bo'ladi."""
+    s = min((head_px / b.head_h + shoulder_px / b.shoulder_w) / 2, max_scale)
     return TeacherPlacement(scale=round(s, 4), x=int(round(center_x - b.center_x * s)),
                             y=int(round(head_y - b.head_y * s)))
 

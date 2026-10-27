@@ -4,6 +4,20 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Joylashuv masshtabi: bosh va yelka bo'yicha (kaft bo'yicha emas)
+
+- Foydalanuvchi (DSBA9359, UI orqali): o'qituvchi juda yaqin, son yuqori qismi ko'rinishi kerak edi. Sabab: bu
+  o'qituvchi qo'llarini deyarli doim beli oldida tutadi — "kaftlar" bel darajasida topildi va kadr pastiga moslandi:
+  masshtab 1.31.
+- O'lchov (alfa siluet, 30 s qadam): bosh tepasi -> bo'yin (bosh ostidagi eng tor qator) / yelka kengligi:
+  Asadov 162 / 370 px, DSBA9359 172 / 378 px — o'qituvchilar kadrda deyarli bir xil.
+- `TeacherFit`: masshtab = o'rtacha(head_px / bosh, shoulder_px / yelka), head_px 161, shoulder_px 368 (Asadov
+  namunasi x0.9936); bosh tepasi va markaz avvalgidek. Natija: Asadov 0.9936 -> 0.9942 (o'zgarmadi), DSBA9359
+  1.3136 -> 0.9548. Kaft (teri rangi) aniqlash olib tashlandi.
+- DSBA9359 eksport v3 (14 taklif foydalanuvchi tasdiqlamagan — qo'llanmadi).
+
+---
+
 ## 2026-10-27 — UI: yangi loyiha (o'qituvchi ma'lumoti), Loyiha sahifasi, to'liq eksport
 
 - Yangi loyiha: video/PPTX Windows oynasidan tanlanadi (`/api/pick-file`, tkinter — stdlib), shablon default

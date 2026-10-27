@@ -1,7 +1,7 @@
 """Studiya fonidan shablon yaratish: fonni kanvasga joylash, ekran (oq slayd hududi) burchaklarini avtomatik topish.
 
     python tools/make_template.py ID FON.png [--scale 0.9145 --offset -4 0] [--intro intro.mp4] [--outro outro.mp4]
-                                  [--fit 250 1025 1473 | --teacher 0.929 692 79] [--copyright "matn"]
+                                  [--fit 250 1473 161 368 | --teacher 0.929 692 79] [--copyright "matn"]
 
 Masshtab/siljish berilmasa fon kanvasni to'liq qoplaydi (cover). Ekran burchaklari: eng katta oq to'rtburchak
 (fonda eski slayd chizilgan bo'lishi kerak). Natija: templates/ID/ (background.png 1920x1080 + template.json).
@@ -61,8 +61,8 @@ def main() -> int:
     ap.add_argument("--intro")
     ap.add_argument("--outro")
     ap.add_argument("--teacher", type=float, nargs=3, metavar=("SCALE", "X", "Y"), help="qat'iy joy")
-    ap.add_argument("--fit", type=int, nargs=3, metavar=("HEAD_Y", "HANDS_Y", "CENTER_X"),
-                    help="gavdani sig'dirish: bosh tepasi, yonga tushgan kaftlar, markaz (kanvas px)")
+    ap.add_argument("--fit", type=float, nargs=4, metavar=("HEAD_Y", "CENTER_X", "HEAD_PX", "SHOULDER_PX"),
+                    help="gavda: bosh tepasi, markaz, bosh balandligi, yelka kengligi (kanvas px)")
     ap.add_argument("--copyright")
     a = ap.parse_args()
     out = paths.ROOT / "templates" / a.id
@@ -79,7 +79,8 @@ def main() -> int:
         "scene_policy": {"mode": "a_then_b", "a_seconds": 10.0, "min_b_seconds": 10.0},
     }
     if a.fit:
-        tpl["teacher_fit"] = dict(zip(("head_y", "hands_y", "center_x"), a.fit, strict=True))
+        tpl["teacher_fit"] = {"head_y": int(a.fit[0]), "center_x": int(a.fit[1]), "head_px": a.fit[2],
+                              "shoulder_px": a.fit[3]}
     if a.teacher:
         tpl["teacher_placement"] = {"scale": a.teacher[0], "x": int(a.teacher[1]), "y": int(a.teacher[2])}
     for key, f in (("intro", a.intro), ("outro", a.outro)):

@@ -50,11 +50,13 @@ class FixedPlacement(BaseModel):
 
 
 class TeacherFit(BaseModel):
-    """O'qituvchi gavdasini kanvasga sig'dirish (kanvas px): bosh tepasi head_y da, yonga tushgan kaftlar hands_y da,
-    gavda markazi center_x da. Oyoqlar kadrdan pastda qoladi (montajchi namunasi, 2026-10-27)."""
+    """O'qituvchi gavdasini kanvasga sig'dirish (kanvas px): bosh tepasi head_y da, gavda markazi center_x da; masshtab
+    — bosh balandligi (tepasidan bo'yingacha) head_px, yelka kengligi shoulder_px bo'ladigan qilib. Foydalanuvchi
+    namunasidan (Asadov: kaftlar ~1025 da, son yuqori qismi ko'rinadi): 250 / 1473 / 161 / 368."""
     head_y: int
-    hands_y: int
     center_x: int
+    head_px: float = 161.0
+    shoulder_px: float = 368.0
 
 
 class Copyright(BaseModel):

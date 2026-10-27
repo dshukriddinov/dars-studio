@@ -63,7 +63,8 @@
  },
  "teacher_fit": {
   "head_y": 250,
-  "hands_y": 1025,
-  "center_x": 1473
+  "center_x": 1473,
+  "head_px": 161.0,
+  "shoulder_px": 368.0
  }
 }

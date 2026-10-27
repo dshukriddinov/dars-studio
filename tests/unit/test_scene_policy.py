@@ -21,10 +21,12 @@ def test_a_then_b() -> None:
 
 def test_fit_body() -> None:
     from darsstudio.render.placement import Body, fit_body
-    pl = fit_body(Body(head_y=66, hands_y=848, center_x=1063), head_y=250, hands_y=1025, center_x=1473)
-    s = pl.scale
-    assert abs(66 * s + pl.y - 250) <= 1 and abs(848 * s + pl.y - 1025) <= 1 and abs(1063 * s + pl.x - 1473) <= 1
-    assert fit_body(Body(0, 100, 0), 0, 1000, 0).scale == 1.5          # kattalashtirish chegarasi
+    # Asadov (namuna) — masshtab ~0.99; qo'lini belida tutadigan o'qituvchi (DSBA9359) — ~0.96, 1.31 emas
+    a = fit_body(Body(head_y=66, head_h=162, shoulder_w=370, center_x=1063), 250, 161, 368, 1473)
+    assert abs(a.scale - 0.994) < 0.01 and abs(66 * a.scale + a.y - 250) <= 1 and abs(1063 * a.scale + a.x - 1473) <= 1
+    d = fit_body(Body(head_y=88, head_h=172, shoulder_w=378, center_x=1000), 250, 161, 368, 1473)
+    assert 0.94 < d.scale < 0.97
+    assert fit_body(Body(0, 10, 10, 0), 0, 161, 368, 0).scale == 1.5          # kattalashtirish chegarasi
 
 
 def test_thanks_slide_and_unshown() -> None:
