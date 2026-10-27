@@ -50,3 +50,38 @@ def test_stutter_false_positives_skipped() -> None:
           [("uch", 0, 150), (".uch", 500, 620), ("rais,", 1000, 1300), ("rais", 1400, 1600),
            ("saylov", 2000, 2000), ("saylov", 2000, 2300)]]
     assert cuts.stutter_cuts(ws, fps) == []
+
+
+def _seq(text: str, t0: int = 0, step: int = 400, gaps: dict[int, int] | None = None) -> list[Word]:
+    out, t = [], t0
+    for i, x in enumerate(text.split()):
+        t += (gaps or {}).get(i, 0)
+        out.append(Word(text=x, start_ms=t, end_ms=t + 300, conf=0.9))
+        t += step
+    return out
+
+
+def test_retake_restart_chain() -> None:
+    # "…etardi. saylov komissiyaning xatti harakatlari ustidan | saylov komissiyaning xatti … qarorlar |
+    #  saylov komissiyaning harakatlari va qarorlar ustidan qilingan."  -> ikki urinish kesiladi
+    ws = _seq("ishtirok etardi. saylov komissiyaning xatti harakatlari ustidan saylov komissiyaning xatti harakatlari "
+              "ustidan qarorlar saylov komissiyaning harakatlari va qarorlar ustidan qilingan.",
+              gaps={7: 1200, 13: 2000})
+    c = cuts.retake_cuts(ws, Fraction(25))
+    assert len(c) == 1
+    kept = [w.text for w in ws if not (c[0].start / 25 * 1000 <= w.start_ms < c[0].end / 25 * 1000)]
+    assert " ".join(kept) == "ishtirok etardi. saylov komissiyaning harakatlari va qarorlar ustidan qilingan."
+
+
+def test_retake_correction_cue() -> None:
+    ws = _seq("qaysi organlar tomonidan koʻriladi? bu demak, birinchi uchast saylov komissiyasini, okrug sudda "
+              "koʻrilishi mumkin. yoʻq, adashdim shu yerda. saylov, demak, bu uchta saylov komissiyasi tomonidan okrug")
+    c = cuts.retake_cuts(ws, Fraction(25))
+    kept = [w.text for w in ws if not any(x.start / 25 * 1000 <= w.start_ms < x.end / 25 * 1000 for x in c)]
+    assert " ".join(kept) == "qaysi organlar tomonidan koʻriladi? bu uchta saylov komissiyasi tomonidan okrug"
+
+
+def test_retake_complete_sentence_not_cut() -> None:
+    ws = _seq("oʻzbekiston respublikasida eng muhim bu huquqiy asos, bu oʻzbekiston respublikasining saylov kodeksi "
+              "hisoblanadi.", gaps={8: 800})
+    assert cuts.retake_cuts(ws, Fraction(25)) == []

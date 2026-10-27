@@ -4,6 +4,25 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Gapni qayta aytish (qayta boshlash, "yo'q, adashdim")
+
+- Foydalanuvchi: v3 da 16:22 (gap 5–6 so'zdan keyin qayta boshlangan) va 17:28 ("yo'q, adashdim shu yerda" deb qayta
+  aytilgan) qolib ketgan. Manbada 998.0 s va 1066.7 s.
+- `cuts.retake_cuts` (sabab "takror", taklif):
+  1) qayta boshlash — ibora boshi (gap oxiri yoki >= 0.5 s pauzadan keyin) <= 10 so'z / 12 s ichida qayta aytilgan,
+     ikki so'z aynan bir xil yoki uchta so'z o'xshash (difflib >= 0.7), birinchi urinishda gap oxiri yo'q; zanjir —
+     oxirgi urinishgacha;
+  2) tuzatish iborasi ("adashdim", "kechirasiz", "noto'g'ri aytdim"…): to'g'ri gapdagi birinchi so'z juftligi
+     30 s ichidagi eng yaqin o'xshash juftlikka moslanadi -> xato gap boshi (gap chegarasigacha orqaga); kesish
+     to'g'ri gap boshigacha (oraliqdagi oxirgi "demak/ya'ni…" dan keyin). Chegaralar so'zlar orasi o'rtasida.
+- Natija: sinov videosida aynan 2 ta (997.3–1005.2 s: ikki tashlab ketilgan urinish; 1051.3–1070.0 s: xato javob +
+  "yo'q, adashdim shu yerda. saylov, demak,"), Dalmuradova namunasida 0. Birinchi variant (2 so'z o'xshash) 68 s da
+  bitta to'liq gapni ("…eng muhim huquqiy asos, bu O'zbekiston Respublikasining Saylov kodeksi") kesardi — shart
+  qattiqlashtirildi. Chiqishda: "…qaysi organlar tomonidan ko'riladi? Bu uchta saylov komissiyasi tomonidan…".
+  Eksport v4: 1127.76 s (-40.6 s jami), A/V 0 ms.
+
+---
+
 ## 2026-10-27 — O'qituvchi joylashuvi: gavda qoidasi (foydalanuvchi namunasi bo'yicha)
 
 - Foydalanuvchi: o'qituvchi to'liq bo'y-basti bilan ko'rinmasin; slayd o'ng cheti bilan kanvas o'ng cheti o'rtasida;

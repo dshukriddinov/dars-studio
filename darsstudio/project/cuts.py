@@ -91,6 +91,111 @@ def stutter_cuts(words: Sequence[Word], fps: Fraction, max_gap_ms: int = 700) ->
     return out
 
 
+RETAKE_MAX_WORDS = 10      # tashlab ketilgan urinish uzunligi (so'z)
+RETAKE_MAX_S = 12.0
+PHRASE_GAP_MS = 500        # shundan uzun pauza — yangi ibora boshi
+CORRECTION_CUES = ("adashdim", "adashibman", "adashdik", "kechirasiz", "uzr", "qaytadan")
+CORRECTION_PAIRS = (("noto'g'ri", "aytdim"), ("xato", "aytdim"), ("noto'g'ri", "aytdik"))
+FILLERS = ("demak", "xo'sh", "ya'ni", "endi", "mana")
+CORRECTION_LOOKBACK_S = 30.0
+
+
+def _key(text: str) -> str:
+    return uz_text.normalize(text).strip(".,;:?!-…")
+
+
+def _alike(a: str, b: str) -> bool:
+    import difflib
+    return a == b or (min(len(a), len(b)) >= 3 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.7)
+
+
+def _restart_match(k: list[str], i: int, j: int) -> bool:
+    """Qayta boshlash: ikki so'z aynan bir xil, yoki uchta so'z o'xshash. ("O'zbekiston Respublikasida… bu
+    O'zbekiston Respublikasining…" — bitta to'liq gap, kesilmasligi kerak.)"""
+    if k[j] == k[i] and k[j + 1] == k[i + 1]:
+        return True
+    return j + 2 < len(k) and i + 2 < j and all(_alike(k[j + d], k[i + d]) for d in range(3))
+
+
+def _ends_sentence(w: Word) -> bool:
+    return w.text.rstrip()[-1:] in ".?!"
+
+
+def _mid_frame(a_ms: int, b_ms: int, fps: Fraction, up: bool) -> int:
+    f = Fraction(a_ms + b_ms, 2000) * fps
+    return math.ceil(f) if up else math.floor(f)
+
+
+def retake_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
+    """Gapni qayta aytish (TZ: inson tasdiqlaydi):
+    1) qayta boshlash — ibora boshidagi >= 2 so'z RETAKE_MAX_WORDS ichida pauzadan keyin qayta aytilgan, birinchi
+       urinish gap oxiriga yetmagan: birinchi urinish boshidan oxirgi urinish boshigacha kesiladi (zanjir);
+    2) tuzatish iborasi ("yo'q, adashdim…"): xato gap boshidan (tuzatilgan gap bilan so'zma-so'z moslab topiladi)
+       to'g'ri gap boshigacha. Kesish chegaralari so'zlar orasidagi bo'shliq o'rtasida."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    k = [_key(w.text) for w in ws]
+    n = len(ws)
+
+    def phrase_start(i: int) -> bool:
+        return i == 0 or _ends_sentence(ws[i - 1]) or ws[i].start_ms - ws[i - 1].end_ms >= PHRASE_GAP_MS
+
+    def cut(i: int, j: int) -> CutProposal | None:
+        lo = ws[i - 1].end_ms if i else ws[i].start_ms
+        cs, ce = _mid_frame(lo, ws[i].start_ms, fps, True), _mid_frame(ws[j - 1].end_ms, ws[j].start_ms, fps, False)
+        return CutProposal(start=cs, end=ce, reason="takror") if ce > cs else None
+
+    out: list[CutProposal] = []
+    # 1) qayta boshlash
+    i = 0
+    while i < n - 2:
+        last = None
+        cur = i
+        while phrase_start(cur):
+            nxt = next((j for j in range(cur + 2, min(n - 1, cur + RETAKE_MAX_WORDS + 1))
+                        if phrase_start(j) and _restart_match(k, cur, j)
+                        and ws[j].start_ms - ws[cur].start_ms <= RETAKE_MAX_S * 1000
+                        and not any(_ends_sentence(ws[m]) for m in range(cur, j))), None)
+            if nxt is None:
+                break
+            last, cur = nxt, nxt
+        if last is not None and (cp := cut(i, last)):
+            out.append(cp)
+            i = last
+        i += 1
+    # 2) tuzatish iborasi
+    for q in range(n):
+        hit = k[q] in CORRECTION_CUES or any(k[q] == a and q + 1 < n and k[q + 1] == b for a, b in CORRECTION_PAIRS)
+        if not hit:
+            continue
+        cs = q - 1 if q and k[q - 1] in ("yo'q", "yoq") else q
+        ce = q
+        while ce + 1 < n and not _ends_sentence(ws[ce]) and ce - q < 4:  # "…shu yerda." ibora oxiri
+            ce += 1
+        after = list(range(ce + 1, min(n, ce + 9)))
+        before = [m for m in range(cs) if ws[cs].start_ms - ws[m].start_ms <= CORRECTION_LOOKBACK_S * 1000]
+        # to'g'ri gapdagi birinchi so'z juftligi xato gapdagi (eng yaqin) juftlikka mos keladi
+        match = next(((a, b) for b in after if b + 1 < n for a in reversed(before)
+                      if a + 1 < cs and _alike(k[a], k[b]) and _alike(k[a + 1], k[b + 1])), None)
+        err0, fix0 = match if match else (cs - 1, ce + 1)   # moslik yo'q: tuzatishdan oldingi gap
+        start = err0
+        while start > 0 and not _ends_sentence(ws[start - 1]) and ws[err0].start_ms - ws[start - 1].start_ms < 20000:
+            start -= 1
+        end = ce + 1
+        for m in range(ce + 1, fix0):                    # "saylov, demak, bu uchta…" — oxirgi to'ldiruvchidan keyin
+            if k[m] in FILLERS:
+                end = m + 1
+        if end < n and (x := cut(start, end)):
+            out.append(x)
+    out.sort(key=lambda x: x.start)
+    merged: list[CutProposal] = []
+    for c in out:
+        if merged and c.start <= merged[-1].end:
+            merged[-1] = merged[-1].model_copy(update={"end": max(merged[-1].end, c.end)})
+        else:
+            merged.append(c)
+    return merged
+
+
 def _intersect(a: list[tuple[int, int]], b: list[tuple[int, int]]) -> list[tuple[int, int]]:
     out, i, j = [], 0, 0
     while i < len(a) and j < len(b):
