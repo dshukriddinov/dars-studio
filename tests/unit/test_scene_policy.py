@@ -27,6 +27,14 @@ def test_fit_body() -> None:
     d = fit_body(Body(head_y=88, head_h=172, shoulder_w=378, center_x=1000), 250, 161, 368, 1473)
     assert 0.94 < d.scale < 0.97
     assert fit_body(Body(0, 10, 10, 0), 0, 161, 368, 0).scale == 1.5          # kattalashtirish chegarasi
+    # kamera uzoq: odam 2x kichik -> 2x kattalashadi (1.5 chegarasigacha); kamera yaqin: kichrayadi
+    far = fit_body(Body(head_y=300, head_h=81, shoulder_w=185, center_x=960), 250, 161, 368, 1473)
+    near = fit_body(Body(head_y=10, head_h=240, shoulder_w=550, center_x=960), 250, 161, 368, 1473)
+    assert far.scale == 1.5 and near.scale < 0.8
+    assert near.y + 1080 * near.scale >= 1079      # 0.67 da gavda kanvas 966-pikselida uzilib qolardi -> 0.78
+    # juda yaqin: manba pastki cheti kanvas pastiga yetishi shart (gavda kadr ichida uzilmaydi)
+    close = fit_body(Body(head_y=10, head_h=400, shoulder_w=900, center_x=960), 250, 161, 368, 1473)
+    assert close.y + 1080 * close.scale >= 1079
 
 
 def test_thanks_slide_and_unshown() -> None:

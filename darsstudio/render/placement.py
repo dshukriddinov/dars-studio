@@ -99,9 +99,12 @@ def body_landmarks(p: ProbeResult, key: KeySettings, device: torch.device, every
 
 
 def fit_body(b: Body, head_y: int, head_px: float, shoulder_px: float, center_x: int,
-             max_scale: float = 1.5) -> TeacherPlacement:
-    """Masshtab: bosh balandligi va yelka kengligi bo'yicha (o'rtacha) — kanvasda head_px / shoulder_px bo'ladi."""
+             max_scale: float = 1.5, src_h: int = 1080, canvas_h: int = 1080) -> TeacherPlacement:
+    """Masshtab: bosh balandligi va yelka kengligi bo'yicha (o'rtacha) — kanvasda head_px / shoulder_px bo'ladi.
+    Kamera juda yaqin bo'lsa (manbada gavda erta kesilgan) — kadr pastida gavda "uzilib" qolmasligi uchun masshtab
+    manba pastki cheti kanvas pastigacha yetadigan darajadan kichik bo'lmaydi."""
     s = min((head_px / b.head_h + shoulder_px / b.shoulder_w) / 2, max_scale)
+    s = max(s, (canvas_h - head_y) / max(1.0, src_h - b.head_y))
     return TeacherPlacement(scale=round(s, 4), x=int(round(center_x - b.center_x * s)),
                             y=int(round(head_y - b.head_y * s)))
 
