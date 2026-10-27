@@ -49,6 +49,14 @@ class FixedPlacement(BaseModel):
     y: int
 
 
+class TeacherFit(BaseModel):
+    """O'qituvchi gavdasini kanvasga sig'dirish (kanvas px): bosh tepasi head_y da, yonga tushgan kaftlar hands_y da,
+    gavda markazi center_x da. Oyoqlar kadrdan pastda qoladi (montajchi namunasi, 2026-10-27)."""
+    head_y: int
+    hands_y: int
+    center_x: int
+
+
 class Copyright(BaseModel):
     text: str
     on: Literal["last_slide", "always"] = "last_slide"
@@ -75,6 +83,7 @@ class Template(BaseModel):
     key_defaults: dict[str, Any] = {}
     scene_policy: ScenePolicy = ScenePolicy()
     teacher_placement: FixedPlacement | None = None
+    teacher_fit: TeacherFit | None = None
     intro: str | None = None                         # intro video (shablon papkasida)
     outro: str | None = None
     copyright: Copyright | None = None

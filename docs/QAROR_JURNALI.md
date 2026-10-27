@@ -4,6 +4,22 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — O'qituvchi joylashuvi: gavda qoidasi (foydalanuvchi namunasi bo'yicha)
+
+- Foydalanuvchi: o'qituvchi to'liq bo'y-basti bilan ko'rinmasin; slayd o'ng cheti bilan kanvas o'ng cheti o'rtasida;
+  pastki chegara yonga tushgan qo'llar darajasida. Namuna skrinshoti (`extra/image.png`, VLC, video maydoni
+  3502x1970 -> 1920x1080) dan: bosh tepasi y~250, kaftlar y~1025, markaz x~1473 (= (1026+1920)/2).
+- `templates.TeacherFit` + `placement.body_landmarks/fit_body`: manbada bosh tepasi (alfa birinchi qatori), kaftlar
+  (alfa ichida yuzdan pastdagi teri rangi, YCrCb, pastki chet), yelka zonasi markazi — 30 s qadam bilan kadrlar
+  medianasi. Sinov videosi: bosh 66, kaftlar 848, markaz 1063 (manba px) -> masshtab 0.9936, (417, 184).
+  `akademiya` shablonida qat'iy `teacher_placement` (0.929 @ 692,79 — Dalmuradova namunasi) o'rniga `teacher_fit`.
+- Lower-third: Roboto Slab'da U+02BB yo'q ("Gʻ" kvadrat chiqdi) — `overlays.glyph_safe` shriftda belgi bo'lmasa
+  U+2018/U+2019 ga almashtiradi (montajchi namunasida ham "G‘").
+- Sinov loyihasi o'qituvchisi: Asadov Shavkat Gʻaybullayevich (avval Eshankulov deb noto'g'ri berilgan edi).
+  Eksport v3: 1153.8 s, A/V 0 ms.
+
+---
+
 ## 2026-10-27 — Nutq kamchiliklari (yo'tal, aksa, takror); sinov videosi `0Z1A1253.MP4` (Eshankulov)
 
 **Sinov materiali:** `namuna/0Z1A1253.MP4` (1168.36 s, 1080p25, green screen, yon tomonda oq devor) + `yangi35.pptx`

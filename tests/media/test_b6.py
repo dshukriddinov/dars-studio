@@ -177,3 +177,9 @@ def test_akademiya_overlays() -> None:
     assert txt.shift_at(0) == 0 and txt.shift_at(25) == -16                    # 16 px/s chapga
     assert (cp.start, cp.end) == (900, 1000) and cp.alpha_at(899) == 0 and cp.alpha_at(950) == 1
     assert overlays.build({}, "akademiya", 8.6, None, None, 1000, FPS, (1920, 1080)) == []
+
+
+def test_glyph_safe_okina() -> None:
+    f = overlays.slab(700, 44)                       # Roboto Slab: U+02BB yo'q, U+2018 bor
+    assert overlays.glyph_safe("Gʻaybullayevich", f) == "G‘aybullayevich"
+    assert overlays.glyph_safe("Gʻ", overlays.font(True, 30)) in ("Gʻ", "G‘")

@@ -3,6 +3,7 @@ bounding box'i (2/98-persentil) olinadi, masshtab va joy bir marta hisoblanadi. 
 
 import threading
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import torch
@@ -34,7 +35,7 @@ def scaled_settings(s: KeySettings, f: float) -> KeySettings:
 
 
 def sample_alphas(p: ProbeResult, key: KeySettings, device: torch.device, every_sec: float = SAMPLE_SEC,
-                  max_samples: int | None = None) -> list[np.ndarray]:
+                  max_samples: int | None = None, with_bgr: bool = False) -> Any:
     """~every_sec dan bitta kalit kadr (skip_frame nokey: tez), 960x540, keyer alfasi > 0.5."""
     w, h = p.video.width // 2, p.video.height // 2
     args = ["-v", "error", "-nostdin", "-skip_frame", "nokey", "-i", p.path, "-map", "0:v:0",
@@ -47,14 +48,58 @@ def sample_alphas(p: ProbeResult, key: KeySettings, device: torch.device, every_
     threading.Thread(target=lambda: err.extend(proc.stderr or []), daemon=True).start()
     keyer = Keyer(scaled_settings(key, 0.5), w, h, p.full_range, device)
     n = w * h * 3 // 2
-    out = []
+    out, bgr = [], []
     assert proc.stdout is not None
     while len(buf := proc.stdout.read(n)) == n:
         pl = planes(np.frombuffer(buf, np.uint8), w, h)
         y, u, v = (torch.from_numpy(a.copy()).unsqueeze(0).to(device) for a in pl)
         out.append((keyer(y, u, v).alpha[0, 0] > 0.5).cpu().numpy())
+        if with_bgr:
+            import cv2
+            bgr.append(cv2.cvtColor(np.frombuffer(buf, np.uint8).reshape(h * 3 // 2, w), cv2.COLOR_YUV2BGR_I420))
     proc.wait()
-    return out
+    return (out, bgr) if with_bgr else out
+
+
+@dataclass
+class Body:
+    head_y: float     # manba px
+    hands_y: float
+    center_x: float
+
+
+def body_landmarks(p: ProbeResult, key: KeySettings, device: torch.device, every_sec: float = 30) -> Body:
+    """Bosh tepasi (alfa birinchi qatori), kaftlar (alfa ichida, yuzdan pastdagi teri rangi pastki cheti) va gavda
+    markazi (yelka zonasi chap/o'ng chetlari o'rtasi). Kadrlar medianasi; o'lchovlar 960x540 da, manbaga x2."""
+    import cv2
+    alphas, frames = sample_alphas(p, key, device, every_sec, with_bgr=True)
+    heads, hands, cxs = [], [], []
+    for a, img in zip(alphas, frames, strict=True):
+        rows = np.flatnonzero(a.any(1))
+        if not len(rows):
+            continue
+        top = int(rows[0])
+        ycc = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+        skin = (ycc[..., 1] > 135) & (ycc[..., 1] < 180) & (ycc[..., 2] > 85) & (ycc[..., 2] < 135) & a
+        skin[: top + 150] = False                              # yuz va bo'yin (540p da ~150 px)
+        skin = cv2.morphologyEx(skin.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
+        sy = np.flatnonzero(skin.any(1))
+        band = a[top + 60: top + 120]                          # yelka zonasi
+        cols = np.flatnonzero(band.any(0))
+        heads.append(top)
+        if len(sy):
+            hands.append(int(sy[-1]))
+        if len(cols):
+            cxs.append((cols[0] + cols[-1]) / 2)
+    if not heads or not hands or not cxs:
+        raise ValueError("o'qituvchi gavdasi (bosh/kaftlar) topilmadi: key sozlamalarini tekshiring")
+    return Body(float(np.median(heads)) * 2, float(np.median(hands)) * 2, float(np.median(cxs)) * 2)
+
+
+def fit_body(b: Body, head_y: int, hands_y: int, center_x: int, max_scale: float = 1.5) -> TeacherPlacement:
+    s = min((hands_y - head_y) / (b.hands_y - b.head_y), max_scale)
+    return TeacherPlacement(scale=round(s, 4), x=int(round(center_x - b.center_x * s)),
+                            y=int(round(head_y - b.head_y * s)))
 
 
 def union_bbox(alphas: list[np.ndarray], scale_back: int = 2) -> BBox:

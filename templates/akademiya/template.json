@@ -52,15 +52,15 @@
   "a_seconds": 10.0,
   "min_b_seconds": 10.0
  },
- "teacher_placement": {
-  "scale": 0.929,
-  "x": 692,
-  "y": 79
- },
  "intro": "intro.mp4",
  "outro": "intro.mp4",
  "copyright": {
   "text": "Mazkur taqdimot akademiya mahsuloti hisoblanadi hamda Oʻzbekiston Respublikasi “Mualliflik huquqi va turdosh huquqlar toʻgʻrisida”gi qonuni bilan himoyalanadi.",
   "on": "last_slide"
+ },
+ "teacher_fit": {
+  "head_y": 250,
+  "hands_y": 1025,
+  "center_x": 1473
  }
 }

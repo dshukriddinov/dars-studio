@@ -52,6 +52,19 @@ def slab(weight: int, size: int) -> ImageFont.FreeTypeFont:
     return f
 
 
+def glyph_safe(text: str, f: ImageFont.FreeTypeFont) -> str:
+    """Shriftda oʻ/gʻ uchun U+02BB (yoki U+02BC) bo'lmasa ‘ / ’ ga almashtiradi (Roboto Slab'da U+02BB yo'q —
+    aks holda "notdef" kvadrat chiqadi)."""
+    def mask(c: str) -> bytes:
+        m = f.getmask(c)
+        return np.asarray(m).tobytes() + str(m.size).encode()
+    nd = mask("")
+    for ch, alt in (("ʻ", "‘"), ("ʼ", "’")):
+        if ch in text and mask(ch) == nd:
+            text = text.replace(ch, alt)
+    return text
+
+
 def _meta(meta: dict[str, str], *keys: str) -> str:
     return next((uz_text.normalize_display(meta[k]) for k in keys if meta.get(k)), "")
 
@@ -101,9 +114,9 @@ def lower_third_akademiya(meta: dict[str, str], canvas: tuple[int, int]) -> tupl
     d = ImageDraw.Draw(txt)
     f1, f2 = slab(700, 44), slab(300, 28)
     x = 160
-    d.text((x, y0 + 4), name, font=f1, fill=(255, 255, 255, 255))
+    d.text((x, y0 + 4), glyph_safe(name, f1), font=f1, fill=(255, 255, 255, 255))
     for i, s in enumerate(sub[:2]):
-        d.text((x, y0 + 56 + i * 30), s, font=f2, fill=(235, 240, 255, 255))
+        d.text((x, y0 + 56 + i * 30), glyph_safe(s, f2), font=f2, fill=(235, 240, 255, 255))
     shadow = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
     shadow.putalpha(txt.getchannel("A").filter(ImageFilter.GaussianBlur(3)).point(lambda v: v * 0.6))
     out = Image.alpha_composite(Image.new("RGBA", (cw, ch), (0, 0, 0, 0)), shadow.transform(
@@ -119,7 +132,7 @@ def copyright_layer(text: str, canvas: tuple[int, int]) -> U8:
     img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     f = ImageFont.truetype(str(FONT_DIR / "NotoSerif-Italic.ttf"), 19)
-    words, lines, cur = uz_text.normalize_display(text).upper().split(), [], ""
+    words, lines, cur = glyph_safe(uz_text.normalize_display(text).upper(), f).split(), [], ""
     for w in words:
         if d.textlength(f"{cur} {w}".strip(), font=f) > 820:
             lines.append(cur)
