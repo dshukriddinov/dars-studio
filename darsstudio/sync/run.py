@@ -2,13 +2,15 @@
 
 import json
 from dataclasses import asdict
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from darsstudio.asr import uz_text
 from darsstudio.audio.extract import read_pcm
 from darsstudio.media.probe import MediaError
 from darsstudio.project.commands import CommandStack
-from darsstudio.project.model import LayoutSpan, Word
+from darsstudio.project.model import LayoutSpan, Slide, SlideSpan, Word
 from darsstudio.sync import ai_align, beep, slide_log
 
 B_SCENE_WORDS = 60  # TZ FR-12: slayd matni >= 60 so'z yoki jadval -> B tavsiya
@@ -19,8 +21,6 @@ def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
     - words (TZ FR-12): matni >= N so'z yoki jadvalli slaydlar B, qolgani A;
     - a_then_b (montajchi uslubi): slayd almashganda a_seconds A (o'qituvchi yangi slayd bilan), keyin B; slayd qolgan
       qismi min_b_seconds dan qisqa bo'lsa A qoladi. Birinchi va oxirgi slayd A (ikkala namunada shunday)."""
-    from fractions import Fraction
-
     from darsstudio.render import templates
     p = stack.project
     try:
@@ -49,6 +49,42 @@ def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
         else:
             out.append(LayoutSpan(start=s0, end=s1, layout=lay, suggested=True))
     return out
+
+
+THANKS = ("rahmat", "e'tibor", "etibor")
+FAREWELL_SEARCH_S = 60
+
+
+def thanks_slide(spans: list[SlideSpan], slides: list[Slide], words: list[Word], fps: Fraction,
+                 total: int) -> list[SlideSpan]:
+    """Oxirgi slayd xayrlashuv slaydi ("E'tiboringiz uchun rahmat") bo'lsa va ko'rsatilmagan bo'lsa — ma'ruzachi
+    xayrlashuv gapini boshlagan joydan oxirigacha (AI matn bo'yicha topa olmaydi: slaydda so'z yo'q)."""
+    if not slides or not spans:
+        return spans
+    last = slides[-1]
+    text = uz_text.normalize(f"{last.title} {last.body}")
+    if last.index in {s.slide for s in spans} or not any(k in text for k in map(uz_text.normalize, THANKS)):
+        return spans
+    ws = sorted(words, key=lambda w: w.start_ms)
+    bye = {uz_text.normalize(x) for x in ("rahmat", "ko'rishguncha", "ko'rishgunimizcha")}
+    end_ms = int(Fraction(total) / fps * 1000)
+    hit = next((i for i in range(len(ws) - 1, -1, -1) if ws[i].start_ms >= end_ms - FAREWELL_SEARCH_S * 1000
+                and uz_text.normalize(ws[i].text).strip(".,!") in bye), None)
+    if hit is None:
+        return spans
+    i = hit
+    while i > 0 and hit - i < 4 and ws[i - 1].text.rstrip()[-1:] not in ".?!":   # gap boshi ("e'tiboringiz…")
+        i -= 1
+    f = round(Fraction(ws[i].start_ms - 300, 1000) * fps)
+    keep = [s for s in spans if s.start < f]
+    if not keep:
+        return spans
+    keep[-1] = keep[-1].model_copy(update={"end": f})
+    return [*keep, SlideSpan(start=f, end=total, slide=last.index, source="ai", confidence=0.9)]
+
+
+def unshown_slides(spans: list[SlideSpan], n_slides: int) -> list[int]:
+    return sorted(set(range(1, n_slides + 1)) - {s.slide for s in spans})
 
 
 def ensure_slide_text(stack: CommandStack) -> None:
@@ -81,9 +117,10 @@ def sync_project(stack: CommandStack, params: ai_align.Params | None = None) -> 
     else:
         words = [Word(**w) for w in json.loads((store.cache("asr") / "words.json").read_text(encoding="utf-8"))]
         r = ai_align.align(words, p.slides, p.total_frames, p.fps_frac, params)
-        spans = r.spans
+        spans = thanks_slide(r.spans, p.slides, words, p.fps_frac, p.total_frames)
         out = {"mode": "ai", "boundaries": [asdict(b) for b in r.boundaries],
                "suspicious": [asdict(b) for b in r.suspicious]}
+    out["unshown"] = unshown_slides(spans, len(p.slides))   # gapirilmagan (ko'rsatilmagan) slaydlar — inson hal qiladi
     stack.do(f"slayd sinxroni ({out['mode']})", {"slide_spans": [s.model_dump(mode="json") for s in spans]})
     stack.do("sahna tavsiyasi", {"layout_spans": [s.model_dump(mode="json") for s in suggest_layouts(stack)]})
     (store.cache("sync") / f"{out['mode']}_align.json").write_text(json.dumps(out, ensure_ascii=False, indent=1),

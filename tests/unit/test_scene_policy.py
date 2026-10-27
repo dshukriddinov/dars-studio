@@ -25,3 +25,18 @@ def test_fit_body() -> None:
     s = pl.scale
     assert abs(66 * s + pl.y - 250) <= 1 and abs(848 * s + pl.y - 1025) <= 1 and abs(1063 * s + pl.x - 1473) <= 1
     assert fit_body(Body(0, 100, 0), 0, 1000, 0).scale == 1.5          # kattalashtirish chegarasi
+
+
+def test_thanks_slide_and_unshown() -> None:
+    from fractions import Fraction
+
+    from darsstudio.project.model import Slide, Word
+    slides = [Slide(index=1, title="Mavzu"), Slide(index=2, title="Saylov"), Slide(index=3, title="Jinoyat"),
+              Slide(index=4, title="EʼTIBORINGIZ UCHUN RAHMAT")]
+    spans = [SlideSpan(start=0, end=1000, slide=1, source="ai"), SlideSpan(start=1000, end=3000, slide=2, source="ai")]
+    ws = [Word(text=t, start_ms=s, end_ms=s + 300, conf=0.9) for t, s in
+          [("iborat", 100000), ("edi.", 100400), ("eʼtiboringiz", 101000), ("uchun", 101500), ("rahmat.", 102000)]]
+    out = run.thanks_slide(spans, slides, ws, Fraction(25), 3000)
+    assert [(s.start, s.end, s.slide) for s in out] == [(0, 1000, 1), (1000, 2518, 2), (2518, 3000, 4)]
+    assert run.unshown_slides(out, 4) == [3]
+    assert run.thanks_slide(spans, slides[:3], ws, Fraction(25), 3000) == spans       # rahmat slaydi yo'q

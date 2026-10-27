@@ -3,6 +3,7 @@
 import random
 from fractions import Fraction
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -122,3 +123,19 @@ def test_cue_phrase_snaps_boundary() -> None:
     far = [ai_align.Boundary(frame=int(2 * 25), prev_slide=1, slide=2, confidence=0.9)]
     ai_align.snap_to_cues(far, words, fps, window_s=10)
     assert far[0].frame == 50
+
+
+def test_bounds_order_restored(monkeypatch: Any) -> None:
+    """Surishlardan keyin chegaralar tartibi buzilsa, oraliqlar baribir monoton va bo'sh emas."""
+    orig = ai_align.snap_to_cues
+
+    def swap(bounds: list[ai_align.Boundary], *a: Any) -> None:
+        orig(bounds, *a)
+        if len(bounds) >= 2:
+            bounds[0].frame, bounds[1].frame = bounds[1].frame + 10, bounds[0].frame
+    monkeypatch.setattr(ai_align, "snap_to_cues", swap)
+    words, slides, _ = make_lesson(0, [40, 55, 35, 60, 45, 50, 30])
+    total = int(words[-1].end_ms / 1000 * 25) + 25
+    r = ai_align.align(words, slides, total, Fraction(25))
+    assert all(s.end - s.start >= 10 for s in r.spans)
+    assert [s.start for s in r.spans] == sorted(s.start for s in r.spans)

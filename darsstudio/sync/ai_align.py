@@ -248,6 +248,10 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
             conf = float(min(post[t, path[t]] for t in range(lo, hi)))
             bounds.append(Boundary(round(Fraction(ms, 1000) * fps), path[i - 1] + 1, path[i] + 1, round(conf, 3)))
     snap_to_cues(bounds, list(words), fps, p.cue_window_s)
+    # aniqlashtirish/signal har chegarani alohida suradi va tartib buzilishi mumkin (sinov: 37->39 1155.8 s, 39->40
+    # 1146.9 s -> 39-slayd 0.1 s miltillardi): vaqtlar o'sish tartibida chegaralarga qayta beriladi
+    for b, f in zip(bounds, sorted(x.frame for x in bounds), strict=True):
+        b.frame = f
     spans: list[SlideSpan] = []
     pos, cur = 0, path[0] + 1
     for b in bounds:

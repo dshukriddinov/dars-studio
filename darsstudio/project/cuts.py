@@ -196,6 +196,33 @@ def retake_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
     return merged
 
 
+def filler_cuts(fillers: Sequence[Any], fps: Fraction, keep_s: float = KEEP_PAUSE_S) -> list[CutProposal]:
+    """O'ylab turish tovushlari (audio/fillers.py) -> kesish: tovush to'liq, atrofidagi jimlik bilan (bo'shliq chetida
+    keep_s/2 qoladi), so'zlarga tegmaydi (bo'shliq chetidan 30 ms ichkarida)."""
+    out = []
+    half = int(keep_s * 500)
+    for f in fillers:
+        g0, g1 = f.gap[0] + 30, f.gap[1] - 30
+        s, e = max(g0, min(f.start_ms, f.gap[0] + half)), min(g1, max(f.end_ms, f.gap[1] - half))
+        cs, ce = math.ceil(Fraction(s, 1000) * fps), math.floor(Fraction(e, 1000) * fps)
+        if ce > cs:
+            out.append(CutProposal(start=cs, end=ce, reason="to'ldiruvchi"))
+    return out
+
+
+def union(cuts: Sequence[CutProposal]) -> list[CutProposal]:
+    """Ustma-ust tushgan takliflarni birlashtiradi (sabab: pauzadan boshqasi ustun — u kesishning asosiy sababi)."""
+    out: list[CutProposal] = []
+    for c in sorted(cuts, key=lambda x: x.start):
+        if out and c.start <= out[-1].end:
+            last = out[-1]
+            reason = last.reason if last.reason != "pause" else c.reason
+            out[-1] = last.model_copy(update={"end": max(last.end, c.end), "reason": reason})
+        else:
+            out.append(c)
+    return out
+
+
 def _intersect(a: list[tuple[int, int]], b: list[tuple[int, int]]) -> list[tuple[int, int]]:
     out, i, j = [], 0, 0
     while i < len(a) and j < len(b):

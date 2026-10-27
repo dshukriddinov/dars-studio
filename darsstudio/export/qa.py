@@ -129,6 +129,9 @@ def run(p: Project, out: Path, tm: TimeMap, pngs: Sequence[Path], srt_path: Path
     checks += check_black_frozen(out, b_ranges)
     checks.append(check_scenes(p.layout_spans, tm))
     checks.append(check_slide_files(p, pngs))
+    unshown = sorted(set(range(1, len(p.slides) + 1)) - {s.slide for s in p.slide_spans})
+    checks.append(QaCheck("korsatilmagan_slaydlar", "ogohlantirish" if unshown else "ok",
+                          (", ".join(map(str, unshown)) + " — videoda yo'q (gapirilmagan?)") if unshown else "yo'q"))
     checks.append(check_suspicious(n_unapproved, sum(c.status == "taklif" for c in p.cuts)))
     if srt_path is not None:
         checks.append(check_srt(srt_path.read_text(encoding="utf-8"), total / float(fps)))

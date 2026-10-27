@@ -59,7 +59,12 @@ def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, kee
     extra = cuts.retake_cuts(ws, p.fps_frac) + cuts.stutter_cuts(ws, p.fps_frac)
     if ef.is_file():
         extra += cuts.event_cuts(json.loads(ef.read_text(encoding="utf-8")), ws, p.fps_frac, p.total_frames)
-    new += [c for c in extra if not any(c.start < o.end and o.start < c.end for o in new)]  # pauza kesishi ustun
+    den = store.cache("audio") / "denoised_48k.wav"
+    if den.is_file():  # "mmm/eee" — so'zlar orasidagi barqaror ohangli tovush
+        from darsstudio.audio import fillers
+        from darsstudio.audio.extract import read_pcm
+        extra += cuts.filler_cuts(fillers.detect(read_pcm(den), ws), p.fps_frac)
+    new = cuts.union(new + extra)
     decided = [c for c in p.cuts if c.status != "taklif"]
     if not any(c.reason in ("bosh", "oxir") for c in decided):  # avtomatik, inson rad etishi mumkin
         decided += cuts.trim_cuts(words(stack), p.fps_frac, p.total_frames)

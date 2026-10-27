@@ -4,6 +4,33 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — "mmm/eee" o'ylab turish tovushlari; gapirilmagan slaydlar; chegara tartibi
+
+**O'ylab turish tovushlari.** Foydalanuvchi v4 17:47–17:48 ni ko'rsatdi (manba 1112.1–1114.8 s, "tarqatish, …
+tashviqot"). O'lchov (30 ms kadrlar): 1113.56–1114.40 s, -9..-12 dBFS (nutq darajasi), ovozlilik 0.7, F0 110–115 Hz
+barqaror, ASR so'zi yo'q; VAD nutq deb hisoblagani uchun pauza kesishi tushmagan.
+- `audio/fillers.py` (model yo'q): so'zlar orasidagi bo'shliqda >= 240 ms, ovozlilik >= 0.5, umumiy RMS dan
+  18 dB ichida, kadrlarning >= 75% i F0 medianasidan +-8% ichida (std mezoni oktava xatosida 1113.6 ni o'tkazib
+  yubordi). Sinov videosi: 22 nomzod, Dalmuradova: 2; ishlash 0.1 s.
+- `cuts.filler_cuts` (sabab "to'ldiruvchi"): tovush to'liq + bo'shliqdagi jimlik, so'zlardan 30 ms ichkarida.
+  `cuts.union`: ustma-ust takliflar birlashadi (avval yangi taklif pauza bilan kesishsa tashlanardi — "mmm" qolardi).
+- Natija (v5): 19 ta "mmm" kesildi; 1112.1–1114.8 dagi 2.66 s bo'shliq chiqishda 0.40 s. Kliplar:
+  `workdir/eshankulov/tekshiruv/mmm/` — **aniqlik foydalanuvchi bahosidan keyin o'lchanadi**.
+
+**Gapirilmagan slaydlar.**
+- `sync.run.thanks_slide`: oxirgi slayd "rahmat/e'tibor" bo'lsa va ko'rsatilmagan bo'lsa — oxirgi 60 s dagi
+  "rahmat/ko'rishguncha" gapi boshidan (0.3 s oldin) oxirigacha. Sinov: 42-slayd endi chiqishda 1101.7 s dan.
+- `unshown` (sinxron natijasi) va QA `korsatilmagan_slaydlar` ogohlantirishi. Sinov: 15, 26, 38, 41 (15 va 38 da
+  slayd matni yo'q — OCR keyinroq, foydalanuvchi ruxsati bilan).
+
+**AI sinxron xatosi topildi:** aniqlashtirish/signal chegaralarni alohida suradi, tartib buzilardi (37->39 1155.8 s,
+39->40 1146.9 s -> 39-slayd 0.1 s miltillardi). Endi vaqtlar o'sish tartibida qayta beriladi. Dalmuradova G3 o'zgarmadi
+(+-2 s 94%, median 0.20 s).
+
+Eksport v5: 1109.72 s, A/V 0 ms, jami kesilgan 69.4 s.
+
+---
+
 ## 2026-10-27 — Gapni qayta aytish (qayta boshlash, "yo'q, adashdim")
 
 - Foydalanuvchi: v3 da 16:22 (gap 5–6 so'zdan keyin qayta boshlangan) va 17:28 ("yo'q, adashdim shu yerda" deb qayta
