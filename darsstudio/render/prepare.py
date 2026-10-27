@@ -109,11 +109,41 @@ def calibrated(p: Project) -> bool:
 def ensure_key(stack: CommandStack, pr: ProbeResult, frame: int | None = None) -> None:
     if calibrated(stack.project) and frame is None:
         return
-    f = frame if frame is not None else stack.project.total_frames // 10
+    p0 = stack.project.parts[0].frames if stack.project.parts else stack.project.total_frames
+    f = frame if frame is not None else p0 // 10   # 1-qism (qolganlari ensure_parts)
     y, u, v = planes(read_frame(pr, f), pr.video.width, pr.video.height)
     ks = keyer.suggest(y, u, v, pr.full_range)
     log.info("key taklifi (%d-kadr): %s", f, ks)
     stack.do(f"key taklifi ({f}-kadr)", {"key": ks.model_dump(mode="json")})
+
+
+def ensure_parts(stack: CommandStack, pr: ProbeResult, tpl: Template, force: bool = False) -> None:
+    """Video qismlari (2-qismdan boshlab): kamera joyi/yorug'lik boshqa bo'lishi mumkin — key va joylashuv qismning
+    o'z kadrlaridan (1-qism loyihaning key/joylashuvini ishlatadi)."""
+    p = stack.project
+    if len(p.parts) < 2 or tpl.teacher_fit is None:
+        return
+    fps = float(p.fps_frac)
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    parts = list(p.parts)
+    changed = False
+    for i, part in enumerate(parts[1:], 1):
+        key, pl = part.key, part.placement
+        if key is None or force:
+            y, u, v = planes(read_frame(pr, part.start + part.frames // 10), pr.video.width, pr.video.height)
+            key = keyer.suggest(y, u, v, pr.full_range)
+        if pl is None or force:
+            f = tpl.teacher_fit
+            win = (part.start / fps, part.frames / fps)
+            b = placement.body_landmarks(pr, key, dev, every_sec=max(2.0, min(30.0, win[1] / 10)), window=win)
+            pl = placement.fit_body(b, f.head_y, f.head_px, f.shoulder_px, f.center_x, src_h=pr.video.height,
+                                    canvas_h=tpl.canvas[1])
+            log.info("%d-qism joylashuvi: %s -> %s", i + 1, b, pl)
+        if (key, pl) != (part.key, part.placement):
+            parts[i] = part.model_copy(update={"key": key, "placement": pl})
+            changed = True
+    if changed:
+        stack.do("qismlar: key va joylashuv", {"parts": [x.model_dump(mode="json") for x in parts]})
 
 
 def ensure_placement(stack: CommandStack, pr: ProbeResult, tpl: Template, force: bool = False) -> None:
@@ -122,7 +152,9 @@ def ensure_placement(stack: CommandStack, pr: ProbeResult, tpl: Template, force:
     if tpl.teacher_fit is not None:  # gavda: bosh/kaftlar/markaz shablondagi joyga (montajchi namunasi)
         f = tpl.teacher_fit
         dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        b = placement.body_landmarks(pr, stack.project.key, dev)
+        p0 = stack.project.parts[0] if stack.project.parts else None   # 1-qism kadrlaridan
+        win = (0.0, p0.frames / float(stack.project.fps_frac)) if p0 else None
+        b = placement.body_landmarks(pr, stack.project.key, dev, window=win)
         pl = placement.fit_body(b, f.head_y, f.head_px, f.shoulder_px, f.center_x, src_h=pr.video.height,
                                 canvas_h=tpl.canvas[1])
         if pl.scale > 1.2:

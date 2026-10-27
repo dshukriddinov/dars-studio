@@ -45,6 +45,7 @@ export const api = {
   template: (id: string) => req<{ screen_quad: number[][]; teacher_anchor: number[]; [k: string]: unknown }>("GET", `/api/templates/${encodeURIComponent(id)}`),
   saveTemplate: (id: string, body: { screen_quad?: number[][]; teacher_anchor?: number[] }) =>
     req<unknown>("PUT", `/api/templates/${encodeURIComponent(id)}`, body),
+  addPart: (name: string, video: string) => req<ProjectView & { jobs: number[] }>("POST", `${p(name)}/parts`, { video }),
   pickFile: (kind: "video" | "slides") => req<{ path: string }>("POST", `/api/pick-file?kind=${kind}`),
   /** Lower-third ko'rinishi (PNG) -> object URL; chaqiruvchi eskisini URL.revokeObjectURL qiladi. */
   lowerThirdPreview: async (template: string, meta: Record<string, string>): Promise<string> => {

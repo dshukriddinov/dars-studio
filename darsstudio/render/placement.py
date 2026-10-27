@@ -35,10 +35,13 @@ def scaled_settings(s: KeySettings, f: float) -> KeySettings:
 
 
 def sample_alphas(p: ProbeResult, key: KeySettings, device: torch.device, every_sec: float = SAMPLE_SEC,
-                  max_samples: int | None = None, with_bgr: bool = False) -> Any:
-    """~every_sec dan bitta kalit kadr (skip_frame nokey: tez), 960x540, keyer alfasi > 0.5."""
+                  max_samples: int | None = None, with_bgr: bool = False,
+                  window: tuple[float, float] | None = None) -> Any:
+    """~every_sec dan bitta kalit kadr (skip_frame nokey: tez), 960x540, keyer alfasi > 0.5.
+    window: (boshlanish, davomiylik) soniyada — faqat shu oraliqdan (video qismi)."""
     w, h = p.video.width // 2, p.video.height // 2
-    args = ["-v", "error", "-nostdin", "-skip_frame", "nokey", "-i", p.path, "-map", "0:v:0",
+    win = ["-ss", f"{window[0]:.3f}", "-t", f"{window[1]:.3f}"] if window else []
+    args = ["-v", "error", "-nostdin", "-skip_frame", "nokey", *win, "-i", p.path, "-map", "0:v:0",
             "-vf", f"fps=1/{every_sec},scale={w}:{h}:flags=area", "-fps_mode", "passthrough"]
     if max_samples:
         args += ["-frames:v", str(max_samples)]
@@ -69,11 +72,12 @@ class Body:
     center_x: float    # yelka zonasi markazi
 
 
-def body_landmarks(p: ProbeResult, key: KeySettings, device: torch.device, every_sec: float = 30) -> Body:
+def body_landmarks(p: ProbeResult, key: KeySettings, device: torch.device, every_sec: float = 30,
+                   window: tuple[float, float] | None = None) -> Body:
     """Alfa siluetidan: bosh tepasi (birinchi qator), bo'yin (bosh ostidagi eng tor qator), yelka kengligi va markazi
     (bo'yindan 80–120 px pastda). Qo'l holatiga bog'liq emas (qo'llarini beli oldida tutadigan o'qituvchida kaft
     bo'yicha o'lchov 1.31x kattalashtirib yuborgan, 2026-10-27). Kadrlar medianasi; 960x540 da, manbaga x2."""
-    alphas = sample_alphas(p, key, device, every_sec)
+    alphas = sample_alphas(p, key, device, every_sec, window=window)
     heads, necks, shoulders, cxs = [], [], [], []
     for a in alphas:
         rows = np.flatnonzero(a.any(1))

@@ -68,6 +68,8 @@ def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, kee
     decided = [c for c in p.cuts if c.status != "taklif"]
     if not any(c.reason in ("bosh", "oxir") for c in decided):  # avtomatik, inson rad etishi mumkin
         decided += cuts.trim_cuts(words(stack), p.fps_frac, p.total_frames)
+    if len(p.parts) > 1 and not any(c.reason == "qism" for c in decided):
+        decided += cuts.part_join_cuts(ws, p.parts, p.fps_frac)
     keep = decided + [c for c in new if not any(c.start < d.end and d.start < c.end for d in decided)]
     if approve_all:
         keep = [c.model_copy(update={"status": "tasdiqlangan"}) if c.status == "taklif" else c for c in keep]
@@ -103,6 +105,7 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
     warped = prepare.ensure_warped(stack, tpl, pngs)
     prepare.ensure_key(stack, pr)
     prepare.ensure_placement(stack, pr, tpl)
+    prepare.ensure_parts(stack, pr, tpl)
     p = stack.project
     if not p.slide_spans:
         raise MediaError("Slayd vaqtlari yo'q: `sync` yoki `render --slides-csv` bilan bering.")

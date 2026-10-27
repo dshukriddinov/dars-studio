@@ -50,6 +50,13 @@ def cmd_import_dir(a: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def cmd_add_part(a: argparse.Namespace) -> int:
+    """Dars davomi boshqa faylda: qismlarni ulaydi; keyin audio, asr, eyecontact, sync, cuts qayta."""
+    p = importer.append_part(ProjectStore(Path(a.project)), Path(a.video))
+    print(f"{len(p.parts)} qism, jami {p.total_frames} kadr. Endi: audio, asr, eyecontact, sync, cuts, export.")
+    return 0
+
+
 def cmd_info(a: argparse.Namespace) -> int:
     p = ProjectStore(Path(a.project)).load()
     print(f"{p.name} ({p.id}): {p.total_frames} kadr @ {p.fps} fps, {len(p.slides)} slayd, shablon {p.template_id}")
@@ -237,6 +244,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--workdir", default=str(paths.workdir()))
     s.set_defaults(fn=cmd_import_dir)
 
+    s = sub.add_parser("add-part", help="dars davomini (keyingi video faylni) loyihaga qo'shish")
+    s.add_argument("project")
+    s.add_argument("video")
+    s.set_defaults(fn=cmd_add_part)
     s = sub.add_parser("info", help="loyiha haqida qisqa ma'lumot")
     s.add_argument("project")
     s.set_defaults(fn=cmd_info)

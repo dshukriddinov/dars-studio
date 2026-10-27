@@ -6,6 +6,7 @@ Chunk'lar chiqish kadrlarida: cache/render/<kalit>/seg_XXXXX.mp4 + .json checkpo
 Audio: tayyor WAV (kesilgan + loudnorm, chiqish vaqt o'qida) yoki (kesishsiz bo'lsa) manbadan.
 """
 
+import bisect
 import hashlib
 import json
 import logging
@@ -87,6 +88,30 @@ class RenderReport:
     warnings: list[dict[str, Any]] = field(default_factory=list)
 
 
+class TeacherParts:
+    """Video qismlari bo'yicha key va joylashuv (bitta faylli loyihada bitta qism)."""
+
+    def __init__(self, project: Project, w: int, h: int, full_range: bool, dev: torch.device) -> None:
+        ps = project.part_settings()
+        self.starts = [s for s, _, _ in ps]
+        self.keyers = [Keyer(k, w, h, full_range, dev) for _, k, _ in ps]
+        self.placements = [pl for _, _, pl in ps]
+
+    def __call__(self, idx: Sequence[int], y: torch.Tensor, u: torch.Tensor, v: torch.Tensor,
+                 comp: Compositor) -> tuple[torch.Tensor, torch.Tensor]:
+        """-> (kanvasdagi o'qituvchi qatlami, alfa). Batch qism chegarasini kesib o'tsa — bo'lib ishlanadi."""
+        part = [bisect.bisect_right(self.starts, f) - 1 for f in idx]
+        layers, alphas = [], []
+        for q in sorted(set(part)):
+            js = [j for j, x in enumerate(part) if x == q]
+            sl = slice(js[0], js[-1] + 1)                       # idx o'suvchi — qism kadrlari ketma-ket
+            kr = self.keyers[q](y[sl], u[sl], v[sl])
+            comp.set_placement(self.placements[q])
+            layers.append(comp.teacher_layer(color_correct(kr.rgb, kr.alpha, self.placements[q].color), kr.alpha))
+            alphas.append(kr.alpha)
+        return torch.cat(layers), torch.cat(alphas)
+
+
 def color_correct(rgb: torch.Tensor, alpha: torch.Tensor, c: dict[str, float]) -> torch.Tensor:
     """O'qituvchi rangi (TZ 9.8): exposure (stop), saturation (1 = o'zgarishsiz). Premultiplied kirish/chiqish."""
     ev, sat = c.get("exposure", 0.0), c.get("saturation", 1.0)
@@ -121,6 +146,7 @@ def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spa
         ep = json.loads((extra.eyepatch_dir / "meta.json").read_text(encoding="utf-8")).get("cfg_key", "")
     h.update(json.dumps({"v": RENDER_VERSION, "key": project.key.model_dump(mode="json"),
                          "placement": project.placement.model_dump(mode="json"), "tpl": tpl.content_hash(),
+                         "parts": [p.model_dump(mode="json") for p in project.parts],
                          "slides": [str(p) + str(p.stat().st_mtime_ns) for p in slide_files],
                          "spans": [[s.model_dump(mode="json") for s in g] for g in spans],
                          "eye_off": [s.model_dump(mode="json") for s in project.eye_off], "eyepatch": ep,
@@ -196,7 +222,8 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
     if dev.type == "cuda":
         torch.cuda.reset_peak_memory_stats(dev)
 
-    keyer = Keyer(project.key, w, h, probe.full_range, dev)
+    parts = TeacherParts(project, w, h, probe.full_range, dev)
+    keyer = parts.keyers[0]
     comp = Compositor(tpl, warped, slides_4k, project.placement, (w, h), dev, dtype)
     tl = Timeline.build(slide_spans, layout_spans, tpl)
     patches = eyepatch.EyePatches(extra.eyepatch_dir) if extra.eyepatch_dir else None
@@ -252,9 +279,7 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
                 y = t[:, :ny].view(-1, h, w)
                 u = t[:, ny:ny + ny // 4].view(-1, h // 2, w // 2)
                 vv = t[:, ny + ny // 4:].view(-1, h // 2, w // 2)
-                kr = keyer(y, u, vv)
-                rgb = color_correct(kr.rgb, kr.alpha, project.placement.color)
-                teacher = comp.teacher_layer(rgb, kr.alpha)
+                teacher, kalpha = parts(idx, y, u, vv, comp)
                 img = comp.compose(idx, tl, teacher)
                 for o, ot in zip(ovs, ov_t, strict=True):
                     for j in range(len(idx)):
@@ -272,7 +297,7 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
                 top = ta[:, :top_zone].flatten(1).any(1)
                 outside = ta.clone()
                 outside[:, ay0:ay1, ax0:ax1] = False
-                edge = (kr.alpha[:, 0] > 0.5)[:, gedge[0, 0]].any(1) if gedge.any() else torch.zeros_like(top)
+                edge = (kalpha[:, 0] > 0.5)[:, gedge[0, 0]].any(1) if gedge.any() else torch.zeros_like(top)
                 for j, f in enumerate(idx):
                     if top[j]:
                         cflags["bosh_yuqori_chetda"].append(f)
@@ -343,7 +368,7 @@ def render_teacher_layer(project: Project, probe: ProbeResult, tpl: Template, ou
     dtype = torch.float16 if dev.type == "cuda" else torch.float32
     v = probe.video
     w, h, fps = v.width, v.height, v.fps
-    keyer = Keyer(project.key, w, h, probe.full_range, dev)
+    parts = TeacherParts(project, w, h, probe.full_range, dev)
     comp = Compositor(tpl, [], [], project.placement, (w, h), dev, dtype)
     cw, ch = tpl.canvas
     patches = eyepatch.EyePatches(eyepatch_dir) if eyepatch_dir else None
@@ -367,9 +392,9 @@ def render_teacher_layer(project: Project, probe: ProbeResult, tpl: Template, ou
             idx, arr = item
             t = torch.from_numpy(arr).to(dev)
             ny = w * h
-            kr = keyer(t[:, :ny].view(-1, h, w), t[:, ny:ny + ny // 4].view(-1, h // 2, w // 2),
-                       t[:, ny + ny // 4:].view(-1, h // 2, w // 2))
-            layer = comp.teacher_layer(color_correct(kr.rgb, kr.alpha, project.placement.color), kr.alpha).float()
+            layer, _ = parts(idx, t[:, :ny].view(-1, h, w), t[:, ny:ny + ny // 4].view(-1, h // 2, w // 2),
+                             t[:, ny + ny // 4:].view(-1, h // 2, w // 2), comp)
+            layer = layer.float()
             a = layer[:, 3:4]
             rgb = torch.where(a > 1e-4, layer[:, :3] / a.clamp(min=1e-4), torch.zeros_like(layer[:, :3]))
             rgba = torch.cat([rgb.clamp(0, 1), a], 1).permute(0, 2, 3, 1)

@@ -122,16 +122,22 @@ class Compositor:
             x1, y1 = min(cw, x + lw), min(ch, y + lh)
             layer[y:y1, x:x1] = lg[: y1 - y, : x1 - x]
             self.logo = premult(layer, device, dtype)
-        # o'qituvchi: manba -> kanvasdagi joy (masshtab + siljish), bir marta hisoblanadigan oyna
-        sw, sh = src_size
-        self.tw, self.th = max(1, round(sw * placement.scale)), max(1, round(sh * placement.scale))
-        x0, y0 = placement.x, placement.y
-        self.dst = (max(0, x0), max(0, y0), min(cw, x0 + self.tw), min(ch, y0 + self.th))
-        self.src = (self.dst[0] - x0, self.dst[1] - y0, self.dst[2] - x0, self.dst[3] - y0)
+        self.src_size = src_size
+        self.set_placement(placement)
         q = np.array(tpl.screen_quad, np.float32)
         self.screen_center = (float(q[:, 0].mean()), float(q[:, 1].mean()))
         self.frame_center = ((cw - 1) / 2, (ch - 1) / 2)
         self.clock = transitions.ClockWipe(self.canvas, self.screen_center, device)
+
+    def set_placement(self, placement: TeacherPlacement) -> None:
+        """O'qituvchi: manba -> kanvasdagi joy (masshtab + siljish). Video qismlarida (VideoPart) qism almashganda."""
+        self.pl = placement
+        sw, sh = self.src_size
+        cw, ch = self.canvas
+        self.tw, self.th = max(1, round(sw * placement.scale)), max(1, round(sh * placement.scale))
+        x0, y0 = placement.x, placement.y
+        self.dst = (max(0, x0), max(0, y0), min(cw, x0 + self.tw), min(ch, y0 + self.th))
+        self.src = (self.dst[0] - x0, self.dst[1] - y0, self.dst[2] - x0, self.dst[3] - y0)
 
     def teacher_layer(self, rgb: Tensor, alpha: Tensor) -> Tensor:
         """[B,3,H,W] premult + [B,1,H,W] -> kanvas [B,4,ch,cw]."""

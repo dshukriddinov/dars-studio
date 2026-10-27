@@ -2,7 +2,7 @@
 export interface Span { start: number; end: number }
 export interface SlideSpan extends Span { slide: number; source: "log" | "ai" | "manual"; confidence: number; approved: boolean }
 export interface LayoutSpan extends Span { layout: "A" | "B" | "C"; suggested: boolean }
-export interface CutProposal extends Span { reason: "pause" | "manual" | "bosh" | "oxir" | "yo'tal" | "aksa" | "to'ldiruvchi" | "takror"; status: "taklif" | "tasdiqlangan" | "rad_etilgan" }
+export interface CutProposal extends Span { reason: "pause" | "manual" | "bosh" | "oxir" | "yo'tal" | "aksa" | "to'ldiruvchi" | "takror" | "qism"; status: "taklif" | "tasdiqlangan" | "rad_etilgan" }
 export type EyeOffSpan = Span;
 
 export interface KeySettings {
@@ -14,6 +14,7 @@ export interface Project {
   id: string; name: string; meta: Record<string, string>; fps: string; total_frames: number; template_id: string;
   slides: { index: number; title: string; body?: string }[];
   slide_spans: SlideSpan[]; layout_spans: LayoutSpan[]; cuts: CutProposal[]; eye_off: EyeOffSpan[];
+  parts?: { path: string; start: number; frames: number }[];
   key: KeySettings; eye_contact: { lid_open?: number; [k: string]: unknown };
 }
 

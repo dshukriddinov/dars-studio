@@ -9,6 +9,7 @@ const DEFAULT_TEMPLATE = "akademiya";
 
 export function NewProject() {
   const [video, setVideo] = useState("");
+  const [more, setMore] = useState("");   // davomi (ikkinchi fayl), ixtiyoriy
   const [slides, setSlides] = useState("");
   const [name, setName] = useState("");
   const [templates, setTemplates] = useState<string[]>([]);
@@ -26,10 +27,10 @@ export function NewProject() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const pick = async (kind: "video" | "slides") => {
+  const pick = async (kind: "video" | "more" | "slides") => {
     try {
-      const { path } = await api.pickFile(kind);
-      if (path) (kind === "video" ? setVideo : setSlides)(path);
+      const { path } = await api.pickFile(kind === "more" ? "video" : kind);
+      if (path) ({ video: setVideo, more: setMore, slides: setSlides }[kind])(path);
     } catch (e) { fail(e); }
   };
 
@@ -39,7 +40,7 @@ export function NewProject() {
     try {
       const strip = (s: string) => s.trim().replace(/^"|"$/g, "");
       const r = await api.createProject({
-        video: strip(video), slides: strip(slides), template, name: name.trim() || null, prepare,
+        video: strip(video), more_videos: more.trim() ? [strip(more)] : [], slides: strip(slides), template, name: name.trim() || null, prepare,
         meta: Object.fromEntries(Object.entries(meta).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v)),
       });
       await open(r.name, "project");
@@ -52,6 +53,8 @@ export function NewProject() {
         <h2 className="heading">1. Fayllar</h2>
         <PathField label="Video (oʻqituvchi, yashil fon)" value={video} onChange={setVideo}
           onPick={() => void pick("video")} placeholder="D:\darslar\dars01.mp4" />
+        <PathField label="Davomi — dars ikkinchi faylda davom etgan boʻlsa (ixtiyoriy)" value={more} onChange={setMore}
+          onPick={() => void pick("more")} placeholder="D:\darslar\dars01_2.mp4" optional />
         <PathField label="Taqdimot (PPTX yoki PDF)" value={slides} onChange={setSlides}
           onPick={() => void pick("slides")} placeholder="D:\darslar\dars01.pptx" />
         <div className="grid2">
@@ -91,14 +94,15 @@ export function NewProject() {
   );
 }
 
-function PathField({ label, value, onChange, onPick, placeholder }: {
+function PathField({ label, value, onChange, onPick, placeholder, optional }: {
   label: string; value: string; onChange: (v: string) => void; onPick: () => void; placeholder: string;
+  optional?: boolean;
 }) {
   return (
     <label className="field">
-      <span className="label">{label} *</span>
+      <span className="label">{label}{optional ? "" : " *"}</span>
       <span className="pick">
-        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required />
+        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required={!optional} />
         <button type="button" className="btn-secondary" onClick={onPick}><FolderOpen size={16} /> Tanlash</button>
       </span>
     </label>

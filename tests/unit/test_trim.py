@@ -85,3 +85,18 @@ def test_retake_complete_sentence_not_cut() -> None:
     ws = _seq("oʻzbekiston respublikasida eng muhim bu huquqiy asos, bu oʻzbekiston respublikasining saylov kodeksi "
               "hisoblanadi.", gaps={8: 800})
     assert cuts.retake_cuts(ws, Fraction(25)) == []
+
+
+def test_part_join_cuts() -> None:
+    """2-qism boshidagi "uch ikki bir boshlasangiz bo'ladi" va 1-qism oxiridagi jimlik kesiladi."""
+    from darsstudio.project.model import VideoPart
+    fps = Fraction(25)
+    parts = [VideoPart(path="a", start=0, frames=25 * 100), VideoPart(path="b", start=25 * 100, frames=25 * 60)]
+    ws = _seq("demak shu bilan", 90000) + _seq("uch ikki bir boshlsangiz boʻladi demak davom etamiz", 102000, 500)
+    c = cuts.part_join_cuts(ws, parts, fps)
+    assert len(c) == 1 and c[0].reason == "qism" and c[0].status == "tasdiqlangan"
+    kept = [w.text for w in ws if not (c[0].start / 25 * 1000 <= w.start_ms < c[0].end / 25 * 1000)]
+    assert kept == ["demak", "shu", "bilan", "demak", "davom", "etamiz"]
+    # signal yo'q: faqat jimlik (birinchi so'zgacha)
+    c2 = cuts.part_join_cuts(_seq("bir", 90000) + _seq("davom etamiz", 104000), parts, fps)
+    assert c2[0].end / 25 * 1000 <= 104000 and c2[0].start / 25 * 1000 >= 90300

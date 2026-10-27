@@ -15,6 +15,7 @@ const STEPS: [string, string][] = [
 export const CUT_KINDS: Record<CutProposal["reason"], string> = {
   pause: "Uzun pauzalar", manual: "Qoʻlda", bosh: "Dars boshi (salomgacha)", oxir: "Dars oxiri (xayrlashuvdan keyin)",
   "yo'tal": "Yoʻtal, tomoq qirish", aksa: "Aksa", "to'ldiruvchi": "“mmm/eee” oʻylab turish", takror: "Takror va qayta aytish",
+  qism: "Video qismlari ulanishi",
 };
 const projName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 
@@ -64,6 +65,7 @@ function Body({ name, p, jobs }: { name: string; p: P; jobs: Job[] }) {
             );
           })}
         </div>
+        <PartsRow name={name} p={p} fps={fps} busy={preparing} />
         {!preparing && !latest("cuts") ? (
           <div style={{ marginTop: 12 }}>
             <button className="btn-secondary" onClick={() => api.prepare(name).catch(fail)}>Tayyorlashni boshlash</button>
@@ -74,6 +76,35 @@ function Body({ name, p, jobs }: { name: string; p: P; jobs: Job[] }) {
       <TeacherPanel p={p} />
       <CutsPanel p={p} fps={fps} />
       <SlidesPanel name={name} p={p} />
+    </div>
+  );
+}
+
+function PartsRow({ name, p, fps, busy }: { name: string; p: P; fps: Fps; busy: boolean }) {
+  const { setView, fail } = useStore.getState();
+  const [adding, setAdding] = useState(false);
+  const parts = p.parts?.length ? p.parts : null;
+  const add = async () => {
+    try {
+      const { path } = await api.pickFile("video");
+      if (!path) return;
+      setAdding(true);
+      const r = await api.addPart(name, path);
+      setView({ project: r.project, can_undo: r.can_undo, can_redo: r.can_redo, undo_label: r.undo_label,
+        redo_label: r.redo_label });
+    } catch (e) { fail(e); } finally { setAdding(false); }
+  };
+  return (
+    <div className="toolbar" style={{ marginTop: 12, marginBottom: 0 }}>
+      <span className="caption dim">
+        {parts ? `Video ${parts.length} qismdan: ` + parts.map((x, i) =>
+          `${i + 1}) ${projName(x.path)} — ${(frameToSec(x.frames, fps) / 60).toFixed(1)} daq`).join(", ")
+          : "Video bitta fayldan."}
+      </span>
+      <button className="btn-secondary sm" disabled={busy || adding} onClick={() => void add()}
+        title="Dars keyingi faylda davom etgan bo‘lsa: qismlar ulanadi, tahlil qayta bajariladi">
+        {adding ? "Ulanmoqda…" : "Davomini qoʻshish"}
+      </button>
     </div>
   );
 }

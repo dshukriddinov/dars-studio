@@ -63,3 +63,37 @@ def test_find_pairs_and_import_dir(test_media: dict[str, Any], tmp_path: Path) -
     assert [(v.name, s.name) for v, s in importer.find_pairs(src)] == [("dars05.MOV", "dars05.pptx")]
     assert cli.main(["import-dir", str(src), "--no-proxy", "--workdir", str(tmp_path / "w")]) == 0
     assert ProjectStore(tmp_path / "w" / "dars05").load().total_frames == 300
+
+
+def _clip(path: Path, seconds: int, color: str) -> Path:
+    from darsstudio.media import ffmpeg
+    ffmpeg.run(["-v", "error", "-y", "-f", "lavfi", "-i", f"color=c={color}:s=1920x1080:r=25:d={seconds}",
+                "-f", "lavfi", "-i", f"sine=f=440:r=48000:d={seconds}", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-g", "25", "-c:a", "pcm_s16le", "-shortest", str(path)])
+    return path
+
+
+def test_parts_join_and_append(test_media: dict[str, Any], tmp_path: Path) -> None:
+    """Dars ikki faylda: import (ikki qism) va mavjud loyihaga davomini qo'shish — kadrlar uzluksiz, 1-qism
+    indekslari va inson qarorlari saqlanadi, 2-qismdan keyingi kadr — ikkinchi fayl."""
+    from darsstudio.media.frames import FrameReader
+    from darsstudio.project.model import CutProposal
+    a, b = _clip(tmp_path / "a.mov", 4, "red"), _clip(tmp_path / "b.mov", 2, "blue")
+    slides = test_media["lesson.pptx"]["path"]
+    s = importer.import_project([a, b], Path(slides), "demo", tmp_path / "w", name="ikki", make_proxy=False)
+    p = s.load()
+    assert p.total_frames == 150 and [(x.start, x.frames) for x in p.parts] == [(0, 100), (100, 50)]
+    pr = probe.probe(p.asset("video").cfr_path)
+    with FrameReader(pr, start=99, count=2) as r:
+        f99, f100 = r.read(), r.read()
+    assert f99[: pr.video.width].mean() < f100[: pr.video.width].mean() or f99.mean() != f100.mean()  # qizil -> ko'k
+
+    s2 = importer.import_project(a, Path(slides), "demo", tmp_path / "w", name="bitta", make_proxy=False)
+    p2 = s2.load()
+    s2.save(p2.model_copy(update={"cuts": [CutProposal(start=10, end=20, reason="pause", status="tasdiqlangan"),
+                                           CutProposal(start=30, end=40, reason="pause")]}))
+    p3 = importer.append_part(s2, b)
+    assert p3.total_frames == 150 and [(x.start, x.frames) for x in p3.parts] == [(0, 100), (100, 50)]
+    assert [(c.start, c.end) for c in p3.cuts] == [(10, 20)]          # tasdiqlangan saqlanadi, taklif qayta hisoblanadi
+    with pytest.raises(MediaError):
+        importer.join_parts([a, Path(test_media["ntsc_2997.mp4"]["path"])], tmp_path / "x.mov")   # fps boshqa

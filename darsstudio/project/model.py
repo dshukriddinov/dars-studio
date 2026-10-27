@@ -62,7 +62,7 @@ class LayoutSpan(Span):
 
 
 class CutProposal(Span):
-    reason: Literal["pause", "manual", "bosh", "oxir", "yo'tal", "aksa", "to'ldiruvchi", "takror"]
+    reason: Literal["pause", "manual", "bosh", "oxir", "yo'tal", "aksa", "to'ldiruvchi", "takror", "qism"]
     status: Literal["taklif", "tasdiqlangan", "rad_etilgan"] = "taklif"
 
 
@@ -88,6 +88,17 @@ class TeacherPlacement(_M):
     x: int = 0
     y: int = 0
     color: dict[str, float] = {}     # exposure, temp, tint, saturation
+
+
+class VideoPart(_M):
+    """Dars bir nechta faylda yozilgan bo'lsa (kamera to'xtatilgan / boshqa kun): qismlar ishchi faylda ketma-ket
+    ulanadi (qayta kodlashsiz), asl kadr indeksi qismlar bo'yicha uzluksiz. Har qismda kamera joyi va yorug'lik boshqa
+    bo'lishi mumkin — key va joylashuv qism uchun alohida (None — loyihaniki)."""
+    path: str
+    start: int = Field(ge=0)         # ishchi fayldagi birinchi kadri
+    frames: int = Field(ge=1)
+    key: KeySettings | None = None
+    placement: TeacherPlacement | None = None
 
 
 def _check_cover(spans: list[Any], total: int, name: str) -> None:
@@ -121,6 +132,7 @@ class Project(_M):
     eye_off: list[EyeOffSpan] = []
     key: KeySettings = KeySettings()
     placement: TeacherPlacement = TeacherPlacement()
+    parts: list[VideoPart] = []      # bo'sh — bitta fayl
     eye_contact: dict[str, Any] = {"lid_open": 0.5}
     exports: list[dict[str, Any]] = []
 
@@ -149,6 +161,12 @@ class Project(_M):
             if n and sp.slide > n:
                 raise ValueError(f"slide_spans: {sp.slide}-slayd yo'q (jami {n})")
         return self
+
+    def part_settings(self) -> list[tuple[int, KeySettings, TeacherPlacement]]:
+        """(boshlanish kadri, key, joylashuv) har qism uchun; bitta faylli loyihada bitta element."""
+        if not self.parts:
+            return [(0, self.key, self.placement)]
+        return [(p.start, p.key or self.key, p.placement or self.placement) for p in self.parts]
 
     def asset(self, kind: str) -> MediaAsset | None:
         return next((a for a in self.assets if a.kind == kind), None)

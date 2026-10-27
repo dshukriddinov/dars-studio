@@ -34,6 +34,7 @@ NAME_RE = re.compile(r"^[\w\-. ]{1,100}$", re.UNICODE)
 
 class ImportReq(BaseModel):
     video: str
+    more_videos: list[str] = []      # davomi (dars bir nechta faylda yozilgan bo'lsa), tartib bilan
     slides: str
     template: str = "demo"
     name: str | None = None
@@ -138,11 +139,24 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
     async def create_project(r: ImportReq) -> dict[str, Any]:
         if r.name and not NAME_RE.match(r.name):
             raise HTTPException(400, "Noto'g'ri loyiha nomi.")
-        s = await asyncio.to_thread(importer.import_project, Path(r.video), Path(r.slides), r.template, wd,
+        videos = [Path(r.video), *(Path(v) for v in r.more_videos if v.strip())]
+        s = await asyncio.to_thread(importer.import_project, videos, Path(r.slides), r.template, wd,
                                     name=r.name, meta=r.meta, slide_log=Path(r.slide_log) if r.slide_log else None,
                                     copy=r.copy_sources, make_proxy=False)
         jobs = enqueue_prepare(queue, str(s.root), proxy=True) if r.prepare else []
         return {"name": s.root.name, "jobs": jobs}
+
+    class PartReq(BaseModel):
+        video: str
+
+    @app.post("/api/projects/{name}/parts")
+    async def add_part(name: str, r: PartReq) -> dict[str, Any]:
+        """Davomini qo'shish: qismlar ulanadi, tahlil (audio, ASR, Eye Contact, sinxron, kesish) qayta navbatga."""
+        s = store(name)
+        if any(j.status in ("navbatda", "ishlanmoqda") for j in queue.list(project=str(s.root))):
+            raise HTTPException(409, "Loyihada vazifalar ishlayapti: tugashini kuting, keyin davomini qo'shing.")
+        await asyncio.to_thread(importer.append_part, s, Path(r.video))
+        return {"jobs": enqueue_prepare(queue, str(s.root), proxy=True), **project_view(stack(name))}
 
     @app.get("/api/projects/{name}")
     def get_project(name: str) -> dict[str, Any]:

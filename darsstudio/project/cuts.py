@@ -4,6 +4,7 @@ Kesish nuqtalari kadr chegarasiga (ichkariga) tekislanadi, shuning uchun so'z ic
 
 import bisect
 import math
+import re
 from collections.abc import Sequence
 from fractions import Fraction
 from typing import Any
@@ -19,7 +20,7 @@ GREETINGS = ("assalomu", "assalom", "salom", "hurmatli", "aziz", "qadrli")
 FAREWELLS = ("ko'rishguncha", "ko'rishgunimizcha", "xayr", "salomat", "rahmat")
 EVENT_MIN_PROB = 0.6     # yo'tal/aksa ehtimoli (PANNs); pastrog'i ko'pincha oddiy nafas
 EVENT_MIN_GAP_MS = 300
-WORD_CUT_REASONS = ("bosh", "oxir", "takror")   # so'zni ataylab kesadigan sabablar (TZ 8.2 istisno)
+WORD_CUT_REASONS = ("bosh", "oxir", "takror", "qism")   # so'zni ataylab kesadigan sabablar (TZ 8.2 istisno)
 TRIM_SEARCH_S = 60      # signal dars boshidagi/oxiridagi shuncha soniya ichida izlanadi
 TRIM_PAD_S = (0.3, 0.6)  # salomdan oldin / xayrdan keyin qoldiriladigan bo'shliq
 
@@ -220,6 +221,39 @@ def union(cuts: Sequence[CutProposal]) -> list[CutProposal]:
             out[-1] = last.model_copy(update={"end": max(last.end, c.end), "reason": reason})
         else:
             out.append(c)
+    return out
+
+
+START_CUE = re.compile(r"^boshl\w*(sangiz|ang|ayvering|adik)$")   # "boshlasangiz bo'ladi" (ASR: "boshlsangiz")
+PART_SEARCH_S = 20
+
+
+def part_join_cuts(words: Sequence[Word], parts: Sequence[Any], fps: Fraction) -> list[CutProposal]:
+    """Video qismlari ulanadigan joy: oldingi qismning oxirgi so'zidan keyingi qismi va keyingi qism boshidagi
+    "uch, ikki, bir, boshlasangiz bo'ladi" (yoki shunchaki jimlik) — birinchi haqiqiy so'zgacha. Sabab "qism"."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+
+    def ms(f: int) -> int:
+        return int(Fraction(f) / fps * 1000)
+
+    out = []
+    for prev, part in zip(parts, parts[1:], strict=False):
+        b0, b1 = ms(part.start), ms(part.start + part.frames)
+        before = [w for w in ws if ms(prev.start) <= w.start_ms < b0]
+        inside = [w for w in ws if b0 <= w.start_ms < min(b1, b0 + PART_SEARCH_S * 1000)]
+        cue = [i for i, w in enumerate(inside) if START_CUE.match(_key(w.text))]
+        if cue:   # "boshlasangiz (bo'ladi)" -> undan keyingi so'z
+            k = cue[-1] + 1
+            if k < len(inside) and _key(inside[k].text) in (uz_text.normalize("bo'ladi"), "boladi"):
+                k += 1
+            nxt = inside[k] if k < len(inside) else None
+        else:     # signal yo'q: qism boshidagi jimlik
+            nxt = inside[0] if inside else None
+        s = before[-1].end_ms + 400 if before else b0
+        e = nxt.start_ms - 300 if nxt else b0
+        cs, ce = math.ceil(Fraction(s, 1000) * fps), math.floor(Fraction(max(e, s), 1000) * fps)
+        if ce > cs:
+            out.append(CutProposal(start=cs, end=ce, reason="qism", status="tasdiqlangan"))
     return out
 
 
