@@ -4,6 +4,27 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — UI qayta qurildi: och mavzu, chap panel, 4 qadam, matnli ko'rib chiqish
+
+- Foydalanuvchi: GUI eski/xira, ish tartibi tushunarsiz, tekshirish ekrani noqulay; tanlov — bosqichma-bosqich,
+  och mavzu.
+- Tuzilish: chap panel (darslar holati bilan, "Yangi dars", navbat qatori, Sozlamalar) + dars sahifasi 4 qadamda:
+  1) Fayllar va o'qituvchi (lower-third jonli ko'rinish, video qismlari, slaydlar — ko'rsatilmaganlari belgilanadi),
+  2) Tayyorlash (6 bosqich holati, xatoda "Qayta urinish"), 3) Ko'rib chiqish, 4) Eksport (versiyalar, "Ko'rish",
+  "Papkada ko'rsatish" — `/api/projects/{name}/reveal`). Eski batafsil tahrir ("Batafsil tahrir") va kalibrlash
+  ekranlari saqlandi (Sozlamalar ichida).
+- Ko'rib chiqish: har taklif o'qituvchi so'zlari bilan — kesiladigan qism ustidan chizilgan qizil, atrofdagi so'zlar
+  kulrang; turlar bo'yicha filtr, katakcha (kesish/qoldirish), "Hammasini kesish/qoldirish", butun dars bo'ylab
+  kesishlar xaritasi; qatorni bosish — 2 s oldindan o'ynaydi; "Natijani tinglash" — tasdiqlangan kesishlarni
+  o'tkazib yuboradi (haqiqiy brauzerda tekshirildi: 3 s takror o'tkazib yuborildi); klaviatura Probel / ↑ ↓ / Enter.
+- Dizayn: tokenlar och palitra (akademiya ko'ki #1F4FD8, matn #17223B), shriftlar videodagi bilan bir xil —
+  Roboto Slab (sarlavha), Noto Sans (interfeys), `ui/public/fonts` (offline). To'g'ridan havola: `?dars=NOM&qadam=N`,
+  `?yangi=1`.
+- Topildi: 2-qism CLI orqali qo'shilganda proxy qayta yasalmagan edi (API'dagi "Davomini qo'shish" uni navbatga
+  qo'yadi) — DSBA9359 proxy qayta yasaldi (1244 s).
+
+---
+
 ## 2026-10-27 — Ortga qaytib qayta aytish ("qaytadan", "boshqatdan", 2–3 gap oldidan)
 
 - `cuts.reread_cuts` (sabab "takror", taklif): qayta boshlash nuqtasi — signal so'zdan ("qaytadan", "boshqatdan",

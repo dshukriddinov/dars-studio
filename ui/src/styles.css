@@ -1,30 +1,24 @@
-/* Tokenlar: engines/eye-contact/design-system/tokens.json (dark birinchi, light ikkinchi). */
+/* Tokenlar: och mavzu. Rang — akademiya studiyasi ko'ki (videodagi fon va lower-third bilan bir xil), shriftlar
+   videodagi bilan bir xil (Roboto Slab — sarlavha, Noto Sans — interfeys), offline: public/fonts. */
+@font-face { font-family: "Noto Sans"; src: url("/fonts/NotoSans-Regular.ttf") format("truetype"); font-weight: 400; }
+@font-face { font-family: "Noto Sans"; src: url("/fonts/NotoSans-Bold.ttf") format("truetype"); font-weight: 600 700; }
+@font-face { font-family: "Roboto Slab"; src: url("/fonts/RobotoSlab-VF.ttf") format("truetype"); font-weight: 100 900; }
 :root {
-  --surface-100: #15141a; --surface-200: #1c1b22; --surface-300: #242329; --surface-400: #2c2b33;
-  --border: #34333c; --border-strong: #46454f;
-  --ink: #f1eee9; --ink-secondary: #b0acb8; --ink-tertiary: #8d8996;
-  --accent: #e2a53a; --accent-strong: #f0b954; --accent-subtle: #362a14; --on-accent: #1c1204;
-  --success: #49b37c; --success-subtle: #16281f; --on-success: #06170e;
-  --danger: #ef5a56; --danger-subtle: #341313; --on-danger: #2a0402;
-  --muted: #8791a3; --muted-subtle: #232732;
-  --overlay: 0 8px 24px -4px #00000073, 0 2px 8px #00000059;
-  --focus-ring: 0 0 0 2px #15141a, 0 0 0 4px #f0b954;
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "Cascadia Mono", "Consolas", "SF Mono", ui-monospace, monospace;
+  --surface-100: #f5f7fb; --surface-200: #ffffff; --surface-300: #eef2f8; --surface-400: #dfe5ef;
+  --border: #e1e6ef; --border-strong: #c9d1de;
+  --ink: #17223b; --ink-secondary: #5b6782; --ink-tertiary: #8790a6;
+  --accent: #1f4fd8; --accent-strong: #173ea9; --accent-subtle: #e6edfd; --on-accent: #ffffff;
+  --success: #2f8a5b; --success-subtle: #e4f3eb; --on-success: #ffffff;
+  --danger: #c8413a; --danger-subtle: #fbe9e7; --on-danger: #ffffff;
+  --warn: #b7791f; --warn-subtle: #fbf1dc;
+  --muted: #6b7690; --muted-subtle: #edf0f5;
+  --overlay: 0 12px 32px -8px #17223b2e, 0 2px 6px #17223b14;
+  --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px #1f4fd8;
+  --font-sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Roboto Slab", "Noto Sans", serif;
+  --font-mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
-  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px; --radius-full: 999px;
-  color-scheme: dark;
-}
-:root[data-theme="light"] {
-  --surface-100: #faf8f4; --surface-200: #ffffff; --surface-300: #f2ede4; --surface-400: #e9e2d4;
-  --border: #ddd5c4; --border-strong: #c4b9a2;
-  --ink: #211b10; --ink-secondary: #5c5343; --ink-tertiary: #746a58;
-  --accent: #8f5c11; --accent-strong: #70480d; --accent-subtle: #f5e6c8; --on-accent: #fffaf0;
-  --success: #227a52; --success-subtle: #e3f3ea; --on-success: #ffffff;
-  --danger: #c22f2b; --danger-subtle: #fbe7e5; --on-danger: #ffffff;
-  --muted: #57647a; --muted-subtle: #e7eaf0;
-  --overlay: 0 8px 24px -4px #1e160b2e, 0 2px 8px #1e160b21;
-  --focus-ring: 0 0 0 2px #faf8f4, 0 0 0 4px #70480d;
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-full: 999px;
   color-scheme: light;
 }
 

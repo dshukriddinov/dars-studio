@@ -15,6 +15,7 @@ export interface Project {
   slides: { index: number; title: string; body?: string }[];
   slide_spans: SlideSpan[]; layout_spans: LayoutSpan[]; cuts: CutProposal[]; eye_off: EyeOffSpan[];
   parts?: { path: string; start: number; frames: number }[];
+  exports?: { version: number; path: string; qa: string }[];
   key: KeySettings; eye_contact: { lid_open?: number; [k: string]: unknown };
 }
 

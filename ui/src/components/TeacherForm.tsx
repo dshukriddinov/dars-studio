@@ -43,7 +43,9 @@ export function LowerThirdPreview({ template, meta }: { template: string; meta: 
     let alive = true;
     let made: string | null = null;
     const t = setTimeout(() => {
-      api.lowerThirdPreview(template, meta)
+      // bo'sh maydonlar o'rniga namuna — qayerda nima chiqishi ko'rinsin
+      const shown = Object.fromEntries(TEACHER_FIELDS.map((f) => [f.key, meta[f.key]?.trim() || f.hint]));
+      api.lowerThirdPreview(template, { ...meta, ...shown })
         .then((u) => { made = u; if (alive) { setUrl(u); setErr(null); } else URL.revokeObjectURL(u); })
         .catch((e) => alive && setErr(String(e instanceof Error ? e.message : e)));
     }, 400);

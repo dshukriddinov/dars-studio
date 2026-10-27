@@ -40,12 +40,14 @@ export const api = {
   keySuggest: (name: string, frame: number) => req<ProjectView>("POST", `${p(name)}/key/suggest?frame=${frame}`),
   preview: (name: string, startS: number, durS: number) =>
     req<{ id: number; file: string }>("POST", `${p(name)}/preview?start_s=${startS}&duration_s=${durS}`),
-  exports: (name: string) => req<{ file: string; size_mb: number; qa: unknown }[]>("GET", `${p(name)}/exports`),
+  exports: (name: string) =>
+    req<{ file: string; size_mb: number; qa: unknown; version: number; mtime: number }[]>("GET", `${p(name)}/exports`),
   templates: () => req<string[]>("GET", "/api/templates"),
   template: (id: string) => req<{ screen_quad: number[][]; teacher_anchor: number[]; [k: string]: unknown }>("GET", `/api/templates/${encodeURIComponent(id)}`),
   saveTemplate: (id: string, body: { screen_quad?: number[][]; teacher_anchor?: number[] }) =>
     req<unknown>("PUT", `/api/templates/${encodeURIComponent(id)}`, body),
   addPart: (name: string, video: string) => req<ProjectView & { jobs: number[] }>("POST", `${p(name)}/parts`, { video }),
+  reveal: (name: string, file: string) => req<{ ok: boolean }>("POST", `${p(name)}/reveal`, { file }),
   pickFile: (kind: "video" | "slides") => req<{ path: string }>("POST", `/api/pick-file?kind=${kind}`),
   /** Lower-third ko'rinishi (PNG) -> object URL; chaqiruvchi eskisini URL.revokeObjectURL qiladi. */
   lowerThirdPreview: async (template: string, meta: Record<string, string>): Promise<string> => {

@@ -48,48 +48,53 @@ export function NewProject() {
   };
 
   return (
-    <form className="page" onSubmit={submit}>
-      <section className="panel form">
-        <h2 className="heading">1. Fayllar</h2>
-        <PathField label="Video (oʻqituvchi, yashil fon)" value={video} onChange={setVideo}
-          onPick={() => void pick("video")} placeholder="D:\darslar\dars01.mp4" />
-        <PathField label="Davomi — dars ikkinchi faylda davom etgan boʻlsa (ixtiyoriy)" value={more} onChange={setMore}
-          onPick={() => void pick("more")} placeholder="D:\darslar\dars01_2.mp4" optional />
-        <PathField label="Taqdimot (PPTX yoki PDF)" value={slides} onChange={setSlides}
-          onPick={() => void pick("slides")} placeholder="D:\darslar\dars01.pptx" />
-        <div className="grid2">
-          <label className="field">
-            <span className="label">Shablon (studiya)</span>
-            <select value={template} onChange={(e) => setTemplate(e.target.value)}>
-              {templates.map((t) => <option key={t}>{t}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span className="label">Loyiha nomi (ixtiyoriy)</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Fayl nomidan olinadi" />
-          </label>
-        </div>
-      </section>
-
-      <section className="panel form">
-        <h2 className="heading">2. Oʻqituvchi (dars boshidagi yozuv)</h2>
-        <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} />
-        <LowerThirdPreview template={template} meta={meta} />
-      </section>
-
-      <section className="panel form">
-        <h2 className="heading">3. Dars</h2>
-        <MetaFields fields={LESSON_FIELDS} meta={meta} onChange={setMeta} />
-        <label className="check body">
-          <input type="checkbox" checked={prepare} onChange={(e) => setPrepare(e.target.checked)} />
-          Darhol tayyorlash (shovqin tozalash, nutqni matnga aylantirish, slayd sinxroni, kesish takliflari, Eye Contact)
-        </label>
+    <form className="lesson-page" onSubmit={submit}>
+      <header className="lesson-head">
         <div>
-          <button className="btn-primary" disabled={busy || !video || !slides || !meta.oqituvchi?.trim()}>
-            {busy ? "Import qilinmoqda…" : "Loyihani yaratish"}
-          </button>
+          <h1 className="display">Yangi dars</h1>
+          <p className="dim">Oʻqituvchi videosi va taqdimotni tanlang. Qolganini dastur oʻzi tayyorlaydi.</p>
         </div>
-      </section>
+      </header>
+      <div className="lesson-body cols">
+        <section className="block form">
+          <h2 className="h2">Fayllar</h2>
+          <PathField label="Video (oʻqituvchi, yashil fon)" value={video} onChange={setVideo}
+            onPick={() => void pick("video")} placeholder="D:\darslar\dars01.mp4" />
+          <PathField label="Davomi, agar dars keyingi faylda davom etgan boʻlsa" value={more} onChange={setMore}
+            onPick={() => void pick("more")} placeholder="Ixtiyoriy" optional />
+          <PathField label="Taqdimot (PPTX yoki PDF)" value={slides} onChange={setSlides}
+            onPick={() => void pick("slides")} placeholder="D:\darslar\dars01.pptx" />
+          <h2 className="h2">Dars</h2>
+          <MetaFields fields={LESSON_FIELDS} meta={meta} onChange={setMeta} />
+          <div className="grid2">
+            <label className="field">
+              <span className="label">Studiya shabloni</span>
+              <select value={template} onChange={(e) => setTemplate(e.target.value)}>
+                {templates.map((t) => <option key={t}>{t}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span className="label">Loyiha nomi</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Fayl nomidan olinadi" />
+            </label>
+          </div>
+        </section>
+
+        <section className="block form">
+          <h2 className="h2">Dars boshidagi yozuv</h2>
+          <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} />
+          <LowerThirdPreview template={template} meta={meta} />
+          <label className="check">
+            <input type="checkbox" checked={prepare} onChange={(e) => setPrepare(e.target.checked)} />
+            Yaratilgach darhol tayyorlashni boshlash
+          </label>
+          <div className="row">
+            <button className="btn-primary big" disabled={busy || !video || !slides || !meta.oqituvchi?.trim()}>
+              {busy ? "Fayllar oʻqilmoqda…" : "Darsni yaratish"}
+            </button>
+          </div>
+        </section>
+      </div>
     </form>
   );
 }

@@ -12,9 +12,8 @@ export function Settings() {
   const commit = () => { if (v !== lid) void command("Eye Contact: lid_open", { "eye_contact.lid_open": v }); };
 
   return (
-    <div className="page panel form">
-      <h2 className="heading">Sozlamalar</h2>
-      {view ? (
+    <div className="block form narrow">
+            {view ? (
         <label className="field">
           <span className="head"><span className="label">Eye Contact: qovoq ochiqligi (lid_open)</span>
             <span className="stat accent">{v.toFixed(2)}</span></span>
@@ -23,16 +22,6 @@ export function Settings() {
           <span className="caption dim">Oʻzgarish Eye Contact keshini bekor qiladi, qayta ishlash kerak boʻladi.</span>
         </label>
       ) : <p className="body dim">Loyiha tanlanmagan.</p>}
-      <label className="field">
-        <span className="label">Mavzu</span>
-        <select defaultValue={document.documentElement.dataset.theme ?? "dark"} style={{ width: 160 }} onChange={(e) => {
-          document.documentElement.dataset.theme = e.target.value;
-          try { localStorage.setItem("theme", e.target.value); } catch { /* saqlanmasa ham ishlaydi */ }
-        }}>
-          <option value="dark">Qorongʻi</option>
-          <option value="light">Yorugʻ</option>
-        </select>
-      </label>
       <div className="field">
         <span className="label">Ishchi papka</span>
         <span className="code">{health.workdir ?? "—"}</span>

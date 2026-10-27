@@ -3,9 +3,14 @@ import { api } from "./lib/api";
 import type { Job, ProjectView, Suspicious, Word } from "./lib/types";
 
 export type Tab = "home" | "new" | "project" | "review" | "key" | "template" | "export" | "settings";
+/** Loyiha ichidagi qadam: 1 fayllar va o'qituvchi, 2 tayyorlash, 3 ko'rib chiqish, 4 eksport. */
+export type Step = 1 | 2 | 3 | 4;
 
 interface State {
   tab: Tab;
+  step: Step;
+  stepFor: string | null;   // qaysi dars uchun qadam tanlangan (yangi dars ochilganda avtomatik tanlanadi)
+  setStep: (s: Step) => void;
   name: string | null;
   view: ProjectView | null;
   words: Word[];
@@ -44,7 +49,7 @@ export const useStore = create<State>((set, get) => {
     }
   };
   return {
-    tab: "home", name: null, view: null, words: [], suspicious: [], jobs: {}, error: null, notice: null, busy: false,
+    tab: "project", step: 1, stepFor: null, setStep: (step) => set({ step, tab: "project", stepFor: get().name }), name: null, view: null, words: [], suspicious: [], jobs: {}, error: null, notice: null, busy: false,
     setTab: (tab) => set({ tab }),
     open: async (name, tab) => {
       set({ name, view: null, words: [], suspicious: [], ...(tab ? { tab } : {}) });

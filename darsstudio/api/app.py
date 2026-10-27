@@ -158,6 +158,20 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         await asyncio.to_thread(importer.append_part, s, Path(r.video))
         return {"jobs": enqueue_prepare(queue, str(s.root), proxy=True), **project_view(stack(name))}
 
+    class RevealReq(BaseModel):
+        file: str
+
+    @app.post("/api/projects/{name}/reveal")
+    def reveal(name: str, r: RevealReq) -> dict[str, bool]:
+        """Eksport faylini Windows Explorer'da belgilab ochadi (faqat loyiha papkasi ichidagi fayl)."""
+        import subprocess
+        root = store(name).root.resolve()
+        f = (root / r.file).resolve()
+        if not str(f).startswith(str(root)) or not f.exists():
+            raise HTTPException(404, "Fayl topilmadi.")
+        subprocess.Popen(["explorer", f"/select,{f}"], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        return {"ok": True}
+
     @app.get("/api/projects/{name}")
     def get_project(name: str) -> dict[str, Any]:
         return project_view(stack(name))
@@ -329,8 +343,10 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         out = []
         for f in sorted(s.root.glob("exports/**/*.mp4")):
             qa = f.with_name("qa.json")
+            m = re.fullmatch(r"v(\d+)", f.parent.name)
             out.append({"file": str(f.relative_to(s.root)).replace("\\", "/"),
-                        "size_mb": round(f.stat().st_size / 2**20, 1),
+                        "size_mb": round(f.stat().st_size / 2**20, 1), "version": int(m.group(1)) if m else 0,
+                        "mtime": int(f.stat().st_mtime),
                         "qa": json.loads(qa.read_text(encoding="utf-8")) if qa.is_file() else None})
         return out
 
