@@ -100,3 +100,19 @@ def test_part_join_cuts() -> None:
     # signal yo'q: faqat jimlik (birinchi so'zgacha)
     c2 = cuts.part_join_cuts(_seq("bir", 90000) + _seq("davom etamiz", 104000), parts, fps)
     assert c2[0].end / 25 * 1000 <= 104000 and c2[0].start / 25 * 1000 >= 90300
+
+
+def test_part_join_overlap_reread() -> None:
+    """Yozuv gap o'rtasida uzilgan, keyingi qismda slayd boshidan qayta o'qilgan: 1-qismdagi takror (uzilgan) gap va
+    2-qism boshidagi gaplashuv kesiladi, qayta o'qilgan to'liq variant qoladi."""
+    from darsstudio.project.model import VideoPart
+    fps = Fraction(25)
+    parts = [VideoPart(path="a", start=0, frames=25 * 100), VideoPart(path="b", start=25 * 100, frames=25 * 80)]
+    p1 = _seq("hududlar hisoblanadi. byudjet kodeksi transportlariga olti turini belgilaydi. subvensiya aniq "
+              "xarajatlar uchun tartibga soluvchi va.", 80000)
+    p2 = _seq("boshidan oʻqiyveraman. boʻldimi? byudjetlararo transportlarni byudjet kodeksi asosan oltita turi "
+              "belgilangan. subvensiya bu aniq xarajat uchun", 101000, gaps={3: 1500})
+    c = cuts.part_join_cuts(p1 + p2, parts, fps)
+    kept = [w.text for w in p1 + p2 if not any(x.start / 25 * 1000 <= w.start_ms < x.end / 25 * 1000 for x in c)]
+    assert " ".join(kept) == ("hududlar hisoblanadi. byudjetlararo transportlarni byudjet kodeksi asosan oltita turi "
+                              "belgilangan. subvensiya bu aniq xarajat uchun")

@@ -14,7 +14,7 @@ from darsstudio.media.timemap import TimeMap
 
 SR = 48000
 XFADE = 480  # 10 ms
-LIMIT_LIN = 0.708  # -3 dBFS (192 kHz da): AAC dan keyin true peak <= -1.5 dBTP zaxira bilan
+LIMIT_LIN = 0.631  # -4 dBFS (192 kHz da): AAC +1.5 dB qo'shadi (DSBA9359: -3.0 -> -1.5 dBTP, chegarada) — zaxira 1 dB
 
 
 def assemble(src: npt.NDArray[np.float32], tm: TimeMap, xfade: int = XFADE) -> npt.NDArray[np.float32]:

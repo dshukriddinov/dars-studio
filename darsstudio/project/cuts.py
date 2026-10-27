@@ -251,10 +251,53 @@ def part_join_cuts(words: Sequence[Word], parts: Sequence[Any], fps: Fraction) -
             nxt = inside[0] if inside else None
         s = before[-1].end_ms + 400 if before else b0
         e = nxt.start_ms - 300 if nxt else b0
+        ov = _part_overlap(before, [w for w in ws if b0 <= w.start_ms < min(b1, b0 + OVERLAP_SEARCH_S * 1000)])
+        if ov:   # keyingi qismda oldingi qism oxiri qayta o'qilgan: takrorlangan (uzilgan) qism va oraliq kesiladi
+            a, b = ov
+            s = (a.start_ms + _prev_end(before, a)) // 2
+            e = b.start_ms - 150
         cs, ce = math.ceil(Fraction(s, 1000) * fps), math.floor(Fraction(max(e, s), 1000) * fps)
         if ce > cs:
             out.append(CutProposal(start=cs, end=ce, reason="qism", status="tasdiqlangan"))
     return out
+
+
+OVERLAP_SEARCH_S = 60      # keyingi qism boshidan shuncha ichida takror izlanadi
+OVERLAP_TAIL_S = 120       # oldingi qism oxiridan
+OVERLAP_MIN = 4            # 8 so'zlik oynada kamida shuncha o'xshash so'z (tartib bilan)
+
+
+def _prev_end(ws: Sequence[Word], w: Word) -> int:
+    i = ws.index(w)
+    return ws[i - 1].end_ms if i else w.start_ms
+
+
+def _sentence_start(ws: Sequence[Word], i: int) -> int:
+    while i > 0 and not _ends_sentence(ws[i - 1]) and ws[i].start_ms - ws[i - 1].end_ms < PHRASE_GAP_MS * 2:
+        i -= 1
+    return i
+
+
+def _part_overlap(before: Sequence[Word], after: Sequence[Word]) -> tuple[Word, Word] | None:
+    """O'qituvchi keyingi qismda oldingi qism oxirini qayta o'qigan bo'lsa (yozuv uzilgan, slayd boshidan):
+    (oldingi qismdagi takrorlangan gap boshi, keyingi qismdagi qayta o'qish gap boshi). Ikki so'z juftligi mos
+    kelgan joydan 8 so'zlik oynada >= OVERLAP_MIN so'z tartib bilan o'xshash bo'lishi kerak."""
+    if not before or not after:
+        return None
+    tail = [w for w in before if w.start_ms >= before[-1].start_ms - OVERLAP_TAIL_S * 1000]
+    kt, ka = [_key(w.text) for w in tail], [_key(w.text) for w in after]
+    for j in range(len(after) - 1):
+        for i in range(len(tail) - 1):
+            if not (_alike(kt[i], ka[j]) and _alike(kt[i + 1], ka[j + 1]) and len(kt[i]) >= 3):
+                continue
+            hits, q = 0, i
+            for b in ka[j:j + 8]:                  # tartibli moslik (so'z tushib qolishiga chidamli)
+                m = next((x for x in range(q, min(len(kt), q + 3)) if _alike(kt[x], b)), None)
+                if m is not None:
+                    hits, q = hits + 1, m + 1
+            if hits >= OVERLAP_MIN:
+                return tail[_sentence_start(tail, i)], after[_sentence_start(after, j)]
+    return None
 
 
 def _intersect(a: list[tuple[int, int]], b: list[tuple[int, int]]) -> list[tuple[int, int]]:

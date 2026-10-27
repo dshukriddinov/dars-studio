@@ -4,6 +4,27 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Dars bir nechta video faylda (DSBA9359 + DSBA9629)
+
+- Foydalanuvchi: dars davomi boshqa faylda (13- va 24-oktabr yozuvlari). 2-qismda kamera yaqinroq va o'ngroqda, yashil
+  fon chegarasi boshqa.
+- `VideoPart` + `importer.join_parts` (concat, -c copy, sifat yo'qolmaydi) / `append_part` (1-qism indekslari, tasdiqlangan
+  kesishlar saqlanadi); renderer `TeacherParts` — har qismga o'z keyer va joylashuvi; `prepare.ensure_parts`.
+  Natija: 1-qism 0.9548, 2-qism 0.8791 — kanvasda o'qituvchi bir xil o'lcham va joyda.
+- **Topilgan xato:** MOV'ga -c copy ulashda edit list 1-qism boshidagi ochiq GOP 2 kadrini yashirdi (31102 paket,
+  31100 kadr; framemd5 bilan aniqlandi) -> indekslar va A/V 80 ms siljirdi, Eye Contact xato berdi. Yechim: MKV;
+  probe video boshlanishi = eng kichik paket pts (asl MOV/MP4 lar uchun o'zgarmaydi); `join_parts` to'liq dekod bilan
+  kadrlar soni aniq tekshiriladi. Eye Contact dvigatelida ham xuddi shu tuzatish (`studio-ec` b86f2aa).
+- Ulanish joyi (`cuts.part_join_cuts`, sabab "qism", avtomatik): 1-qism gap o'rtasida uzilgan ("…tartibga soluvchi
+  va."), 2-qism xodimlar bilan gaplashuv bilan boshlanib ("boshidan o'qiyveraman… bo'ldimi?"), o'qituvchi slaydni
+  boshidan qayta o'qigan. 2-qism boshi 1-qism oxiri bilan so'zma-so'z moslanadi (juftlik + 8 so'zlik oynada >= 4):
+  974.56–1002.84 s kesiladi — "…yetishmayotgan hududlar hisoblanadi. Byudjetlararo transfertlarni…". Moslik bo'lmasa
+  — "uch, ikki, bir, boshlasangiz bo'ladi" yoki jimlik.
+- QA: TP -1.4 dBTP (chegara -1.5). Limiterdan keyin -3.0 dBFS, AAC'dan keyin -1.5 dBTP (o'lchandi) -> limiter
+  -4 dBFS (`LIMIT_LIN` 0.631). v5: 1220.92 s, A/V 0 ms, -16.7 LUFS, TP -3.0 dBTP.
+
+---
+
 ## 2026-10-27 — Joylashuv masshtabi: bosh va yelka bo'yicha (kaft bo'yicha emas)
 
 - Foydalanuvchi (DSBA9359, UI orqali): o'qituvchi juda yaqin, son yuqori qismi ko'rinishi kerak edi. Sabab: bu
