@@ -56,7 +56,7 @@ def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, kee
                        prefer_fullscreen)
     ws = words(stack)
     ef = store.cache("audio") / "events.json"
-    extra = cuts.retake_cuts(ws, p.fps_frac) + cuts.stutter_cuts(ws, p.fps_frac)
+    extra = cuts.retake_cuts(ws, p.fps_frac) + cuts.repeat_cuts(ws, p.fps_frac) + cuts.stutter_cuts(ws, p.fps_frac)
     if ef.is_file():
         extra += cuts.event_cuts(json.loads(ef.read_text(encoding="utf-8")), ws, p.fps_frac, p.total_frames)
     den = store.cache("audio") / "denoised_48k.wav"

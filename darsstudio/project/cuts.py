@@ -105,9 +105,20 @@ def _key(text: str) -> str:
     return uz_text.normalize(text).strip(".,;:?!-…")
 
 
+NUMBER_ROOTS = tuple(uz_text.normalize(x) for x in (
+    "bir", "ikki", "uch", "to'rt", "besh", "olti", "yetti", "sakkiz", "to'qqiz", "o'n", "yigirma", "o'ttiz", "qirq",
+    "ellik", "oltmish", "yetmish", "sakson", "to'qson", "yuz", "ming", "million", "milliard", "trillion"))
+
+
 def _alike(a: str, b: str) -> bool:
+    """O'xshash so'z (ASR xatolari, qo'shimchalar). Sonlar aynan teng bo'lishi shart: "to'rtinchi" ~ "oltinchi"
+    (difflib 0.7+) yilni almashtirib, haqiqiy gapni takror deb kesardi (DSBA9359, 324 s)."""
     import difflib
-    return a == b or (min(len(a), len(b)) >= 3 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.7)
+    if a == b:
+        return True
+    if a.startswith(NUMBER_ROOTS) or b.startswith(NUMBER_ROOTS):
+        return False
+    return min(len(a), len(b)) >= 3 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.7
 
 
 def _restart_match(k: list[str], i: int, j: int) -> bool:
@@ -125,6 +136,83 @@ def _ends_sentence(w: Word) -> bool:
 def _mid_frame(a_ms: int, b_ms: int, fps: Fraction, up: bool) -> int:
     f = Fraction(a_ms + b_ms, 2000) * fps
     return math.ceil(f) if up else math.floor(f)
+
+
+REPEAT_MAX_S = 20.0
+REPEAT_MIN_RUN = 7         # tashlab ketilgan urinish: shuncha so'z tartib bilan qayta aytilgan (6 da reja bandlari
+                           # "xalq deputatlari viloyat… saylov prinsiplari / …saylov organlari" takror deb topildi)
+REPEAT_MIN_SENTENCE = 3    # to'liq gap qayta aytilgan ("e'tiboringiz uchun rahmat.")
+
+
+def repeat_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
+    """Uzun takrorlar (DSBA9359, xulosa va xayrlashuv): 20 s ichida
+    1) >= 6 so'z ketma-ket qayta aytilgan va ikkinchisi ibora boshidan — birinchi urinish tashlab ketilgan:
+       uning gapi boshidan ikkinchisi boshigacha kesiladi ("Xulosa qilamiz. Byudjet daromadi… haqida, e, | Xulosa
+       qiladigan bo'lsak, byudjet daromadi…" — oldidagi qisqa "xulosa qilamiz." ham, chunki ikkinchisi xuddi shu
+       so'z bilan boshlanadi);
+    2) >= 3 so'zli to'liq gap aynan qayta aytilgan — birinchisi kesiladi."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    k = [_key(w.text) for w in ws]
+    n = len(ws)
+
+    def start_of(i: int) -> bool:
+        return i == 0 or _ends_sentence(ws[i - 1]) or ws[i].start_ms - ws[i - 1].end_ms >= PHRASE_GAP_MS \
+            or ws[i - 1].text.rstrip()[-1:] == ","
+
+    def run(i: int, j: int) -> int:
+        t = 0
+        while j + t < n and i + t < j and _alike(k[i + t], k[j + t]):
+            t += 1
+        return t
+
+    def loose(i: int, j: int) -> int:
+        """Tartibli moslik, 1–2 so'z qo'shilishi/tushishiga chidamli ("byudjet daromadi [bu] yalpi…")."""
+        if not (_alike(k[i], k[j]) and i + 1 < j and j + 1 < n and _alike(k[i + 1], k[j + 1])):
+            return 0
+        hits, q = 0, i
+        for b in range(j, min(n, j + 12)):
+            m = next((x for x in range(q, min(j, q + 3)) if _alike(k[x], k[b])), None)
+            if m is not None:
+                hits, q = hits + 1, m + 1
+            elif k[b].startswith(NUMBER_ROOTS):   # boshqa son ("2026-yilda 372 / 2028-yilda 484") — takror emas
+                return 0
+        return hits
+
+    out: list[CutProposal] = []
+    i = 0
+    while i < n:
+        hit = None
+        for j in range(i + REPEAT_MIN_SENTENCE, n):
+            if ws[j].start_ms - ws[i].start_ms > REPEAT_MAX_S * 1000:
+                break
+            if not start_of(j) or len(k[j]) < 2:
+                continue
+            L = run(i, j)
+            # birinchi urinish tugallanmagan (i va j orasida gap oxiri yo'q): to'liq gapdagi atamalarning keyingi gapda
+            # takrorlanishi — takror emas (Eshankulov: mavzu nomi kirishda va reja ichida)
+            if start_of(i) and loose(i, j) >= REPEAT_MIN_RUN and not any(_ends_sentence(ws[m]) for m in range(i, j)):
+                s = i   # takror ibora boshidan (gap boshidagi takrorlanmagan qism qoladi)
+                # oldingi qisqa ibora ("xulosa qilamiz.") ikkinchi urinish boshidagi so'z bilan boshlansa — u ham
+                p0 = _sentence_start(ws, s - 1) if s > 0 else s
+                j0 = _sentence_start(ws, j)
+                if s > 0 and s - p0 <= 4 and _alike(k[p0], k[j0]):
+                    s, j = p0, j0
+                hit = (s, j)
+                break
+            if L >= REPEAT_MIN_SENTENCE and start_of(i) and _ends_sentence(ws[i + L - 1]) \
+                    and _ends_sentence(ws[j + L - 1]) and (i + L == j or not _ends_sentence(ws[i + L - 2])):
+                hit = (i, i + L)
+                break
+        if hit and hit[1] < n:
+            a, b = hit
+            lo = ws[a - 1].end_ms if a else ws[a].start_ms
+            cs, ce = _mid_frame(lo, ws[a].start_ms, fps, True), _mid_frame(ws[b - 1].end_ms, ws[b].start_ms, fps, False)
+            if ce > cs:
+                out.append(CutProposal(start=cs, end=ce, reason="takror"))
+            i = b
+        else:
+            i += 1
+    return out
 
 
 def retake_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:

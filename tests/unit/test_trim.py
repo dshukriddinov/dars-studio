@@ -4,7 +4,7 @@ import math
 from fractions import Fraction
 
 from darsstudio.project import cuts
-from darsstudio.project.model import Word
+from darsstudio.project.model import CutProposal, Word
 
 
 def test_trim_head_and_tail() -> None:
@@ -116,3 +116,30 @@ def test_part_join_overlap_reread() -> None:
     kept = [w.text for w in p1 + p2 if not any(x.start / 25 * 1000 <= w.start_ms < x.end / 25 * 1000 for x in c)]
     assert " ".join(kept) == ("hududlar hisoblanadi. byudjetlararo transportlarni byudjet kodeksi asosan oltita turi "
                               "belgilangan. subvensiya bu aniq xarajat uchun")
+
+
+def _kept(ws: list[Word], cs: list[CutProposal]) -> str:
+    return " ".join(w.text for w in ws if not any(c.start * 40 <= w.start_ms < c.end * 40 for c in cs))
+
+
+def test_repeat_abandoned_and_sentence() -> None:
+    """DSBA9359 oxiri: tashlab ketilgan xulosa va ikki marta aytilgan xayrlashuv."""
+    ws = _seq("oladi. xulosa qilamiz. byudjet daromadi yalpi ichki mahsulotning bir qismini davlatga qayta "
+              "taqsimlash munosabati haqida, e, xulosa qiladigan boʻlsak, byudjet daromadi bu yalpi ichki "
+              "mahsulotning bir qismini davlatga qayta taqsimlash munosabatlarini oʻz ichiga oladi. "
+              "eʼtiboringiz uchun rahmat. savollaringiz boʻlsa, muhokama qilamiz. eʼtiboringiz uchun rahmat.",
+              0, 450, gaps={16: 1500})
+    assert _kept(ws, cuts.repeat_cuts(ws, Fraction(25))) == (
+        "oladi. xulosa qiladigan boʻlsak, byudjet daromadi bu yalpi ichki mahsulotning bir qismini davlatga qayta "
+        "taqsimlash munosabatlarini oʻz ichiga oladi. savollaringiz boʻlsa, muhokama qilamiz. "
+        "eʼtiboringiz uchun rahmat.")
+
+
+def test_repeat_false_positives() -> None:
+    # yillar va sonlar boshqa — takror emas; to'liq gapdagi atamalar keyingi gapda — takror emas
+    a = _seq("fiskal strategiyaga koʻra ikki ming yigirma oltinchi yilda daromadlar uch yuz yetmish ikki "
+             "trillion, ikki ming yigirma sakkizinchi yilda esa toʻrt yuz sakson toʻrt trillion boʻladi.", 0, 350)
+    b = _seq("navbatdagi dars mahalliy davlat hokimiyati vakillik organlarini shakllantirishga bagʻishlangan. "
+             "demak, biz koʻrib chiqamiz: mahalliy davlat hokimiyati vakillik organlarini shakllantirishning "
+             "asoslarini.", 0, 350)
+    assert cuts.repeat_cuts(a, Fraction(25)) == [] and cuts.repeat_cuts(b, Fraction(25)) == []

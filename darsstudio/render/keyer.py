@@ -128,6 +128,9 @@ class Keyer:
         return KeyResult(rgb=rgb * a, alpha=a)
 
 
+GARBAGE_FILL = 0.95
+
+
 def suggest(y: npt.NDArray[np.uint8], u: npt.NDArray[np.uint8], v: npt.NDArray[np.uint8], full_range: bool,
             margin_px: int = 6) -> KeySettings:
     """Bitta kadrdan boshlang'ich sozlamalar: key rangi (yashil piksellar medianasi), tolerantlik (fon
@@ -143,8 +146,11 @@ def suggest(y: npt.NDArray[np.uint8], u: npt.NDArray[np.uint8], v: npt.NDArray[n
     d = np.hypot(cb - key[0], cr - key[1])
     tol = float(np.percentile(d[green], 99.5)) + 0.02
     h, w = green.shape
-    cols = np.flatnonzero(green.mean(axis=0) > 0.3)
-    rows = np.flatnonzero(green.mean(axis=1) > 0.3)
+    # chegara — deyarli to'liq yashil ustun/qator: mato chekkasi qiyshiq bo'lsa (DSBA9359: 30% — 348, 98% — 370-ustun)
+    # 30% chegarasida devordan yupqa oq chiziq qolardi (kanvasda slayd ostidan pastgacha)
+    cols = np.flatnonzero(green.mean(axis=0) > GARBAGE_FILL)
+    inner = green[:, cols[0]:cols[-1] + 1] if len(cols) else green   # qatorlar — yashil ustunlar oralig'ida
+    rows = np.flatnonzero(inner.mean(axis=1) > GARBAGE_FILL)
     polys: list[list[tuple[int, int]]] = []
     if len(cols):
         x0, x1 = int(cols[0]) + margin_px, int(cols[-1]) - margin_px

@@ -4,6 +4,27 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-27 — Oq chiziq (garbage chegarasi) va uzun takrorlar (xulosa, xayrlashuv)
+
+- Foydalanuvchi (DSBA9359 v5): slayd ekrani ostidan pastgacha oq chiziq. Sabab: yashil mato chekkasi qiyshiq —
+  ustundagi yashil ulushi 30% bo'yicha garbage chegarasi 348 (+6 = 355), 98% — 370: 355–370 oralig'ida devor
+  qatorlari kalitdan o'tib, kanvasda x~855 da vertikal chiziq bo'lardi (faqat 1-qismda). `keyer.suggest`: chegara —
+  >= 95% yashil ustun; qatorlar yashil ustunlar oralig'ida o'lchanadi. DSBA 355 -> 376, Asadov 339 -> 348,
+  Dalmuradova 227 -> 231.
+- Foydalanuvchi: xulosa va xayrlashuv takrorlangan. `cuts.repeat_cuts` (sabab "takror", taklif): 20 s ichida
+  1) tashlab ketilgan urinish — ibora boshidan >= 7 so'z tartib bilan qayta aytilgan (1–2 so'z qo'shilishi/tushishiga
+     chidamli), birinchi urinishda gap oxiri yo'q; kesish takror ibora boshidan (oldidagi qisqa "xulosa qilamiz." ham,
+     agar ikkinchisi shu so'z bilan boshlansa) ikkinchisi boshigacha;
+  2) >= 3 so'zli to'liq gap aynan takrorlangan — birinchisi.
+  Sonlar aynan teng bo'lishi shart (`_alike`: "to'rtinchi" ~ "oltinchi" yilni almashtirib haqiqiy gapni kesardi;
+  qayta aytish/qismlar ulanishiga ham ta'sir qiladi). Kalibrlash (3 ma'ruza): DSBA 8 ta (hammasi haqiqiy takror:
+  222, 586, 614, 843, 903, 956, 1218 xulosa, 1235 xayrlashuv), Asadov 0, Dalmuradova 0. Oraliq variantlarda
+  rad etilganlar: 6 so'z chegarasida reja bandlari, sonlari boshqa yillar, to'liq gapdagi atamalar takrori,
+  gap boshidan kesish (takrorlanmagan qismni ham olardi).
+- DSBA9359 v6: takrorlar tasdiqlandi (foydalanuvchi so'rovi bo'yicha), 1160.12 s, A/V 0 ms.
+
+---
+
 ## 2026-10-27 — Dars bir nechta video faylda (DSBA9359 + DSBA9629)
 
 - Foydalanuvchi: dars davomi boshqa faylda (13- va 24-oktabr yozuvlari). 2-qismda kamera yaqinroq va o'ngroqda, yashil
