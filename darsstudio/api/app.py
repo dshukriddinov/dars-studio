@@ -69,6 +69,12 @@ class Hub:
             self.loop.call_soon_threadsafe(q.put_nowait, msg)
 
 
+def reveal_cmd(f: Path) -> str:
+    """Explorer faqat /select,"yo'l" ko'rinishini tushunadi. Ro'yxat argumenti bo'sh joyli yo'lni butunlay
+    qo'shtirnoqqa olardi ("/select,D:/ai montaj/...") va Explorer boshqa papkani (Hujjatlar) ochardi."""
+    return f'explorer /select,"{f}"'
+
+
 def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> FastAPI:
     wd = Path(workdir or paths.workdir())
     wd.mkdir(parents=True, exist_ok=True)
@@ -169,7 +175,7 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         f = (root / r.file).resolve()
         if not str(f).startswith(str(root)) or not f.exists():
             raise HTTPException(404, "Fayl topilmadi.")
-        subprocess.Popen(["explorer", f"/select,{f}"], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        subprocess.Popen(reveal_cmd(f), creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         return {"ok": True}
 
     @app.get("/api/projects/{name}")

@@ -77,3 +77,8 @@ def test_lines_from_ui_fields() -> None:
     assert (name, sub) == ("A B", ["Maktab dotsenti", "(PhD)"])
     assert overlays._lines({"oqituvchi": "A", "lavozim": "dotsenti"})[1] == ["dotsenti"]
     assert overlays._lines({"oqituvchi": "A", "unvon": "x | y"})[1] == ["x", "y"]       # eski loyihalar
+
+
+def test_reveal_cmd_quotes_only_path() -> None:
+    from darsstudio.api.app import reveal_cmd
+    assert reveal_cmd(Path(r"D:\projects\ai montaj\x\v6.mp4")) == r'explorer /select,"D:\projects\ai montaj\x\v6.mp4"'
