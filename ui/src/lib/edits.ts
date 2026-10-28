@@ -1,6 +1,7 @@
 // Tekshirish amallari -> server buyrug'i {label, values}. Sof funksiyalar; null = o'zgarish yo'q.
 import { indexAt, mergeAt, moveBoundary, setRange, splitAt } from "./spans";
-import type { LayoutSpan, Project, SlideSpan } from "./types";
+import { frameToSec, msToFrame, type Fps } from "./time";
+import type { LayoutSpan, Project, SlideSpan, Word } from "./types";
 
 export interface Cmd { label: string; values: Record<string, unknown> }
 
@@ -77,4 +78,47 @@ export function addEyeOffCmd(p: Project, a: number, b: number): Cmd | null {
 export function removeEyeOffCmd(p: Project, i: number): Cmd | null {
   if (!p.eye_off[i]) return null;
   return { label: "Eye Contact oraligʻini oʻchirish", values: { eye_off: p.eye_off.filter((_, j) => j !== i) } };
+}
+
+/** Kadr so'z ichida bo'lsa — eng yaqin so'zlar orasidagi bo'shliq o'rtasiga (kesish so'zni qirqmasin). */
+export function snapOutOfWord(frame: number, words: Word[], fps: Fps): number {
+  const ms = frameToSec(frame, fps) * 1000;
+  const k = words.findIndex((w) => w.start_ms < ms && ms < w.end_ms);
+  if (k < 0) return frame;
+  const w = words[k];
+  const before = k > 0 ? (words[k - 1].end_ms + w.start_ms) / 2 : w.start_ms;
+  const after = k + 1 < words.length ? (w.end_ms + words[k + 1].start_ms) / 2 : w.end_ms;
+  return msToFrame(ms - before <= after - ms ? before : after, fps);
+}
+
+/** Qo'lda kesish (timeline'dagi kesish asbobi yoki matndan); aynan shunday kesish bo'lsa — qo'shilmaydi. */
+export function addCutCmd(p: Project, start: number, end: number, label = "Timeline'dan kesish"): Cmd | null {
+  const s = Math.max(0, Math.min(start, end)), e = Math.min(p.total_frames, Math.max(start, end));
+  if (e - s < 1 || p.cuts.some((c) => c.start === s && c.end === e && c.status === "tasdiqlangan")) return null;
+  return { label, values: { cuts: [...p.cuts, { start: s, end: e, reason: "manual", status: "tasdiqlangan" }] } };
+}
+
+/** Kesishni cheti bo'yicha kengaytirish/toraytirish: inson qarori — qo'lda, tasdiqlangan. */
+export function resizeCutCmd(p: Project, i: number, edge: "start" | "end", to: number): Cmd | null {
+  const c = p.cuts[i];
+  if (!c) return null;
+  const f = Math.max(0, Math.min(p.total_frames, Math.round(to)));
+  const [start, end] = edge === "start" ? [Math.min(f, c.end - 1), c.end] : [c.start, Math.max(f, c.start + 1)];
+  if (start === c.start && end === c.end) return null;
+  return { label: "Kesish chegarasi", values: { [`cuts.${i}`]: { ...c, start, end, reason: "manual", status: "tasdiqlangan" } } };
+}
+
+/** Sahna chegarasini surish (i — o'ng tomondagi oraliq; boshi = chapdagining oxiri). */
+export function moveSceneBoundaryCmd(p: Project, i: number, to: number): Cmd | null {
+  if (i <= 0 || i >= p.layout_spans.length) return null;
+  const spans = moveBoundary(p.layout_spans, i - 1, to, { suggested: false });
+  return changed(spans, p.layout_spans) ? { label: "Sahna chegarasi", values: { layout_spans: spans } } : null;
+}
+
+/** Sahna A <-> B (ikki marta bosish). */
+export function toggleSceneCmd(p: Project, i: number): Cmd | null {
+  const s = p.layout_spans[i];
+  if (!s) return null;
+  const layout = s.layout === "A" ? "B" : "A";
+  return { label: `Sahna ${layout}`, values: { layout_spans: setRange(p.layout_spans, s.start, s.end, "layout", layout, { suggested: false }) } };
 }

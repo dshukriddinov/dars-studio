@@ -6,7 +6,7 @@
 //  - umumiy ko'rinish (minimap): butun dars, ko'rinib turgan oyna sudraladi.
 // Faqat ko'rinadigan elementlar chiziladi (virtualizatsiya); playhead React'dan tashqarida yangilanadi.
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Maximize2, Minus, Plus, Crosshair } from "lucide-react";
+import { Maximize2, Minus, Plus, Crosshair, Scissors } from "lucide-react";
 import { player } from "../lib/player";
 import { visibleSlice } from "../lib/spans";
 import type { Span } from "../lib/types";
@@ -14,8 +14,9 @@ import type { Span } from "../lib/types";
 export interface Item extends Span { i: number; text?: string; cls?: string; thumb?: string }
 export interface Lane {
   id: string; label: string; items: Item[]; maxLen: number; boundaries?: boolean; tall?: boolean;
-  drag?: boolean;   // har element boshini sudrab surish (onItemDrag)
+  drag?: boolean | "both";   // element boshini (both: boshi va oxirini) sudrab surish (onItemDrag)
 }
+export type Edge = "start" | "end";
 
 interface Props {
   total: number;
@@ -25,7 +26,9 @@ interface Props {
   onItemClick?: (lane: string, i: number, frame: number) => void;
   onBoundaryClick?: (b: number) => void;
   onBoundaryDrag?: (b: number, frame: number) => void;
-  onItemDrag?: (lane: string, i: number, frame: number) => void;
+  onItemDrag?: (lane: string, i: number, frame: number, edge: Edge) => void;
+  onItemDouble?: (lane: string, i: number) => void;   // ikki marta bosish (masalan sahna A <-> B)
+  onRangeCut?: (start: number, end: number) => void;  // kesish asbobi (C): timeline'da sudrab belgilangan oraliq
   onSeek: (frame: number) => void;
   waveform?: Uint8Array | null;                // har kadrga cho'qqi (0..255)
   overview?: Span[];                           // minimap'da belgilanadigan oraliqlar (masalan kesishlar)
@@ -53,7 +56,8 @@ export function fmtTc(f: number, withFrames = false): string {
 }
 
 export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, onItemClick, onBoundaryClick,
-  onBoundaryDrag, onItemDrag, onSeek, waveform, overview = [], width: fixedWidth, pxPerFrame }: Props) {
+  onBoundaryDrag, onItemDrag, onItemDouble, onRangeCut, onSeek, waveform, overview = [], width: fixedWidth,
+  pxPerFrame }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(fixedWidth ?? 1000);
@@ -68,6 +72,8 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
   followRef.current = follow;
   const [hover, setHover] = useState<number | null>(null);
   const [drag, setDrag] = useState<{ b: number; frame: number } | null>(null);
+  const [razor, setRazor] = useState(false);
+  const [range, setRange] = useState<[number, number] | null>(null);
   const pendingAnchor = useRef<{ frame: number; px: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -144,10 +150,12 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
       else if (e.key === "\\") { e.preventDefault(); setZoom(0); }
       else if (e.key === "Home") { e.preventDefault(); onSeek(0); if (scrollRef.current) scrollRef.current.scrollLeft = 0; }
       else if (e.key === "End") { e.preventDefault(); onSeek(total - 1); }
+      else if (onRangeCut && (e.key === "c" || e.key === "C") && !e.altKey) { e.preventDefault(); setRazor((r) => !r); }
+      else if (e.key === "Escape") setRazor(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setZoom, onSeek, total]);
+  }, [setZoom, onSeek, total, onRangeCut]);
 
   const frameAt = (clientX: number) => {
     const el = scrollRef.current;
@@ -157,7 +165,8 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
   };
 
   // sudrash: o'lchovda scrub, o'rta tugma bilan surish, slayd chegarasi
-  const startDrag = (e: React.MouseEvent, kind: "scrub" | "pan" | { b: number; lane?: string }) => {
+  type Kind = "scrub" | "pan" | { b: number; lane?: string; edge?: Edge } | { range: number };
+  const startDrag = (e: React.MouseEvent, kind: Kind) => {
     e.preventDefault();
     const el = scrollRef.current;
     const x0 = e.clientX, s0 = el?.scrollLeft ?? 0;
@@ -167,6 +176,7 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
       let f = frameAt(ev.clientX);
       if (kind === "scrub") { if (f !== last) { last = f; onSeek(f); } return; }
       if (Math.abs((f - player.frame) * zoomRef.current) <= SNAP_PX) f = player.frame;   // playhead'ga yopishadi
+      if ("range" in kind) { setRange([Math.min(kind.range, f), Math.max(kind.range, f)]); return; }
       setDrag({ b: kind.b, frame: f });
     };
     const up = (ev: MouseEvent) => {
@@ -176,8 +186,12 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
         let f = frameAt(ev.clientX);
         if (Math.abs((f - player.frame) * zoomRef.current) <= SNAP_PX) f = player.frame;
         setDrag(null);
-        if (Math.abs(ev.clientX - x0) > 2) {
-          if (kind.lane) onItemDrag?.(kind.lane, kind.b, f); else onBoundaryDrag?.(kind.b, f);
+        setRange(null);
+        if ("range" in kind) {
+          const [a, b] = [Math.min(kind.range, f), Math.max(kind.range, f)];
+          if (b - a >= 2) onRangeCut?.(a, b + 1);
+        } else if (Math.abs(ev.clientX - x0) > 2) {
+          if (kind.lane) onItemDrag?.(kind.lane, kind.b, f, kind.edge ?? "start"); else onBoundaryDrag?.(kind.b, f);
         }
       }
     };
@@ -201,8 +215,14 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
         <button className="btn-ghost sm" onClick={() => setZoom(0)} title="Butun dars (\)"><Maximize2 size={14} /> Butun dars</button>
         <button className={`btn-ghost sm${follow ? " on" : ""}`} onClick={() => setFollow(!follow)}
           title="Ijroda timeline playhead ortidan yursin"><Crosshair size={14} /> Kuzatish</button>
+        {onRangeCut ? (
+          <button className={`btn-ghost sm${razor ? " on" : ""}`} onClick={() => setRazor(!razor)}
+            title="Kesish asbobi (C): timeline ustida sudrab kesiladigan joyni belgilang; Esc — chiqish">
+            <Scissors size={14} /> Kesish (C)</button>
+        ) : null}
         <span className="spacer" />
-        <span className="caption dim">{hover !== null ? `Kursor: ${fmtTc(hover, zoom > 4)}` : "Alt + gʻildirak — masshtab, gʻildirak — surish"}</span>
+        <span className="caption dim">{razor ? "Kesish: sudrab belgilang (Esc — chiqish)"
+          : hover !== null ? `Kursor: ${fmtTc(hover, zoom > 4)}` : "Alt + gʻildirak — masshtab, gʻildirak — surish"}</span>
       </div>
       <Overview total={total} marks={overview} scroll={scroll} width={width} zoom={zoom}
         onMove={(frameLeft) => { if (scrollRef.current) scrollRef.current.scrollLeft = frameLeft * zoom; }} />
@@ -215,21 +235,29 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
         <div className="tl-scroll ntl-scroll" ref={scrollRef} onScroll={onScroll}
           onMouseMove={(e) => setHover(frameAt(e.clientX))} onMouseLeave={() => setHover(null)}
           onMouseDown={(e) => { if (e.button === 1) startDrag(e, "pan"); }}>
-          <div className="tl-inner" style={{ width: Math.max(total * zoom, 1) }} onMouseDown={(e) => {
-            if (e.button === 0 && (e.target as HTMLElement).dataset.bg !== undefined) onSeek(frameAt(e.clientX));
-          }}>
+          <div className={`tl-inner${razor ? " razor" : ""}`} style={{ width: Math.max(total * zoom, 1) }}
+            onMouseDownCapture={(e) => {
+              if (!razor || e.button !== 0 || (e.target as HTMLElement).closest(".ntl-ruler")) return;
+              e.stopPropagation();
+              startDrag(e, { range: frameAt(e.clientX) });
+            }}
+            onMouseDown={(e) => {
+              if (e.button === 0 && (e.target as HTMLElement).dataset.bg !== undefined) onSeek(frameAt(e.clientX));
+            }}>
             <Ruler total={total} zoom={zoom} from={from} to={to} onScrub={(e) => startDrag(e, "scrub")} />
             {lanes.map((l) => (
               <LaneRow key={l.id} lane={l} zoom={zoom} from={from} to={to} selected={selected[l.id] ?? -1}
                 selectedBoundary={l.boundaries ? selectedBoundary : -1}
-                onItemClick={onItemClick} onBoundaryClick={onBoundaryClick}
-                onBoundaryDown={l.drag && onItemDrag ? (e, i) => startDrag(e, { b: i, lane: l.id })
+                onItemClick={onItemClick} onBoundaryClick={onBoundaryClick} onItemDouble={onItemDouble}
+                onBoundaryDown={l.drag && onItemDrag ? (e, i, edge) => startDrag(e, { b: i, lane: l.id, edge })
                   : l.boundaries && onBoundaryDrag ? (e, b) => { onBoundaryClick?.(b); startDrag(e, { b }); } : undefined} />
             ))}
             {waveform ? <Wave peaks={waveform} zoom={zoom} scroll={scroll} width={width} /> : null}
             {hover !== null ? <div className="ntl-hover" style={{ transform: `translateX(${hover * zoom}px)` }} /> : null}
             {drag ? <div className="ntl-ghost" style={{ transform: `translateX(${drag.frame * zoom}px)` }}>
               <span>{fmtTc(drag.frame, true)}</span></div> : null}
+            {range ? <div className="ntl-range" style={{ left: range[0] * zoom, width: Math.max(1, (range[1] - range[0]) * zoom) }}>
+              <span>{fmtTc(range[0], true)} – {fmtTc(range[1], true)}</span></div> : null}
             <div className="tl-playhead ntl-playhead" ref={headRef}><span className="ntl-knob" /></div>
           </div>
         </div>
@@ -263,12 +291,12 @@ function Ruler({ total, zoom, from, to, onScrub }: {
 
 interface LaneProps {
   lane: Lane; zoom: number; from: number; to: number; selected: number; selectedBoundary: number;
-  onItemClick?: Props["onItemClick"]; onBoundaryClick?: Props["onBoundaryClick"];
-  onBoundaryDown?: (e: React.MouseEvent, b: number) => void;
+  onItemClick?: Props["onItemClick"]; onBoundaryClick?: Props["onBoundaryClick"]; onItemDouble?: Props["onItemDouble"];
+  onBoundaryDown?: (e: React.MouseEvent, b: number, edge: Edge) => void;
 }
 
 const LaneRow = memo(function LaneRow({ lane, zoom, from, to, selected, selectedBoundary, onItemClick, onBoundaryClick,
-  onBoundaryDown }: LaneProps) {
+  onItemDouble, onBoundaryDown }: LaneProps) {
   const [i0, i1] = visibleSlice(lane.items, from, to, lane.maxLen);
   const h = lane.tall ? TALL_H : LANE_H;
   const els = [];
@@ -283,7 +311,8 @@ const LaneRow = memo(function LaneRow({ lane, zoom, from, to, selected, selected
           e.stopPropagation();
           const rect = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
           onItemClick?.(lane.id, it.i, Math.floor((e.clientX - rect.left) / zoom));
-        }}>
+        }}
+        onDoubleClick={onItemDouble ? () => onItemDouble(lane.id, it.i) : undefined}>
         {w > 24 ? (
           <span className="tl-stick">
             {it.thumb && w > 90 ? <img className="tl-thumb" src={it.thumb} alt="" loading="lazy" draggable={false} /> : null}
@@ -294,11 +323,15 @@ const LaneRow = memo(function LaneRow({ lane, zoom, from, to, selected, selected
           <span className={`tl-bound${it.i - 1 === selectedBoundary ? " sel" : ""}`} title="Chegara: sudrab suring"
             onMouseDown={(e) => {
               e.stopPropagation();
-              if (onBoundaryDown) onBoundaryDown(e, it.i - 1); else onBoundaryClick?.(it.i - 1);
+              if (onBoundaryDown) onBoundaryDown(e, it.i - 1, "start"); else onBoundaryClick?.(it.i - 1);
             }} />
         ) : lane.drag ? (
-          <span className="tl-bound" title="Javob shu paytda chiqadi: sudrab suring"
-            onMouseDown={(e) => { e.stopPropagation(); onBoundaryDown?.(e, it.i); }} />
+          <span className="tl-bound" title="Boshini sudrab suring"
+            onMouseDown={(e) => { e.stopPropagation(); onBoundaryDown?.(e, it.i, "start"); }} />
+        ) : null}
+        {lane.drag === "both" ? (
+          <span className="tl-bound end" title="Oxirini sudrab suring"
+            onMouseDown={(e) => { e.stopPropagation(); onBoundaryDown?.(e, it.i, "end"); }} />
         ) : null}
       </div>,
     );

@@ -553,7 +553,10 @@ def check_no_word_cut(cuts: Sequence[CutProposal], words: Sequence[Word], fps: F
             continue
         cs_ms, ce_ms = Fraction(c.start) / fps * 1000, Fraction(c.end) / fps * 1000
         if c.reason == "manual":
-            hit = any(w.start_ms < x < w.end_ms for w in words for x in (cs_ms, ce_ms))
+            # 1 kadr chidam: so'zlar orasida bo'shliq bo'lmasa (ASR: "etaman." 1197.18 s da tugaydi, "musiqa" shu
+            # zahoti boshlanadi) chegara kadrga yaxlitlanib so'zga 20 ms kirib qoladi (DSBA9600 eksporti to'xtardi)
+            tol = 1000 / fps
+            hit = any(w.start_ms + tol < x < w.end_ms - tol for w in words for x in (cs_ms, ce_ms))
         else:
             hit = any(w.start_ms < ce_ms and cs_ms < w.end_ms for w in words)
         if hit:

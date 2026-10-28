@@ -40,6 +40,13 @@ def test_propose_cuts_never_inside_words() -> None:
     assert cuts.check_no_word_cut([whole], words, FPS) == []
     pause = CutProposal(start=11, end=24, reason="pause", status="tasdiqlangan")     # avtomatik — so'zga tegmasin
     assert cuts.check_no_word_cut([pause], words, FPS) == [pause]
+    # oraliqsiz so'zlar (DSBA9600: "etaman." tugashi = "musiqa" boshi): chegara kadrga yaxlitlanib so'zga 1 kadrdan
+    # kam kirsa — xato emas; ko'proq kirsa — xato
+    glued = [W("etaman.", 0, 1000), W("musiqa", 1000, 2000)]
+    near = CutProposal(start=26, end=60, reason="manual", status="tasdiqlangan")     # 1040 ms: 40 ms ichkarida
+    far = CutProposal(start=28, end=60, reason="manual", status="tasdiqlangan")      # 1120 ms
+    assert cuts.check_no_word_cut([near], glued, FPS) == []
+    assert cuts.check_no_word_cut([far], glued, FPS) == [far]
 
 
 def test_assemble_audio_length_and_crossfade() -> None:

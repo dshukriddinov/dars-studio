@@ -77,3 +77,31 @@ describe("moveAnimStepCmd", () => {
     expect(E.moveAnimStepCmd(p, 1, 150)).toBeNull();
   });
 });
+
+describe("timeline tahriri", () => {
+  const fps = { num: 25, den: 1 };
+  const words = [{ text: "bir", start_ms: 0, end_ms: 400, conf: 1 }, { text: "ikki", start_ms: 600, end_ms: 1000, conf: 1 }];
+  it("kesish cheti so'z ichiga tushsa — bo'shliq o'rtasiga", () => {
+    expect(E.snapOutOfWord(18, words, fps)).toBe(13);     // 720 ms "ikki" ichida -> (400+600)/2 = 500 ms
+    expect(E.snapOutOfWord(12, words, fps)).toBe(12);     // 480 ms bo'shliqda
+  });
+  it("kesishni cheti bo'yicha o'zgartirish qo'lda va tasdiqlangan bo'ladi; teskari bo'lmaydi", () => {
+    const c = E.resizeCutCmd(project(), 0, "end", 5)!;
+    expect(c.values["cuts.0"]).toEqual({ start: 10, end: 11, reason: "manual", status: "tasdiqlangan" });
+  });
+  it("bir xil qo'lda kesish ikki marta qo'shilmaydi", () => {
+    const p = { ...project(), cuts: [{ start: 30, end: 40, reason: "manual" as const, status: "tasdiqlangan" as const }] };
+    expect(E.addCutCmd(p, 30, 40)).toBeNull();
+    expect(E.addCutCmd(p, 40, 30)).toBeNull();
+    expect(E.addCutCmd(p, 41, 50)!.values.cuts).toHaveLength(2);
+  });
+  it("sahna: chegara surish va A<->B", () => {
+    const p = { ...project(), layout_spans: [{ start: 0, end: 100, layout: "A" as const, suggested: true },
+      { start: 100, end: 300, layout: "B" as const, suggested: true }] };
+    expect(E.moveSceneBoundaryCmd(p, 1, 120)!.values.layout_spans).toEqual([
+      { start: 0, end: 120, layout: "A", suggested: false }, { start: 120, end: 300, layout: "B", suggested: false }]);
+    expect(E.moveSceneBoundaryCmd(p, 0, 50)).toBeNull();
+    const t = E.toggleSceneCmd(p, 1)!.values.layout_spans as { layout: string }[];
+    expect(t.every((s) => s.layout === "A")).toBe(true);
+  });
+});

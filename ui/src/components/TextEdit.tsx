@@ -33,6 +33,20 @@ export function TextEdit({ words, cuts, fps, total, onCut, onRestore }: {
     return k >= 0 && t < ws[k].end_ms + 300 ? k : -1;
   }, [ws, fps]);
 
+  // ijroda joriy so'z ko'rinadigan joydan chiqsa — uning qatori tepaga (sahifa kabi), keyin davomi o'qiladi
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = boxRef.current?.querySelector<HTMLElement>(".w.now");
+    if (!el || !player.playing) return;
+    let sc: HTMLElement | null = el.parentElement;
+    while (sc && !(sc.scrollHeight > sc.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(sc).overflowY))) {
+      sc = sc.parentElement;
+    }
+    if (!sc) return;
+    const r = el.getBoundingClientRect(), b = sc.getBoundingClientRect();
+    if (r.bottom > b.bottom - 4 || r.top < b.top) sc.scrollTop += r.top - b.top - 6;
+  }, [playing]);
+
   const sel = anchor !== null && head !== null ? [Math.min(anchor, head), Math.max(anchor, head)] as const : null;
   const selCuts = sel ? [...new Set(cutOf.slice(sel[0], sel[1] + 1).filter((x) => x >= 0))] : [];
   const allCut = sel ? cutOf.slice(sel[0], sel[1] + 1).every((x) => x >= 0) : false;
@@ -67,7 +81,7 @@ export function TextEdit({ words, cuts, fps, total, onCut, onRestore }: {
   });
 
   return (
-    <div className="textedit">
+    <div className="textedit" ref={boxRef}>
       <div className="te-bar">
         {sel ? (
           <>

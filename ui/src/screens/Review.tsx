@@ -84,6 +84,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
     return () => { v.removeEventListener("play", on); v.removeEventListener("pause", on); player.detach(); };
   }, [name, fps, p.total_frames]);
 
+  const sortedWords = useMemo(() => [...words].sort((a, b) => a.start_ms - b.start_ms), [words]);
   const run = useCallback((c: E.Cmd | null) => { if (c) void command(c.label, c.values); }, [command]);
 
   // Playhead ostidagi slayd oralig'i (kam o'zgaradi, shuning uchun qayta chizish arzon)
@@ -120,8 +121,8 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
     });
     return [
       { id: "slide", label: "Slayd", items: slide, maxLen: laneMaxLen(slide), boundaries: true, tall: true },
-      { id: "scene", label: "Sahna (A/B)", items: scene, maxLen: laneMaxLen(scene) },
-      { id: "cut", label: "Kesishlar", items: cuts, maxLen: laneMaxLen(cuts) },
+      { id: "scene", label: "Sahna (A/B)", items: scene, maxLen: laneMaxLen(scene), drag: true },
+      { id: "cut", label: "Kesishlar", items: cuts, maxLen: laneMaxLen(cuts), drag: "both" as const },
       ...(steps.length ? [{ id: "anim", label: "Javoblar (animatsiya)", items: answers, maxLen: laneMaxLen(answers),
         drag: true }] : []),
       { id: "eye", label: "Eye Contact oʻchiq", items: eye, maxLen: laneMaxLen(eye) },
@@ -232,9 +233,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
           <h2 className="heading">Transkript: soʻzlarni belgilab kesish</h2>
           <div className="scroll te-host">
             <TextEdit words={words} cuts={p.cuts} fps={fps} total={p.total_frames}
-              onCut={(start, end) => void command("Matndan kesish", {
-                cuts: [...p.cuts, { start, end, reason: "manual", status: "tasdiqlangan" }],
-              })}
+              onCut={(start, end) => run(E.addCutCmd(p, start, end, "Matndan kesish"))}
               onRestore={(idx) => {
                 const set = new Set(idx);
                 void command("Kesishni tiklash", { cuts: p.cuts.map((c, i) => (set.has(i) ? { ...c, status: "rad_etilgan" } : c)) });
@@ -313,10 +312,16 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
         <Timeline total={p.total_frames} lanes={lanes} selected={{ cut: selCut, eye: selEye, slide: spanIdx }}
           selectedBoundary={boundary} onItemClick={onItemClick} onBoundaryClick={setSelBoundary}
           onBoundaryDrag={(b, f) => run(E.moveBoundaryCmd(p, b, f))}
-          onItemDrag={(lane, i, f) => { if (lane === "anim") run(E.moveAnimStepCmd(p, i, f)); }}
+          onItemDrag={(lane, i, f, edge) => {
+            if (lane === "anim") run(E.moveAnimStepCmd(p, i, f));
+            else if (lane === "scene") run(E.moveSceneBoundaryCmd(p, i, f));
+            else if (lane === "cut") run(E.resizeCutCmd(p, i, edge, E.snapOutOfWord(f, sortedWords, fps)));
+          }}
+          onItemDouble={(lane, i) => { if (lane === "scene") run(E.toggleSceneCmd(p, i)); }}
+          onRangeCut={(a, b) => run(E.addCutCmd(p, E.snapOutOfWord(a, sortedWords, fps), E.snapOutOfWord(b, sortedWords, fps)))}
           onSeek={(f) => player.seek(f)} waveform={wave} overview={cutMarks} />
         <p className="caption dim hint">
-          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End
+          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End · C kesish asbobi · kesish chetlarini sudrang · sahnani ikki bosish A↔B
         </p>
       </section>
     </div>

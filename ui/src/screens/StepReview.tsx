@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, SlidersHorizontal } from "lucide-react";
 import { useStore } from "../store";
 import { urls } from "../lib/api";
+import * as E from "../lib/edits";
 import { player, useFrameValue } from "../lib/player";
 import { frameToSec, parseFps, secToFrame } from "../lib/time";
 import type { CutProposal, Project as P, Word } from "../lib/types";
@@ -131,9 +132,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
         </div>
         {panel === "text" ? (
           <TextEdit words={words} cuts={p.cuts} fps={fps} total={p.total_frames}
-            onCut={(start, end) => void command("Matndan kesish", {
-              cuts: [...p.cuts, { start, end, reason: "manual", status: "tasdiqlangan" }],
-            })}
+            onCut={(start, end) => { const c = E.addCutCmd(p, start, end, "Matndan kesish"); if (c) void command(c.label, c.values); }}
             onRestore={(idx) => setStatus(idx, "rad_etilgan")} />
         ) : <>
         <div className="chips" role="tablist">

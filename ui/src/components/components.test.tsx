@@ -69,6 +69,35 @@ describe("Timeline virtualization", () => {
   });
 });
 
+describe("Timeline tahrir", () => {
+  const cuts: Item[] = [{ start: 100, end: 200, i: 0, text: "pauza" }];
+  const lanes = [{ id: "cut", label: "Kesishlar", items: cuts, maxLen: 100, drag: "both" as const }];
+  it("C — kesish asbobi: sudralgan oraliq kesiladi", () => {
+    const onCut = vi.fn();
+    const { container } = render(<Timeline total={1000} lanes={lanes} onSeek={() => undefined} width={1000} pxPerFrame={1}
+      onRangeCut={onCut} />);
+    act(() => { fireEvent.keyDown(window, { key: "c" }); });
+    const inner = container.querySelector(".tl-inner")!;
+    expect(inner.className).toContain("razor");
+    fireEvent.mouseDown(inner.querySelector(".tl-lane")!, { button: 0, clientX: 20 });
+    fireEvent.mouseMove(window, { clientX: 50 });
+    expect(container.querySelector(".ntl-range")).toBeTruthy();
+    fireEvent.mouseUp(window, { clientX: 50 });
+    expect(onCut).toHaveBeenCalledWith(20, 51);
+    act(() => { fireEvent.keyDown(window, { key: "Escape" }); });
+    expect(inner.className).not.toContain("razor");
+  });
+  it("kesish oxirini sudrash: onItemDrag(edge = end)", () => {
+    const onDrag = vi.fn();
+    const { container } = render(<Timeline total={1000} lanes={lanes} onSeek={() => undefined} width={1000} pxPerFrame={1}
+      onItemDrag={onDrag} />);
+    fireEvent.mouseDown(container.querySelector(".tl-bound.end")!, { button: 0, clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 260 });
+    fireEvent.mouseUp(window, { clientX: 260 });
+    expect(onDrag).toHaveBeenCalledWith("cut", 0, 260, "end");
+  });
+});
+
 describe("StatusBadge", () => {
   it.each([
     ["navbatda", "Navbatda", "var(--muted)"],
