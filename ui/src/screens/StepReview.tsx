@@ -8,6 +8,7 @@ import { urls } from "../lib/api";
 import { player, useFrameValue } from "../lib/player";
 import { frameToSec, parseFps, secToFrame } from "../lib/time";
 import type { CutProposal, Project as P, Word } from "../lib/types";
+import { TextEdit } from "../components/TextEdit";
 
 type Group = "all" | "takror" | "yotal" | "mmm" | "pause" | "auto";
 const GROUPS: [Group, string, CutProposal["reason"][]][] = [
@@ -33,6 +34,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
   const [sel, setSel] = useState(0);
   const [result, setResult] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const [panel, setPanel] = useState<"list" | "text">("list");
 
   const items = useMemo(() => p.cuts.map((c, i) => ({ c, i })).sort((a, b) => a.c.start - b.c.start), [p.cuts]);
   const shown = useMemo(() => {
@@ -76,6 +78,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input, select, textarea")) return;
       if (e.key === " ") { e.preventDefault(); player.toggle(); }
+      else if (panel !== "list") return;
       else if (e.key === "ArrowDown") { e.preventDefault(); jump(Math.min(shown.length - 1, sel + 1)); }
       else if (e.key === "ArrowUp") { e.preventDefault(); jump(Math.max(0, sel - 1)); }
       else if (e.key === "Enter" && shown[sel]) {
@@ -120,6 +123,19 @@ export function StepReview({ name, p }: { name: string; p: P }) {
       </div>
 
       <aside className="rv-list">
+        <div className="seg" role="tablist" aria-label="Koʻrinish">
+          <button role="tab" aria-selected={panel === "list"} className={panel === "list" ? "on" : ""}
+            onClick={() => setPanel("list")}>Takliflar</button>
+          <button role="tab" aria-selected={panel === "text"} className={panel === "text" ? "on" : ""}
+            onClick={() => setPanel("text")}>Matn</button>
+        </div>
+        {panel === "text" ? (
+          <TextEdit words={words} cuts={p.cuts} fps={fps} total={p.total_frames}
+            onCut={(start, end) => void command("Matndan kesish", {
+              cuts: [...p.cuts, { start, end, reason: "manual", status: "tasdiqlangan" }],
+            })}
+            onRestore={(idx) => setStatus(idx, "rad_etilgan")} />
+        ) : <>
         <div className="chips" role="tablist">
           {GROUPS.map(([g, label, reasons]) => {
             const n = g === "all" ? items.length : items.filter((x) => reasons.includes(x.c.reason)).length;
@@ -144,6 +160,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
           </ul>
         )}
         <p className="caption dim hint">Probel — oʻynatish, ↑ ↓ — oldingi/keyingi, Enter — kesish yoki qoldirish.</p>
+        </>}
       </aside>
 
     </div>

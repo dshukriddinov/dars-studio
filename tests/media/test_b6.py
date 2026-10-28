@@ -34,8 +34,12 @@ def test_propose_cuts_never_inside_words() -> None:
     for c in props:
         c.status = "tasdiqlangan"
     assert cuts.check_no_word_cut(props, words, FPS) == []
-    bad = CutProposal(start=5, end=20, reason="manual", status="tasdiqlangan")
+    bad = CutProposal(start=5, end=20, reason="manual", status="tasdiqlangan")       # "bir" yarmidan
     assert cuts.check_no_word_cut([bad], words, FPS) == [bad]
+    whole = CutProposal(start=11, end=24, reason="manual", status="tasdiqlangan")    # "ikki" butunligicha (matndan)
+    assert cuts.check_no_word_cut([whole], words, FPS) == []
+    pause = CutProposal(start=11, end=24, reason="pause", status="tasdiqlangan")     # avtomatik — so'zga tegmasin
+    assert cuts.check_no_word_cut([pause], words, FPS) == [pause]
 
 
 def test_assemble_audio_length_and_crossfade() -> None:

@@ -541,13 +541,19 @@ def propose(words: Sequence[Word], vad_silence_ms: list[tuple[int, int]], fps: F
 
 
 def check_no_word_cut(cuts: Sequence[CutProposal], words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
-    """Tasdiqlangan kesishlardan so'z ichiga tushganlari (TZ 8.2 invarianti). Bo'sh ro'yxat — hammasi to'g'ri."""
+    """Tasdiqlangan kesishlardan so'z ichiga tushganlari (TZ 8.2 invarianti). Bo'sh ro'yxat — hammasi to'g'ri.
+    Avtomatik (pauza, "mmm", yo'tal…) — hech bir so'zga tegmasligi kerak; qo'lda ("manual", masalan matndan
+    belgilangan) — butun so'zlarni kesishi mumkin, faqat chegarasi so'z yarmiga tushmasin."""
     bad = []
     for c in cuts:
         if c.status != "tasdiqlangan" or c.reason in WORD_CUT_REASONS:  # so'zlarni ataylab kesadi
             continue
         cs_ms, ce_ms = Fraction(c.start) / fps * 1000, Fraction(c.end) / fps * 1000
-        if any(w.start_ms < ce_ms and cs_ms < w.end_ms for w in words):
+        if c.reason == "manual":
+            hit = any(w.start_ms < x < w.end_ms for w in words for x in (cs_ms, ce_ms))
+        else:
+            hit = any(w.start_ms < ce_ms and cs_ms < w.end_ms for w in words)
+        if hit:
             bad.append(c)
     return bad
 

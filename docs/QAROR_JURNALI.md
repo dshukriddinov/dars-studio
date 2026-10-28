@@ -4,6 +4,23 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — Matn orqali kesish (transkriptdan so'zlarni belgilab)
+
+- Foydalanuvchi: transkriptdagi so'zni bosib tanlasa, o'sha qism videodan kesilsin. 3-qadamda "Takliflar | Matn"
+  yorlig'i (`components/TextEdit.tsx`): so'zni bosish yoki sudrash, Shift + bosish — kengaytirish; "Kesish" yoki
+  Delete — qo'lda kesish (`reason: manual`, darhol tasdiqlangan), chegaralari so'zlar orasidagi bo'shliq o'rtasida;
+  kesilgan so'z bosilsa "Tiklash" (rad etiladi). Bosilgan so'zga video o'tadi, o'ynayotgan so'z belgilanadi;
+  xatboshilar >= 1.5 s pauzada, vaqt belgisi bilan.
+- TZ 8.2 invarianti aniqlashtirildi (`check_no_word_cut`): avtomatik kesishlar (pauza, "mmm", yo'tal) hech bir
+  so'zga tegmasligi kerak (avvalgidek); qo'lda kesish butun so'zlarni kesishi mumkin, faqat chegarasi so'z yarmiga
+  tushmasin (avval qo'lda kesish so'z ustida bo'lsa eksport to'xtardi).
+- Sinov (haqiqiy brauzer, uitest loyihasi): 5 so'z Shift bilan belgilandi -> kesish qo'shildi (681–764 kadr),
+  so'zlar ustidan chizildi -> "Tiklash" -> rad etildi. Topilgan xatolar: tez bosishlarda tanlov boshi eski holatda
+  qolardi (ref bilan tuzatildi), `.cut` CSS sinfi takliflar ro'yxati bilan to'qnashib so'zlarni alohida qatorga
+  cho'zardi.
+
+---
+
 ## 2026-10-28 — Foydalanuvchi sinovidagi xatolar (DSBA8971)
 
 - Eksport ikki marta to'xtadi: "1 ta tasdiqlangan kesish so'z ichiga tushadi (18163-kadr)". Sabab: `cuts.union`
