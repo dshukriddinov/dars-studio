@@ -218,6 +218,29 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
     def slide_png(name: str, index: int) -> FileResponse:
         return cached_file(name, "slides", "4k", f"{index:03d}.png")
 
+    @app.get("/api/projects/{name}/waveform")
+    def waveform(name: str) -> Response:
+        """Timeline uchun audio to'lqin: har kadrga RMS (0..255, uint8), keshlanadi (cache/audio/rms.u8)."""
+        import numpy as np
+
+        from darsstudio.audio.extract import read_pcm
+        s = store(name)
+        d = s.cache("audio")
+        out = d / "rms.u8"
+        src = next((f for f in (d / "denoised_48k.wav", d / "src_48k.wav") if f.is_file()), None)
+        if src is None:
+            raise HTTPException(404, "Audio hali tayyor emas.")
+        if not out.is_file() or out.stat().st_mtime < src.stat().st_mtime:
+            fps = float(s.load().fps_frac)
+            x = read_pcm(src, 16000).astype(np.float64) ** 2
+            hop = 16000 / fps
+            n = int(len(x) / hop)
+            idx = (np.arange(n + 1) * hop).astype(np.int64)
+            peaks = np.sqrt(np.add.reduceat(x[: idx[-1]], idx[:-1]) / np.diff(idx)) if n else np.zeros(0)
+            ref = float(np.percentile(peaks, 99.5)) if n else 1.0
+            out.write_bytes((np.clip(peaks / max(ref, 1e-4), 0, 1) * 255).astype(np.uint8).tobytes())
+        return Response(out.read_bytes(), media_type="application/octet-stream")
+
     @app.get("/api/projects/{name}/words")
     def words(name: str) -> Any:
         f = store(name).cache("asr") / "words.json"

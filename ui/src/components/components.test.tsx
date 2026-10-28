@@ -41,6 +41,32 @@ describe("Timeline virtualization", () => {
     fireEvent.mouseDown(container.querySelectorAll(".tl-bound")[0]);
     expect(onBound).toHaveBeenCalledWith(0);
   });
+
+  it("Alt + g'ildirak oldinga yaqinlashtiradi, orqaga uzoqlashtiradi; \\ butun dars", () => {
+    const { container } = render(<Timeline total={20000} lanes={lanes} onSeek={() => undefined} width={1000} />);
+    const inner = () => parseFloat((container.querySelector(".tl-inner") as HTMLElement).style.width);
+    const sc = container.querySelector(".tl-scroll")!;
+    const fit = inner();
+    act(() => { sc.dispatchEvent(new WheelEvent("wheel", { deltaY: -300, altKey: true, bubbles: true, cancelable: true })); });
+    const near = inner();
+    expect(near).toBeGreaterThan(fit * 2);
+    act(() => { sc.dispatchEvent(new WheelEvent("wheel", { deltaY: 150, altKey: true, bubbles: true, cancelable: true })); });
+    expect(inner()).toBeLessThan(near);
+    act(() => { fireEvent.keyDown(window, { key: "\\" }); });
+    expect(inner()).toBeCloseTo(fit);
+  });
+
+  it("slayd chegarasini sudrab surish: qo'yib yuborilganda onBoundaryDrag", () => {
+    const onDrag = vi.fn();
+    const { container } = render(<Timeline total={20000} lanes={lanes} onSeek={() => undefined} width={1000} pxPerFrame={1}
+      onBoundaryDrag={onDrag} />);
+    fireEvent.mouseDown(container.querySelectorAll(".tl-bound")[1], { button: 0, clientX: 20 });
+    fireEvent.mouseMove(window, { clientX: 57 });
+    expect(container.querySelector(".ntl-ghost")).toBeTruthy();
+    fireEvent.mouseUp(window, { clientX: 57 });
+    expect(onDrag).toHaveBeenCalledWith(1, 57);
+    expect(container.querySelector(".ntl-ghost")).toBeNull();
+  });
 });
 
 describe("StatusBadge", () => {

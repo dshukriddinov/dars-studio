@@ -49,6 +49,14 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
   const [selEye, setSelEye] = useState(-1);
   const [markIn, setMarkIn] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [wave, setWave] = useState<Uint8Array | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    fetch(urls.waveform(name)).then((r) => (r.ok ? r.arrayBuffer() : null))
+      .then((b) => { if (live && b) setWave(new Uint8Array(b)); }).catch(() => undefined);
+    return () => { live = false; };
+  }, [name]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -71,20 +79,21 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
       arr.map((x, i) => ({ start: x.start, end: x.end, i, ...f(x, i) }))
         .sort((a, b) => a.start - b.start);
     const slide = items(p.slide_spans, (s) => ({
-      text: String(s.slide), cls: `src-${s.source}${s.confidence < 0.6 ? " low" : ""}`,
+      text: String(s.slide), cls: `src-${s.source}${s.confidence < 0.6 ? " low" : ""}`, thumb: urls.slide(name, s.slide),
     }));
     const scene = items(p.layout_spans, (s) => ({ text: s.layout, cls: `scene-${s.layout}` }));
     const cuts = items(p.cuts, (c) => ({ cls: `cut-${c.status}`, text: CUT_LABELS[c.reason] }));
     const eye = items(p.eye_off, () => ({ cls: "eye" }));
     const subs = groupWords(words, fps).map((c, i) => ({ ...c, i, cls: "sub" }));
     return [
-      { id: "slide", label: "Slayd", items: slide, maxLen: laneMaxLen(slide), boundaries: true },
+      { id: "slide", label: "Slayd", items: slide, maxLen: laneMaxLen(slide), boundaries: true, tall: true },
       { id: "scene", label: "Sahna (A/B)", items: scene, maxLen: laneMaxLen(scene) },
       { id: "cut", label: "Kesishlar", items: cuts, maxLen: laneMaxLen(cuts) },
       { id: "eye", label: "Eye Contact oʻchiq", items: eye, maxLen: laneMaxLen(eye) },
       { id: "sub", label: "Subtitr", items: subs, maxLen: laneMaxLen(subs) },
     ];
-  }, [p, words, fps]);
+  }, [p, words, fps, name]);
+  const cutMarks = useMemo(() => p.cuts.filter((c) => c.status !== "rad_etilgan"), [p.cuts]);
 
   const onItemClick = useCallback((lane: string, i: number, frame: number) => {
     player.seek(frame);
@@ -253,9 +262,10 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
       <section className="panel tl-panel">
         <Timeline total={p.total_frames} lanes={lanes} selected={{ cut: selCut, eye: selEye, slide: spanIdx }}
           selectedBoundary={boundary} onItemClick={onItemClick} onBoundaryClick={setSelBoundary}
-          onSeek={(f) => player.seek(f)} />
+          onBoundaryDrag={(b, f) => run(E.moveBoundaryCmd(p, b, f))}
+          onSeek={(f) => player.seek(f)} waveform={wave} overview={cutMarks} />
         <p className="caption dim hint">
-          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Ctrl+gʻildirak masshtab
+          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End
         </p>
       </section>
     </div>

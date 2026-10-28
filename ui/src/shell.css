@@ -173,3 +173,42 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
 .w.sel { background: var(--accent); color: #fff; text-decoration-color: #fff; }
 .te-host { display: flex; flex-direction: column; }
 .te-host .te-text { font-size: 14px; line-height: 24px; }
+
+/* Timeline (Batafsil tahrir) */
+.tl-panel, .ntl, .ntl-body { min-width: 0; }
+.ntl { display: flex; flex-direction: column; gap: var(--space-2); user-select: none; }
+.ntl-bar { display: flex; align-items: center; gap: var(--space-2); }
+.ntl-bar .btn-ghost.sm { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 13px; }
+.ntl-bar .btn-ghost.on { background: var(--accent-subtle); color: var(--accent-strong); }
+.ntl-zoom { width: 140px; accent-color: var(--accent); }
+.ntl-over { position: relative; height: 14px; border-radius: 7px; background: var(--surface-300); cursor: pointer; overflow: hidden; }
+.ntl-over-mark { position: absolute; top: 3px; bottom: 3px; background: var(--danger); opacity: .55; }
+.ntl-over-view { position: absolute; top: 0; bottom: 0; border-radius: 7px; background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent); cursor: grab; }
+.ntl-body { display: flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--surface-100); }
+.ntl-heads { flex: none; width: 150px; background: var(--surface-200); border-right: 1px solid var(--border); }
+.ntl-head { display: flex; align-items: center; padding: 0 var(--space-3); font-size: 12px; font-weight: 600;
+  color: var(--ink-secondary); border-top: 1px solid var(--border); white-space: nowrap; }
+.ntl-head.ruler-head { border-top: 0; }
+.ntl-scroll { min-width: 0; scrollbar-width: thin; }
+.ntl-ruler { cursor: col-resize; background: var(--surface-200); border-bottom: 1px solid var(--border); }
+.ntl-tick { position: absolute; bottom: 0; height: 6px; border-left: 1px solid var(--border-strong); }
+.ntl-tick.major { height: 12px; border-left-color: var(--ink-secondary); }
+.ntl-tick span { position: absolute; bottom: 12px; left: 4px; font: 11px var(--font-mono); color: var(--ink-secondary); white-space: nowrap; }
+.ntl .tl-lane { border-top: 1px solid var(--border); }
+.ntl .tl-item { top: 4px; bottom: 4px; display: flex; align-items: center; gap: 6px; overflow: clip; font-size: 12px;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); }
+.ntl .tl-item:hover { filter: brightness(0.96); }
+.ntl .tl-item.sel { box-shadow: inset 0 0 0 2px var(--accent-strong); }
+.tl-stick { position: sticky; left: 0; display: flex; align-items: center; gap: 6px; height: 100%; min-width: 0; pointer-events: none; }
+.tl-thumb { height: 100%; aspect-ratio: 16 / 9; object-fit: cover; flex: none; border-radius: 3px 0 0 3px; pointer-events: none; }
+.ntl .tl-bound { width: 6px; margin-left: -3px; background: var(--ink-secondary); opacity: .55; z-index: 2; }
+.ntl .tl-bound:hover, .ntl .tl-bound.sel { opacity: 1; background: var(--accent-strong); }
+.ntl-wave { color: color-mix(in srgb, var(--accent) 55%, var(--ink-secondary)); background: var(--surface-200); }
+.ntl-hover { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: var(--ink-secondary); opacity: .35; pointer-events: none; }
+.ntl-ghost { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; margin-left: -1px; background: var(--warn); pointer-events: none; z-index: 4; }
+.ntl-ghost span { position: absolute; top: 2px; left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--warn); color: #fff;
+  font: 11px var(--font-mono); white-space: nowrap; }
+.ntl-playhead { z-index: 5; background: var(--danger); width: 2px; }
+.ntl-knob { position: absolute; top: 0; left: -6px; width: 14px; height: 12px; background: var(--danger);
+  clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); }

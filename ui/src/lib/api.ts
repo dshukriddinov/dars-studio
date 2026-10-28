@@ -61,6 +61,7 @@ export const api = {
 
 export const urls = {
   proxy: (name: string) => `${p(name)}/proxy`,
+  waveform: (name: string) => `${p(name)}/waveform`,
   slide: (name: string, i: number) => `${p(name)}/slides/${i}`,
   frame: (name: string, f: number, mode: string, width = 960) => `${p(name)}/frame/${f}?mode=${mode}&width=${width}`,
   file: (name: string, file: string) => `${p(name)}/files/${file.split("/").map(encodeURIComponent).join("/")}`,

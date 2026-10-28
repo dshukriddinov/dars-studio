@@ -82,3 +82,19 @@ def test_lines_from_ui_fields() -> None:
 def test_reveal_cmd_quotes_only_path() -> None:
     from darsstudio.api.app import reveal_cmd
     assert reveal_cmd(Path(r"D:\projects\ai montaj\x\v6.mp4")) == r'explorer /select,"D:\projects\ai montaj\x\v6.mp4"'
+
+
+def test_waveform_one_value_per_frame(tmp_path: Path, test_media: dict[str, Any]) -> None:
+    from darsstudio.audio.extract import extract_all
+    from darsstudio.media.probe import probe
+    from darsstudio.project import importer
+    from darsstudio.project.store import ProjectStore
+    src = Path(test_media["av_offset.mov"]["path"])
+    importer.import_project(src, Path(test_media["lesson.pptx"]["path"]), "demo", tmp_path, name="d3")
+    with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
+        assert c.get("/api/projects/d3/waveform").status_code == 404
+        extract_all(probe(src), ProjectStore(tmp_path / "d3").cache("audio"))
+        r = c.get("/api/projects/d3/waveform")
+        assert r.status_code == 200
+        frames = c.get("/api/projects/d3").json()["project"]["total_frames"]
+        assert abs(len(r.content) - frames) <= 1 and max(r.content) > 200

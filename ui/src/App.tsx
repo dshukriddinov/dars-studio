@@ -17,14 +17,14 @@ export function App() {
   const notice = useStore((s) => s.notice);
   const { clearError, setTab, setStep } = useStore.getState();
   useEffect(() => connectJobs(), []);
-  // to'g'ridan havola: ?dars=NOM&qadam=3 (yoki ?yangi)
+  // to'g'ridan havola: ?dars=NOM&qadam=3, ?dars=NOM&batafsil (yoki ?yangi)
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     const d = q.get("dars");
     if (q.has("yangi")) setTab("new");
     else if (d) {
       const s = Number(q.get("qadam"));
-      void useStore.getState().open(d, "project");
+      void useStore.getState().open(d, q.has("batafsil") ? "review" : "project");
       if (s >= 1 && s <= 4) useStore.setState({ step: s as 1 | 2 | 3 | 4, stepFor: d });
     }
   }, [setTab, setStep]);

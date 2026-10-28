@@ -4,6 +4,25 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — Batafsil tahrir: timeline qayta qurildi
+
+- Boshqaruv: Alt (yoki Ctrl) + g'ildirak — kursor ostidagi kadr atrofida masshtab (oldinga — yaqin, orqaga — uzoq);
+  oddiy g'ildirak va o'rta tugma bilan sudrash — gorizontal surish; `=`/`-` masshtab, `\` butun dars, Home/End;
+  masshtab slayderi; "Kuzatish" (ijroda playhead ortidan yurish) o'chirib-yoqiladi.
+- Ko'rinish: o'lchov chizig'i soniyalardan kadrlargacha (eng yaqinda 1 kadr = 24 px, 25 fps'da 5 kadr qadam),
+  sichqoncha ostidagi vaqt, o'lchovda sudrab ko'rish (scrub); slayd yo'lagida kichik rasm va raqam (chapga
+  yopishadi); slayd chegarasini sudrab surish (playhead'dan 8 px ichida unga yopishadi, undo bilan);
+  audio to'lqin yo'lagi; butun dars minimap'i (kesishlar belgilangan, ko'rinib turgan oyna sudraladi).
+- Audio to'lqin: `GET /api/projects/{name}/waveform` — har kadrga RMS (uint8, 99.5-persentil bo'yicha
+  normallangan), `cache/audio/rms.u8` da keshlanadi. DSBA8971 (24420 kadr): birinchi hisob 2.2 s, keyin 2 ms,
+  24 KB. Cho'qqi (max) bilan to'lqin deyarli bir tekis to'la chiqdi — RMS tanlandi.
+- Topilgan xato (eski timeline'da ham bo'lgan): flex/grid zanjirida `min-width: 0` yo'qligi sababli yaqinlashganda
+  konteyner kontent kengligigacha cho'zilib, surish ishlamasdi va "butun dars" masshtabi noto'g'ri hisoblanardi.
+- Tekshiruv: haqiqiy loyiha bilan headless Chrome (CDP orqali Alt+g'ildirak hodisalari) — 3 masshtabda skrinshot.
+  Batafsil tahrirga to'g'ridan havola: `?dars=NOM&batafsil`.
+
+---
+
 ## 2026-10-28 — Matn orqali kesish (transkriptdan so'zlarni belgilab)
 
 - Foydalanuvchi: transkriptdagi so'zni bosib tanlasa, o'sha qism videodan kesilsin. 3-qadamda "Takliflar | Matn"
