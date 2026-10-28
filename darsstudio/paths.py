@@ -20,7 +20,11 @@ def ffmpeg_dir() -> Path:
 
 
 def maxine_dir() -> Path:
-    return _env_path("DARS_MAXINE_DIR", runtime_dir() / "maxine")
+    """Paketda runtime/maxine; ishlab chiqish muhitida yonidagi "eye contact" loyihasi (ish stoli yorlig'i .bat'siz
+    ochganda ham Eye Contact ishlasin)."""
+    sibling = ROOT.parent / "eye contact" / "runtime" / "maxine"
+    default = runtime_dir() / "maxine"
+    return _env_path("DARS_MAXINE_DIR", default if default.is_dir() or not sibling.is_dir() else sibling)
 
 
 def python_exe() -> Path:
