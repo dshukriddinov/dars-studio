@@ -227,3 +227,5 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
 .final-stale { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; align-items: center; gap: var(--space-2);
   padding: 6px 8px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, .92); font-size: 12px; color: var(--ink); }
 .final-stale span { flex: 1; }
+.ntl .tl-item.anim { background: var(--success-subtle); color: var(--success); }
+.ntl .tl-item.anim.src-manual { background: var(--accent-subtle); color: var(--accent-strong); }

@@ -63,3 +63,17 @@ describe("command payload builders", () => {
     expect(E.addEyeOffCmd(project(), 5, 5)).toBeNull();
   });
 });
+
+describe("moveAnimStepCmd", () => {
+  it("javob vaqtini shu slaydning qo'shni qadamlari orasida suradi va qo'lda deb belgilaydi", () => {
+    const p = { ...project(), anim_steps: [
+      { slide: 2, click: 1, frame: 120, source: "ai" as const },
+      { slide: 2, click: 2, frame: 150, source: "ai" as const },
+      { slide: 3, click: 1, frame: 250, source: "ai" as const },
+    ] };
+    const c = E.moveAnimStepCmd(p, 0, 170)!;   // 2-qadamdan o'tib ketmaydi
+    expect(c.values.anim_steps).toEqual([
+      { slide: 2, click: 1, frame: 149, source: "manual" }, p.anim_steps[1], p.anim_steps[2]]);
+    expect(E.moveAnimStepCmd(p, 1, 150)).toBeNull();
+  });
+});

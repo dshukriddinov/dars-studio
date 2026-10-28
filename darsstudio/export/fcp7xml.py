@@ -79,8 +79,10 @@ class Xml:
         return c
 
 
-def build(p: Project, tm: TimeMap, pkg: Path, name: str) -> ET.ElementTree:
-    """pkg: background.png, slides_warped/NNN.png, slides_full/NNN.png, teacher.mov, audio.wav."""
+def build(p: Project, tm: TimeMap, pkg: Path, name: str,
+          display: list[tuple[int, int, str]] | None = None) -> ET.ElementTree:
+    """pkg: background.png, slides_warped/NNN.png, slides_full/NNN.png, teacher.mov, audio.wav.
+    display: (boshlanish, slayd, fayl nomi) — animatsiya qadamlari bilan (NNN_k.png); yo'q bo'lsa slayd oraliqlari."""
     fps = p.fps_frac
     x = Xml(fps, (1920, 1080))
     root = ET.Element("xmeml", version="5")
@@ -97,15 +99,18 @@ def build(p: Project, tm: TimeMap, pkg: Path, name: str) -> ET.ElementTree:
 
     v1, v2, v3 = (ET.SubElement(video, "track") for _ in range(3))
     x.clip(v1, "bg", pkg / "background.png", 0, tm.out_total, 0, LONG, "still")
-    for sp in p.slide_spans:
+    ds = sorted(display) if display else sorted((s.start, s.slide, f"{s.slide:03d}") for s in p.slide_spans)
+    end = max((s.end for s in p.slide_spans), default=p.total_frames)
+    for k, (start, _slide, stem) in enumerate(ds):
+        stop = ds[k + 1][0] if k + 1 < len(ds) else end
         for ls in p.layout_spans:
-            a, b = max(sp.start, ls.start), min(sp.end, ls.end)
+            a, b = max(start, ls.start), min(stop, ls.end)
             if a >= b:
                 continue
             sub = "slides_full" if ls.layout == "B" else "slides_warped"
-            f = pkg / sub / f"{sp.slide:03d}.png"
+            f = pkg / sub / f"{stem}.png"
             for s, e in tm.map_span(a, b):
-                x.clip(v2, f"{sub}-{sp.slide}", f, s, e, 0, LONG, "still")
+                x.clip(v2, f"{sub}-{stem}", f, s, e, 0, LONG, "still")
     total = p.total_frames
     for ls in p.layout_spans:
         if ls.layout == "B":

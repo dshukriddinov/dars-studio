@@ -4,6 +4,45 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — Slayd animatsiyasi: javob o'qituvchi aytganda chiqadi; ingliz tili 3 unit bo'yicha o'lchov
+
+**Talab (foydalanuvchi):** topshiriq slaydlarida javoblar PowerPoint animatsiyasi bilan chiqadi — topshiriqni
+tushuntirayotganda javob ko'rinmasligi kerak. Avval slayd doim yakuniy holatda (barcha javoblar ko'rinib) edi.
+
+- PPTX: `extract.anim_clicks` — asosiy ketma-ketlik (`mainSeq`) bosish guruhlari, paydo bo'ladigan/yo'qoladigan
+  shakl id'lari; `Slide.anim` — har bosishda chiqadigan matn. Matnsiz moslashtirish chizig'i (prstGeom line)
+  — uchiga eng yaqin matnli shakl (ta'rif); javob qutisi foni (matnsiz to'rtburchak) hisobga olinmaydi.
+- Render: PowerPoint COM'da har holat uchun hali chiqmagan shakllar xotirada yashirilib eksport (`NNN_k.png`,
+  manba faqat o'qish uchun ochiladi, saqlanmaydi). Unit 1 (15 slayd, 22 qadam): 12.6 s. LibreOffice/PDF —
+  qadamsiz (yakuniy holat). Eski kesh (stamp'da "steps" yo'q) qayta render qilinadi.
+- Model: `Project.anim_steps` (slayd, click, kadr, ai/manual). Bo'sh — yakuniy holat (eski loyihalar o'zgarmaydi).
+- Vaqt (`slides/anim.py`): bosish matni slayd oralig'idagi nutqdan tartib bilan, faqat mazmunli so'zlar bo'yicha
+  ("He is the CEO" -> "ceo"; avval yordamchi so'zlar savol gapiga mos kelib 12/22 qadam erta chiqardi). Ibora
+  chetidan slaydning o'z matni davom etsa ("true or false", "simple or continuous") — topshiriq o'qilmoqda, o'tkaziladi.
+  "Answers: 1→e 2→h…" kabi bitta qutida hamma javob — yorliq so'zi ("now answers"). Topilmagan bosish kechroq
+  (keyingi topilgandan yoki slayd oxiridan 1.5 s qadam bilan orqaga) — javob hech qachon erta chiqmaydi.
+- Kompozitor: rasm id = slayd + 1000 * holat (animatsiyasiz slayd — o'z raqami, eski xatti-harakat va testlar
+  o'zgarmadi); slayd ichida qadam — 4 kadr crossfade (clock wipe emas). Premiere paketi ham qadam rasmlari bilan.
+- UI: Batafsil tahrirda "Javoblar (animatsiya)" yo'lagi (sudrab surish, qo'shni qadamlar orasida, `manual`),
+  slayd ekrani playhead'dagi holatni ko'rsatadi ("2 ta javob ko'rinadi").
+- **O'lchov — qadam vaqti, Unit 1, montajchi (english1.prproj, Slide06_0…_5 kliplari) bilan:** 22 qadam,
+  ±1 s 20/22, o'rtacha |farq| 0.57 s, **1 s dan erta 0**, kech 1 (14.5 "Disagreeing (politely)": so'zlar orasida
+  10 so'z, +4.8 s). Render tekshiruvi: 550 s javobsiz, 560 s 1-javob, 570 s 2 javob (3-chisi 572.5 s da).
+  Unit 2/3 da animatsiya yo'q. Unit 4 (etalonsiz): 5- va 11-slaydda "Answers:" qutisi "answer for…" / "now
+  answers" da — qo'lda tekshirildi.
+- **Slayd chegaralari (3 unit, montajchi etaloni):** Unit 1 ±2 s 8/15, Unit 2 7/14 -> **8/14** (o'rtacha 9.3 ->
+  5.9 s), Unit 3 9/13. Yangi `drop_premature`: A->B, <= 20 s da B->A va B keyinroq yana — birinchi borish
+  olib tashlanadi (Unit 2: reja slaydida keyingi bosqich mazmuni aytilgan). O'zbekcha namuna o'zgarmadi
+  (±2 s 94%, median 1.26 s). Qolgan xatolar: o'qituvchi slaydni tushuntirayotganda keyingi slayd mazmunini aytadi
+  (Unit 2 12-slayd -33 s), qisqa (<= 10 s) slaydlar topilmaydi. Unit 4 (36 slayd, etalonsiz) yomon: 17 slayd
+  topildi, 3<->4 qayta-qayta — ochiq masala.
+- Topilgan va tuzatilgan xato (avvaldan): `project_lock` — Windows'da o'chirilayotgan qulf faylini ochish
+  `PermissionError` beradi (FileExistsError emas) -> parallel buyruqlardan biri yo'qolardi
+  (`test_concurrent_stacks_no_lost_update` 31 urinishda 1 marta yiqildi). Endi band deb kutadi (40/40 o'tdi);
+  doimiy PermissionError timeout bilan tugaydi.
+
+---
+
 ## 2026-10-28 — Ingliz tili darslari (dars tili `meta.til`)
 
 - Foydalanuvchi: ingliz tili darsi deyarli to'liq inglizcha, orada o'zbekcha so'zlar bo'lishi mumkin. Yangi dars

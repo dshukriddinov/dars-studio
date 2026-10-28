@@ -14,6 +14,8 @@ from darsstudio.project import cuts
 from darsstudio.project.commands import CommandStack
 from darsstudio.project.model import Word
 from darsstudio.render import bumpers, eyepatch, overlays, prepare, renderer, templates
+from darsstudio.slides import anim
+from darsstudio.slides import render as slide_render
 
 log = logging.getLogger(__name__)
 
@@ -148,8 +150,14 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
         extra.eyepatch_dir = ep
     opts = renderer.RenderOptions(profile=profile, preset=preset, chunk_sec=chunk_sec, start=start, frames=frames,
                                   on_progress=on_progress)
-    rep = renderer.render(p, pr, tpl, warped, pngs, p.slide_spans, p.layout_spans, out, stack.store.cache("render"),
-                          opts, extra)
+    # animatsiya qadamlari: javob o'qituvchi aytganda chiqadi (qadam vaqtlari bo'lmasa — yakuniy holat)
+    steps = slide_render.load_steps(stack.store.cache("slides") / "4k")
+    clicks = anim.clicks_of(p.slides, steps)
+    steps = {i: fs[:clicks[i]] for i, fs in steps.items() if clicks.get(i)}
+    wsteps = {i: prepare.ensure_warped(stack, tpl, fs) for i, fs in steps.items()}
+    extra.display = anim.display_spans(p.slide_spans, p.anim_steps, clicks)
+    rep = renderer.render(p, pr, tpl, anim.image_table(warped, wsteps), anim.image_table(pngs, steps),
+                          p.slide_spans, p.layout_spans, out, stack.store.cache("render"), opts, extra)
     full = start == 0 and frames is None
     lead, tail = (bumpers.wrap(out, tpl, p.fps_frac, profile, stack.store.cache("render"), extra.audio_wav)
                   if full and bumpers_on else (0, 0))
@@ -190,7 +198,7 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     p = stack.project
     tm = cuts.timemap(p)
     tables.write_tables(p, tm, d / name, lead=r["intro_frames"])
-    pngs = sorted((store.cache("slides") / "4k").glob("*.png"))
+    pngs = sorted((store.cache("slides") / "4k").glob("[0-9][0-9][0-9].png"))   # yakuniy (qadamlarsiz)
     srt_path = Path(r["srt"]) if r["srt"] else None
     report = qa.run(p, mp4, tm, pngs, srt_path, _unapproved_suspicious(stack),
                     lead=r["intro_frames"], tail=r["outro_frames"])
@@ -198,12 +206,18 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     pkg = None
     if premiere:
         tpl = templates.load(p.template_id)
-        warped = prepare.ensure_warped(stack, tpl, pngs)
+        steps = slide_render.load_steps(store.cache("slides") / "4k")
+        clicks = anim.clicks_of(p.slides, steps)
+        step_files = [f for i, fs in sorted(steps.items()) for f in fs[:clicks.get(i, 0)]]
+        all_pngs = pngs + step_files
+        warped = prepare.ensure_warped(stack, tpl, all_pngs)
+        display = [(s, i, f"{i:03d}" if st >= clicks.get(i, 0) else f"{i:03d}_{st}")
+                   for s, i, st in anim.display_spans(p.slide_spans, p.anim_steps, clicks)]
         ep = store.cache("eyepatch")
         pr = prepare.work_probe(p)
         use_ep = ep if eyepatch.is_valid(ep, Path(pr.path), float(p.eye_contact.get("lid_open", 0.5))) else None
-        pkg = premiere_pkg.build(p, tm, tpl, pngs, warped, store.cache("audio") / "denoised_48k.wav", pr,
-                                 d / "premiere", name, use_ep, on_progress=on_progress)
+        pkg = premiere_pkg.build(p, tm, tpl, all_pngs, warped, store.cache("audio") / "denoised_48k.wav", pr,
+                                 d / "premiere", name, use_ep, on_progress=on_progress, display=display)
     entry = {"version": v, "profile": profile, "path": str(mp4), "qa": report["verdict"],
              "premiere": str(pkg) if pkg else None}
     stack.do(f"eksport v{v}", {"exports": [*stack.project.exports, entry]})

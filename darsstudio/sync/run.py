@@ -11,6 +11,7 @@ from darsstudio.audio.extract import read_pcm
 from darsstudio.media.probe import MediaError
 from darsstudio.project.commands import CommandStack
 from darsstudio.project.model import LayoutSpan, Slide, SlideSpan, Word
+from darsstudio.slides import anim
 from darsstudio.sync import ai_align, beep, slide_log
 
 B_SCENE_WORDS = 60  # TZ FR-12: slayd matni >= 60 so'z yoki jadval -> B tavsiya
@@ -123,6 +124,12 @@ def sync_project(stack: CommandStack, params: ai_align.Params | None = None) -> 
                "suspicious": [asdict(b) for b in r.suspicious]}
     out["unshown"] = unshown_slides(spans, len(p.slides))   # gapirilmagan (ko'rsatilmagan) slaydlar — inson hal qiladi
     stack.do(f"slayd sinxroni ({out['mode']})", {"slide_spans": [s.model_dump(mode="json") for s in spans]})
+    wf = store.cache("asr") / "words.json"
+    if any(s.anim for s in p.slides) and wf.is_file():   # javob o'qituvchi aytganda chiqadi
+        ws = [Word(**w) for w in json.loads(wf.read_text(encoding="utf-8"))]
+        steps = anim.step_times(p.slides, spans, ws, p.fps_frac, p.total_frames)
+        stack.do("animatsiya qadamlari", {"anim_steps": [s.model_dump(mode="json") for s in steps]})
+        out["anim_steps"] = len(steps)
     stack.do("sahna tavsiyasi", {"layout_spans": [s.model_dump(mode="json") for s in suggest_layouts(stack)]})
     (store.cache("sync") / f"{out['mode']}_align.json").write_text(json.dumps(out, ensure_ascii=False, indent=1),
                                                                     encoding="utf-8")

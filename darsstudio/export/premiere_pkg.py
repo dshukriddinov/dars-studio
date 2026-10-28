@@ -15,7 +15,9 @@ from darsstudio.slides import warp
 
 def build(p: Project, tm: TimeMap, tpl: Template, pngs: list[Path], warped: list[Path], denoised_wav: Path,
           probe: ProbeResult, pkg: Path, name: str, eyepatch_dir: Path | None = None,
-          teacher: bool = True, on_progress: Callable[[int, int], None] | None = None) -> Path:
+          teacher: bool = True, on_progress: Callable[[int, int], None] | None = None,
+          display: list[tuple[int, int, str]] | None = None) -> Path:
+    """pngs/warped — yakuniy slaydlar va animatsiya qadamlari (NNN_k.png) birga; display — fcp7xml.build."""
     pkg.mkdir(parents=True, exist_ok=True)
     cw, ch = tpl.canvas
     import cv2
@@ -33,5 +35,5 @@ def build(p: Project, tm: TimeMap, tpl: Template, pngs: list[Path], warped: list
     if teacher:
         renderer.render_teacher_layer(p, probe, tpl, pkg / "teacher.mov", eyepatch_dir, on_progress=on_progress)
     xml = pkg / "sequence.xml"
-    fcp7xml.write(fcp7xml.build(p, tm, pkg, name), xml)
+    fcp7xml.write(fcp7xml.build(p, tm, pkg, name, display), xml)
     return xml

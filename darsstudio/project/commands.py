@@ -150,13 +150,16 @@ def project_lock(root: Path, timeout: float = 60.0) -> Iterator[None]:
             os.write(fd, str(os.getpid()).encode())
             os.close(fd)
             break
-        except FileExistsError:
+        except (FileExistsError, PermissionError):
+            # Windows: boshqa oqim qulfni hozirgina o'chirgan (delete pending) — PermissionError; band deb kutamiz
             try:
                 if time.time() - lock.stat().st_mtime > STALE_LOCK_S:
                     lock.unlink(missing_ok=True)
                     continue
             except FileNotFoundError:
                 continue
+            except PermissionError:
+                pass   # doimiy bo'lsa (yozish huquqi yo'q) — quyidagi timeout'gacha kutiladi
             if time.monotonic() - t0 > timeout:
                 raise TimeoutError(f"Loyiha band (project.lock): {root}") from None
             time.sleep(0.02)

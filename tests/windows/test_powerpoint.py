@@ -19,3 +19,8 @@ def test_render_pptx_com(test_media: dict[str, Any], tmp_path: Path) -> None:
     assert img.shape == (2160, 3840, 3) and img.std() > 5   # bo'sh emas
     again, _ = render.render_slides(Path(test_media["lesson.pptx"]["path"]), tmp_path / "4k")  # kesh
     assert [p.stat().st_mtime_ns for p in again] == [p.stat().st_mtime_ns for p in pngs]
+    # animatsiya qadami: 6-slaydda matn bosishda chiqadi — qadam rasmida u hali yo'q (yakuniy holatdan farqli)
+    steps = render.load_steps(tmp_path / "4k")
+    assert list(steps) == [6] and len(steps[6]) == 1
+    before, final = warp.read_rgb(steps[6][0]).astype(int), warp.read_rgb(pngs[5]).astype(int)
+    assert abs(before - final).mean() > 0.5 and before.std() > 0

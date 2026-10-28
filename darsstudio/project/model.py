@@ -40,6 +40,7 @@ class Slide(_M):
     png_4k: str = ""
     warped_png: str | None = None
     warnings: list[str] = []
+    anim: list[str] = []             # animatsiya: har bosishda chiqadigan matn (bo'sh — matnsiz shakl, chiziq)
 
 
 class Word(_M):
@@ -68,6 +69,14 @@ class CutProposal(Span):
 
 class EyeOffSpan(Span):
     pass
+
+
+class AnimStep(_M):
+    """Slayd animatsiyasining `click`-bosishi (1..n) shu asl kadrda (javob o'qituvchi aytganda chiqadi)."""
+    slide: int = Field(ge=1)
+    click: int = Field(ge=1)
+    frame: int = Field(ge=0)
+    source: Literal["ai", "manual"] = "ai"
 
 
 class KeySettings(_M):
@@ -130,6 +139,7 @@ class Project(_M):
     layout_spans: list[LayoutSpan] = []
     cuts: list[CutProposal] = []
     eye_off: list[EyeOffSpan] = []
+    anim_steps: list[AnimStep] = []  # bo'sh — animatsiyali slayd yakuniy holatda (avvalgi xatti-harakat)
     key: KeySettings = KeySettings()
     placement: TeacherPlacement = TeacherPlacement()
     parts: list[VideoPart] = []      # bo'sh — bitta fayl

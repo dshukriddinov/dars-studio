@@ -12,7 +12,10 @@ import { visibleSlice } from "../lib/spans";
 import type { Span } from "../lib/types";
 
 export interface Item extends Span { i: number; text?: string; cls?: string; thumb?: string }
-export interface Lane { id: string; label: string; items: Item[]; maxLen: number; boundaries?: boolean; tall?: boolean }
+export interface Lane {
+  id: string; label: string; items: Item[]; maxLen: number; boundaries?: boolean; tall?: boolean;
+  drag?: boolean;   // har element boshini sudrab surish (onItemDrag)
+}
 
 interface Props {
   total: number;
@@ -22,6 +25,7 @@ interface Props {
   onItemClick?: (lane: string, i: number, frame: number) => void;
   onBoundaryClick?: (b: number) => void;
   onBoundaryDrag?: (b: number, frame: number) => void;
+  onItemDrag?: (lane: string, i: number, frame: number) => void;
   onSeek: (frame: number) => void;
   waveform?: Uint8Array | null;                // har kadrga cho'qqi (0..255)
   overview?: Span[];                           // minimap'da belgilanadigan oraliqlar (masalan kesishlar)
@@ -49,7 +53,7 @@ export function fmtTc(f: number, withFrames = false): string {
 }
 
 export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, onItemClick, onBoundaryClick,
-  onBoundaryDrag, onSeek, waveform, overview = [], width: fixedWidth, pxPerFrame }: Props) {
+  onBoundaryDrag, onItemDrag, onSeek, waveform, overview = [], width: fixedWidth, pxPerFrame }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(fixedWidth ?? 1000);
@@ -153,7 +157,7 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
   };
 
   // sudrash: o'lchovda scrub, o'rta tugma bilan surish, slayd chegarasi
-  const startDrag = (e: React.MouseEvent, kind: "scrub" | "pan" | { b: number }) => {
+  const startDrag = (e: React.MouseEvent, kind: "scrub" | "pan" | { b: number; lane?: string }) => {
     e.preventDefault();
     const el = scrollRef.current;
     const x0 = e.clientX, s0 = el?.scrollLeft ?? 0;
@@ -172,7 +176,9 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
         let f = frameAt(ev.clientX);
         if (Math.abs((f - player.frame) * zoomRef.current) <= SNAP_PX) f = player.frame;
         setDrag(null);
-        if (Math.abs(ev.clientX - x0) > 2) onBoundaryDrag?.(kind.b, f);
+        if (Math.abs(ev.clientX - x0) > 2) {
+          if (kind.lane) onItemDrag?.(kind.lane, kind.b, f); else onBoundaryDrag?.(kind.b, f);
+        }
       }
     };
     window.addEventListener("mousemove", move);
@@ -217,7 +223,8 @@ export function Timeline({ total, lanes, selected = {}, selectedBoundary = -1, o
               <LaneRow key={l.id} lane={l} zoom={zoom} from={from} to={to} selected={selected[l.id] ?? -1}
                 selectedBoundary={l.boundaries ? selectedBoundary : -1}
                 onItemClick={onItemClick} onBoundaryClick={onBoundaryClick}
-                onBoundaryDown={l.boundaries && onBoundaryDrag ? (e, b) => { onBoundaryClick?.(b); startDrag(e, { b }); } : undefined} />
+                onBoundaryDown={l.drag && onItemDrag ? (e, i) => startDrag(e, { b: i, lane: l.id })
+                  : l.boundaries && onBoundaryDrag ? (e, b) => { onBoundaryClick?.(b); startDrag(e, { b }); } : undefined} />
             ))}
             {waveform ? <Wave peaks={waveform} zoom={zoom} scroll={scroll} width={width} /> : null}
             {hover !== null ? <div className="ntl-hover" style={{ transform: `translateX(${hover * zoom}px)` }} /> : null}
@@ -289,6 +296,9 @@ const LaneRow = memo(function LaneRow({ lane, zoom, from, to, selected, selected
               e.stopPropagation();
               if (onBoundaryDown) onBoundaryDown(e, it.i - 1); else onBoundaryClick?.(it.i - 1);
             }} />
+        ) : lane.drag ? (
+          <span className="tl-bound" title="Javob shu paytda chiqadi: sudrab suring"
+            onMouseDown={(e) => { e.stopPropagation(); onBoundaryDown?.(e, it.i); }} />
         ) : null}
       </div>,
     );

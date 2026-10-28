@@ -13,6 +13,19 @@ export function moveBoundaryCmd(p: Project, b: number, to: number): Cmd | null {
   return changed(spans, p.slide_spans) ? { label: "Chegarani surish", values: { slide_spans: spans } } : null;
 }
 
+/** Javob (animatsiya qadami) vaqtini surish: shu slaydning qo'shni qadamlari orasida, qo'lda belgilangan. */
+export function moveAnimStepCmd(p: Project, i: number, to: number): Cmd | null {
+  const steps = p.anim_steps ?? [];
+  const s = steps[i];
+  if (!s) return null;
+  const same = steps.filter((x) => x.slide === s.slide);
+  const lo = Math.max(0, ...same.filter((x) => x.click < s.click).map((x) => x.frame + 1));
+  const hi = Math.min(p.total_frames - 1, ...same.filter((x) => x.click > s.click).map((x) => x.frame - 1));
+  const frame = Math.max(lo, Math.min(hi, Math.round(to)));
+  if (frame === s.frame) return null;
+  return { label: "Javob vaqti", values: { anim_steps: steps.map((x, k) => (k === i ? { ...x, frame, source: "manual" } : x)) } };
+}
+
 export function splitSlideCmd(p: Project, frame: number): Cmd | null {
   const spans = splitAt(p.slide_spans, frame, manual);
   return changed(spans, p.slide_spans) ? { label: "Chegara qoʻshish", values: { slide_spans: spans } } : null;

@@ -12,5 +12,7 @@ def test_extract_lesson(test_media: dict[str, Any]) -> None:
     assert [s.title for s in slides] == [e["title"] for e in exp]
     assert [s.body for s in slides] == [e["body"] for e in exp]
     assert [s.notes for s in slides] == [e["notes"] for e in exp]
-    anim = [s.index for s in slides if extract.WARN_ANIM in s.warnings]
+    anim = [s.index for s in slides if any(w.startswith("animatsiya") for w in s.warnings)]
     assert anim == [e["index"] for e in exp if e["animated"]]
+    for s, e in zip(slides, exp, strict=True):   # bosishda chiqadigan matn (javob o'qituvchi aytganda ko'rinadi)
+        assert s.anim == ([e["body"]] if e["animated"] else [])

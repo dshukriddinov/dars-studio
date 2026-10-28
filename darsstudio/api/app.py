@@ -215,7 +215,10 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         return cached_file(name, "media", "proxy_540p.mp4")
 
     @app.get("/api/projects/{name}/slides/{index}")
-    def slide_png(name: str, index: int) -> FileResponse:
+    def slide_png(name: str, index: int, state: int | None = None) -> FileResponse:
+        """state — animatsiya holati (bajarilgan bosishlar soni); yakuniy holat yoki qadam yo'q — NNN.png."""
+        if state is not None and (store(name).cache("slides") / "4k" / f"{index:03d}_{state}.png").is_file():
+            return cached_file(name, "slides", "4k", f"{index:03d}_{state}.png")
         return cached_file(name, "slides", "4k", f"{index:03d}.png")
 
     @app.get("/api/projects/{name}/waveform")

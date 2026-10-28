@@ -78,6 +78,7 @@ class RenderInputs:
     lower_third: np.ndarray | None = None          # eski API: "default" uslub, fade 0.3 s
     lower_third_s: float = 6.0
     overlays: list[Overlay] = field(default_factory=list)   # chiqish (asosiy qism) kadrlarida
+    display: list[tuple[int, int, int]] | None = None        # anim.display_spans (animatsiya qadamlari bilan)
 
 
 @dataclass
@@ -157,7 +158,8 @@ def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spa
                                  o.slide_in_px, o.slide_frames, o.clip_x]
                                 for o in extra.overlays],
                          "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
-                         "src": probe.path, "start": opts.start, "sharpen": compositor.TEACHER_SHARPEN},
+                         "src": probe.path, "start": opts.start, "sharpen": compositor.TEACHER_SHARPEN,
+                         "display": extra.display},
                         sort_keys=True).encode())
     return h.hexdigest()[:16]
 
@@ -210,7 +212,8 @@ def _writer(wr: FrameWriter, q: "queue.Queue[Any]", err: list[BaseException]) ->
             pass
 
 
-def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Path], slides_4k: list[Path],
+def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Path] | dict[int, Path],
+           slides_4k: list[Path] | dict[int, Path],
            slide_spans: list[SlideSpan], layout_spans: list[LayoutSpan], out: Path, work_root: Path,
            opts: RenderOptions | None = None, extra: RenderInputs | None = None) -> RenderReport:
     opts = opts or RenderOptions()
@@ -227,14 +230,15 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
     parts = TeacherParts(project, w, h, probe.full_range, dev)
     keyer = parts.keyers[0]
     comp = Compositor(tpl, warped, slides_4k, project.placement, (w, h), dev, dtype)
-    tl = Timeline.build(slide_spans, layout_spans, tpl)
+    tl = Timeline.build(slide_spans, layout_spans, tpl, extra.display)
     patches = eyepatch.EyePatches(extra.eyepatch_dir) if extra.eyepatch_dir else None
     ovs = list(extra.overlays)
     if extra.lower_third is not None:
         n_lt = round(Fraction(extra.lower_third_s).limit_denominator(1000) * fps)
         ovs.append(overlays.Overlay(extra.lower_third, 0, n_lt, fade_frames=round(overlays.FADE_S * float(fps))))
     ov_t = [premult(o.layer, dev, dtype) for o in ovs]
-    key = render_key(project, tpl, slides_4k, (slide_spans, layout_spans), opts, probe, tm, extra)
+    files = sorted(slides_4k.values()) if isinstance(slides_4k, dict) else slides_4k
+    key = render_key(project, tpl, files, (slide_spans, layout_spans), opts, probe, tm, extra)
     wd = work_root / key
     wd.mkdir(parents=True, exist_ok=True)
     chunk = max(1, int(opts.chunk_sec * fps))

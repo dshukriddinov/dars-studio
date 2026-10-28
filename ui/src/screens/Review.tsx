@@ -89,6 +89,13 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
   // Playhead ostidagi slayd oralig'i (kam o'zgaradi, shuning uchun qayta chizish arzon)
   const spanIdx = useFrameValue((f) => indexAt(p.slide_spans, f), [p.slide_spans]);
   const slideNo = spanIdx >= 0 ? p.slide_spans[spanIdx].slide : null;
+  // animatsiyali slayd: playhead'gacha bajarilgan bosishlar (qadam vaqti yo'q — yakuniy holat)
+  const animState = useFrameValue((f) => {
+    if (!slideNo) return undefined;
+    const n = p.slides.find((s) => s.index === slideNo)?.anim?.length ?? 0;
+    const st = (p.anim_steps ?? []).filter((a) => a.slide === slideNo);
+    return n && st.length ? st.filter((a) => a.frame <= f).length : undefined;
+  }, [slideNo, p.anim_steps, p.slides]);
   const boundary = selBoundary >= 0 && selBoundary < p.slide_spans.length - 1 ? selBoundary : -1;
 
   const lanes = useMemo<Lane[]>(() => {
@@ -102,10 +109,21 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
     const cuts = items(p.cuts, (c) => ({ cls: `cut-${c.status}`, text: CUT_LABELS[c.reason] }));
     const eye = items(p.eye_off, () => ({ cls: "eye" }));
     const subs = groupWords(words, fps).map((c, i) => ({ ...c, i, cls: "sub" }));
+    const steps = p.anim_steps ?? [];
+    const answers = items(steps.map((a) => ({ start: a.frame, end: a.frame + 1, a })), ({ a }, i) => {
+      const next = steps.filter((b) => b.frame > a.frame).reduce((m, b) => Math.min(m, b.frame), Infinity);
+      return {
+        end: Math.min(a.frame + Math.round(2 * fps.num / fps.den), next),
+        text: `${a.slide}.${a.click} ${p.slides.find((s) => s.index === a.slide)?.anim?.[a.click - 1] ?? ""}`,
+        cls: `anim${a.source === "manual" ? " src-manual" : ""}`, i,
+      };
+    });
     return [
       { id: "slide", label: "Slayd", items: slide, maxLen: laneMaxLen(slide), boundaries: true, tall: true },
       { id: "scene", label: "Sahna (A/B)", items: scene, maxLen: laneMaxLen(scene) },
       { id: "cut", label: "Kesishlar", items: cuts, maxLen: laneMaxLen(cuts) },
+      ...(steps.length ? [{ id: "anim", label: "Javoblar (animatsiya)", items: answers, maxLen: laneMaxLen(answers),
+        drag: true }] : []),
       { id: "eye", label: "Eye Contact oʻchiq", items: eye, maxLen: laneMaxLen(eye) },
       { id: "sub", label: "Subtitr", items: subs, maxLen: laneMaxLen(subs) },
     ];
@@ -185,8 +203,9 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
               <figcaption className="caption dim">Asl video (proxy)</figcaption>
             </figure>
             <figure hidden={!panes.slide}>
-              {slideNo ? <img src={urls.slide(name, slideNo)} alt={`${slideNo}-slayd`} /> : <div className="noslide" />}
-              <figcaption className="caption dim">{slideNo ? `${slideNo}-slayd` : "Slayd yoʻq"}</figcaption>
+              {slideNo ? <img src={urls.slide(name, slideNo, animState)} alt={`${slideNo}-slayd`} /> : <div className="noslide" />}
+              <figcaption className="caption dim">{slideNo ? `${slideNo}-slayd` : "Slayd yoʻq"}
+                {animState !== undefined ? ` · ${animState} ta javob koʻrinadi` : ""}</figcaption>
             </figure>
             {panes.final ? (
               <figure>
@@ -294,6 +313,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
         <Timeline total={p.total_frames} lanes={lanes} selected={{ cut: selCut, eye: selEye, slide: spanIdx }}
           selectedBoundary={boundary} onItemClick={onItemClick} onBoundaryClick={setSelBoundary}
           onBoundaryDrag={(b, f) => run(E.moveBoundaryCmd(p, b, f))}
+          onItemDrag={(lane, i, f) => { if (lane === "anim") run(E.moveAnimStepCmd(p, i, f)); }}
           onSeek={(f) => player.seek(f)} waveform={wave} overview={cutMarks} />
         <p className="caption dim hint">
           J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End

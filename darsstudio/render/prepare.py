@@ -81,7 +81,7 @@ def ensure_slides(stack: CommandStack) -> list[Path]:
         slides, general = extract.extract_pptx(src.path)
         for s, png in zip(slides, pngs, strict=True):
             s.png_4k = str(png)
-        key = lambda xs: [(x.title, x.body, x.notes) for x in xs]  # noqa: E731
+        key = lambda xs: [(x.title, x.body, x.notes, x.anim) for x in xs]  # noqa: E731
         if key(slides) != key(p.slides):
             stack.do("slaydlar matni", {"slides": [s.model_dump(mode="json") for s in slides]})
             for g in general:

@@ -38,6 +38,7 @@ class Params:
     seg_max_s: float = 12.0
     suspicious_below: float = 0.6
     short_back_s: float = 10.0
+    premature_s: float = 20.0    # A->B->A, B keyinroq yana: birinchi qisqa "borish" olib tashlanadi
     cue_window_s: float = 25.0   # "keyingi slayd" signali chegaradan shuncha uzoqlikkacha izlanadi
 
 
@@ -252,6 +253,7 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
     # 1146.9 s -> 39-slayd 0.1 s miltillardi): vaqtlar o'sish tartibida chegaralarga qayta beriladi
     for b, f in zip(bounds, sorted(x.frame for x in bounds), strict=True):
         b.frame = f
+    drop_premature(bounds, fps, p.premature_s)
     spans: list[SlideSpan] = []
     pos, cur = 0, path[0] + 1
     for b in bounds:
@@ -271,6 +273,20 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
                 b.reason = "qisqa orqaga qaytish"
                 susp.append(b)
     return AlignResult(spans, bounds, susp)
+
+
+def drop_premature(bounds: list[Boundary], fps: Fraction, max_s: float) -> None:
+    """Ma'ruzachi reja/kirishda keyingi slayd mazmunini aytgan joy (Unit 2: "warm-up ... 2 minutes" 3-slaydda):
+    A->B, qisqa vaqtdan keyin B->A va B keyinroq yana ko'rsatiladi — birinchi borish olib tashlanadi."""
+    k = 0
+    while k + 1 < len(bounds):
+        a, b = bounds[k], bounds[k + 1]
+        if (b.prev_slide == a.slide and b.slide == a.prev_slide and (b.frame - a.frame) / fps <= max_s
+                and any(x.slide == a.slide for x in bounds[k + 2:])):
+            del bounds[k:k + 2]
+            k = max(0, k - 1)
+        else:
+            k += 1
 
 
 CUE_NEXT = re.compile(r"^(keyingi|navbatdagi|keyinggi|next|following)$")   # + ingliz tili darslari

@@ -19,6 +19,7 @@ import torch.nn.functional as F
 from darsstudio.project.model import LayoutSpan, SlideSpan, TeacherPlacement
 from darsstudio.render import transitions
 from darsstudio.render.templates import Template
+from darsstudio.slides import anim
 from darsstudio.slides.warp import fit_contain, hex_rgb, read_rgb
 
 Tensor = torch.Tensor
@@ -57,11 +58,16 @@ class Timeline:
     layout_frames: int
 
     @classmethod
-    def build(cls, slide_spans: Sequence[SlideSpan], layout_spans: Sequence[LayoutSpan], tpl: Template) -> "Timeline":
-        ss = sorted(slide_spans, key=lambda s: s.start)
+    def build(cls, slide_spans: Sequence[SlideSpan], layout_spans: Sequence[LayoutSpan], tpl: Template,
+              display: Sequence[tuple[int, int, int]] | None = None) -> "Timeline":
+        """display — anim.display_spans (boshlanish, slayd, animatsiya holati); yo'q bo'lsa slayd oraliqlari.
+        Qiymatlar — rasm id (anim.image_id)."""
+        if display is None:
+            display = [(s.start, s.slide, 0) for s in slide_spans]
+        ds = sorted(display)
         ls = sorted(layout_spans, key=lambda s: s.start)
-        return cls([s.start for s in ss], [s.slide for s in ss], [s.start for s in ls], [s.layout for s in ls],
-                   tpl.transitions.slide_frames, tpl.transitions.layout_frames)
+        return cls([d[0] for d in ds], [anim.image_id(d[1], d[2]) for d in ds], [s.start for s in ls],
+                   [s.layout for s in ls], tpl.transitions.slide_frames, tpl.transitions.layout_frames)
 
     @staticmethod
     def _at(starts: list[int], vals: list[object], f: int, n: int) -> tuple[object, object, float]:
@@ -75,7 +81,10 @@ class Timeline:
         return vals[i + 1], cur, (f - (nxt - n) + 1) / (n + 1)
 
     def slide(self, f: int) -> tuple[int, int, float]:
-        c, p, w = self._at(self.slide_starts, self.slides, f, self.slide_frames)
+        # bitta slayd ichida animatsiya qadami: qisqa paydo bo'lish (javob o'qituvchi aytgan paytda ko'rinsin)
+        i = max(0, bisect.bisect_right(self.slide_starts, f) - 1)
+        same = i + 1 < len(self.slides) and self.slides[i + 1] % 1000 == self.slides[i] % 1000
+        c, p, w = self._at(self.slide_starts, self.slides, f, STEP_FRAMES if same else self.slide_frames)
         return int(c), int(p), w  # type: ignore[call-overload,unused-ignore]
 
     def layout(self, f: int) -> tuple[str, str, float]:
@@ -83,6 +92,7 @@ class Timeline:
         return str(c), str(p), w
 
 
+STEP_FRAMES = 4         # animatsiya qadami (bitta slayd ichida) o'tishi, kadr
 TEACHER_SHARPEN = 1.0   # unsharp mask kuchi (sigma 1 px); 0 — o'chiq
 
 
@@ -100,17 +110,21 @@ def sharpen(t: Tensor, amount: float, sigma: float = 1.0) -> Tensor:
 
 
 class Compositor:
-    def __init__(self, tpl: Template, warped: list[Path], slides_4k: list[Path], placement: TeacherPlacement,
+    def __init__(self, tpl: Template, warped: list[Path] | dict[int, Path], slides_4k: list[Path] | dict[int, Path],
+                 placement: TeacherPlacement,
                  src_size: tuple[int, int], device: torch.device, dtype: torch.dtype = torch.float16) -> None:
         self.tpl, self.dev, self.dtype, self.pl = tpl, device, dtype, placement
         cw, ch = tpl.canvas
         self.canvas = (cw, ch)
         bg = fit_contain(read_rgb(tpl.asset(tpl.background)), cw, ch)
         self.bg = torch.from_numpy(bg).to(device).permute(2, 0, 1).to(dtype) / 255.0
-        self.warped = [premult(load_rgba(p), device, dtype) for p in warped]
+        # rasmlar anim.image_id bo'yicha; ro'yxat berilsa — animatsiyasiz slaydlar (1, 2, ...)
+        wt = warped if isinstance(warped, dict) else {anim.image_id(i, 0): p for i, p in enumerate(warped, 1)}
+        ft = slides_4k if isinstance(slides_4k, dict) else {anim.image_id(i, 0): p for i, p in enumerate(slides_4k, 1)}
+        self.warped = {k: premult(load_rgba(p), device, dtype) for k, p in wt.items()}
         box = hex_rgb(tpl.fullscreen.pillarbox_color)
-        self.full = [torch.from_numpy(fit_contain(read_rgb(p), cw, ch, box)).to(device).permute(2, 0, 1).to(dtype)
-                     / 255.0 for p in slides_4k]
+        self.full = {k: torch.from_numpy(fit_contain(read_rgb(p), cw, ch, box)).to(device).permute(2, 0, 1).to(dtype)
+                     / 255.0 for k, p in ft.items()}
         self.logo = None
         if tpl.logo:
             lg = load_rgba(tpl.asset(tpl.logo.file))
@@ -163,15 +177,17 @@ class Compositor:
     def scene(self, layout: str, slide: tuple[int, int, float], teacher: Tensor) -> Tensor:
         cur, prev, ws = slide
         if layout == "B":   # to'liq ekranda slayd almashishi: crossfade (montajchida bunday holat yo'q)
-            return self.full[cur - 1] if ws >= 1 else transitions.crossfade(self.full[prev - 1], self.full[cur - 1], ws)
+            return self.full[cur] if ws >= 1 else transitions.crossfade(self.full[prev], self.full[cur], ws)
         if ws >= 1:
-            sl = self.warped[cur - 1]
+            sl = self.warped[cur]
+        elif cur % 1000 == prev % 1000:   # animatsiya qadami — PowerPoint'dagidek paydo bo'lish
+            sl = transitions.crossfade(self.warped[prev], self.warped[cur], ws)
         elif self.tpl.transitions.slide == "clock_wipe":
-            sl = self.clock(self.warped[prev - 1], self.warped[cur - 1], ws)
+            sl = self.clock(self.warped[prev], self.warped[cur], ws)
         elif self.tpl.transitions.slide == "cut":
-            sl = self.warped[cur - 1]
+            sl = self.warped[cur]
         else:
-            sl = transitions.crossfade(self.warped[prev - 1], self.warped[cur - 1], ws)
+            sl = transitions.crossfade(self.warped[prev], self.warped[cur], ws)
         return self.scene_a(sl, teacher)
 
     def layout_transition(self, lp: str, lc: str, slide: tuple[int, int, float], teacher: Tensor, wl: float) -> Tensor:

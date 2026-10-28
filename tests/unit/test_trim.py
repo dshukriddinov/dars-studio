@@ -175,7 +175,8 @@ def test_reread_after_abandoned_sentence_and_pause() -> None:
     """Ingliz tili darsi (264 s): gap chala qolib pauza, keyin shu boshlanish bilan qayta — 5 mos so'z yetarli."""
     ws = _seq("we saw the title. okay for the next slide we are going to do a short reading. we will do the "
               "summary the some", 0, 450) + _seq("for the next slide we will do the reading part.", 13000, 450)
-    assert _kept(ws, cuts.reread_cuts(ws, Fraction(25))) == "we saw the title. for the next slide we will do the reading part."
+    assert _kept(ws, cuts.reread_cuts(ws, Fraction(25))) == (
+        "we saw the title. for the next slide we will do the reading part.")
 
 
 def test_finished_sentence_still_needs_strong_match() -> None:

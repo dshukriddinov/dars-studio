@@ -4,6 +4,8 @@ export interface SlideSpan extends Span { slide: number; source: "log" | "ai" | 
 export interface LayoutSpan extends Span { layout: "A" | "B" | "C"; suggested: boolean }
 export interface CutProposal extends Span { reason: "pause" | "manual" | "bosh" | "oxir" | "yo'tal" | "aksa" | "to'ldiruvchi" | "takror" | "qism"; status: "taklif" | "tasdiqlangan" | "rad_etilgan" }
 export type EyeOffSpan = Span;
+/** Slayd animatsiyasining click-bosishi shu asl kadrda (javob o'qituvchi aytganda chiqadi). */
+export interface AnimStep { slide: number; click: number; frame: number; source: "ai" | "manual" }
 
 export interface KeySettings {
   key_cbcr: [number, number]; tolerance: number; softness: number; spill: number;
@@ -12,7 +14,8 @@ export interface KeySettings {
 
 export interface Project {
   id: string; name: string; meta: Record<string, string>; fps: string; total_frames: number; template_id: string;
-  slides: { index: number; title: string; body?: string }[];
+  slides: { index: number; title: string; body?: string; anim?: string[] }[];
+  anim_steps?: AnimStep[];
   slide_spans: SlideSpan[]; layout_spans: LayoutSpan[]; cuts: CutProposal[]; eye_off: EyeOffSpan[];
   parts?: { path: string; start: number; frames: number }[];
   exports?: { version: number; path: string; qa: string }[];
