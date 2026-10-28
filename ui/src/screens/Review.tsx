@@ -11,7 +11,7 @@ import { keyToAction, type KeyAction } from "../lib/keys";
 import * as E from "../lib/edits";
 import { Timeline, laneMaxLen, type Item, type Lane } from "../components/Timeline";
 import { SuspiciousList } from "../components/SuspiciousList";
-import { Transcript } from "../components/Transcript";
+import { TextEdit } from "../components/TextEdit";
 import { StatusBadge } from "../components/StatusBadge";
 import type { CutProposal, Project } from "../lib/types";
 
@@ -170,8 +170,17 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
         <section className="panel side">
           <h2 className="heading">Shubhali joylar <span className="caption dim">{suspicious.length}</span></h2>
           <div className="scroll"><SuspiciousList items={suspicious} fps={fps} onJump={(f) => player.seek(f)} /></div>
-          <h2 className="heading">Transkript</h2>
-          <div className="scroll"><Transcript words={words} /></div>
+          <h2 className="heading">Transkript: soʻzlarni belgilab kesish</h2>
+          <div className="scroll te-host">
+            <TextEdit words={words} cuts={p.cuts} fps={fps} total={p.total_frames}
+              onCut={(start, end) => void command("Matndan kesish", {
+                cuts: [...p.cuts, { start, end, reason: "manual", status: "tasdiqlangan" }],
+              })}
+              onRestore={(idx) => {
+                const set = new Set(idx);
+                void command("Kesishni tiklash", { cuts: p.cuts.map((c, i) => (set.has(i) ? { ...c, status: "rad_etilgan" } : c)) });
+              }} />
+          </div>
         </section>
       </div>
 

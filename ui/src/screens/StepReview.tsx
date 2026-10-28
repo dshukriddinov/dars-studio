@@ -127,7 +127,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
           <button role="tab" aria-selected={panel === "list"} className={panel === "list" ? "on" : ""}
             onClick={() => setPanel("list")}>Takliflar</button>
           <button role="tab" aria-selected={panel === "text"} className={panel === "text" ? "on" : ""}
-            onClick={() => setPanel("text")}>Matn</button>
+            onClick={() => setPanel("text")}>Matn: soʻzlarni kesish</button>
         </div>
         {panel === "text" ? (
           <TextEdit words={words} cuts={p.cuts} fps={fps} total={p.total_frames}

@@ -171,3 +171,5 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
 .w.w-cut { color: var(--danger); text-decoration: line-through; text-decoration-thickness: 2px; background: var(--danger-subtle); }
 .w.now { box-shadow: inset 0 -2px 0 var(--accent); }
 .w.sel { background: var(--accent); color: #fff; text-decoration-color: #fff; }
+.te-host { display: flex; flex-direction: column; }
+.te-host .te-text { font-size: 14px; line-height: 24px; }
