@@ -76,7 +76,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, select, textarea")) return;
+      if ((e.target as HTMLElement | null)?.closest?.("input, select, textarea")) return;
       if (e.key === " ") { e.preventDefault(); player.toggle(); }
       else if (panel !== "list") return;
       else if (e.key === "ArrowDown") { e.preventDefault(); jump(Math.min(shown.length - 1, sel + 1)); }

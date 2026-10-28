@@ -50,7 +50,7 @@ export function TextEdit({ words, cuts, fps, total, onCut, onRestore }: {
   useEffect(() => {
     const up = () => { dragging.current = false; };
     const key = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, select, textarea")) return;
+      if ((e.target as HTMLElement | null)?.closest?.("input, select, textarea")) return;
       if ((e.key === "Delete" || e.key === "Backspace") && sel && !allCut) { e.preventDefault(); cutSelection(); }
       if (e.key === "Escape") { pick(null, null); }
     };
