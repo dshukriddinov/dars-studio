@@ -4,6 +4,26 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — Batafsil tahrir: 3-ekran "Tayyor video", ekranlarni yoqish/o'chirish
+
+- Ekranlar: "Asl video", "Slayd", "Tayyor video" — har biri alohida yoqiladi (kamida bittasi qoladi), tanlov
+  brauzerda saqlanadi. Asl video yashirilsa ham pleyer va ovoz undan (proxy) ishlaydi.
+- Tayyor video: butun dars `render` vazifasi bilan (alohida GPU jarayoni) `cache/preview/final_<xesh>.mp4` ga,
+  intro/outro va SRT'siz (asl kadr bilan 1:1 moslash uchun). Render boshlanganidagi saqlangan oraliqlar va
+  project.json xeshi `final_<xesh>.json` ga; loyiha o'zgarsa "eskirgan — Yangilash". UI asl kadrni shu oraliqlar
+  bo'yicha chiqish kadriga o'giradi (`srcToOut`); kesilgan joyda "Bu joy kesiladi". Eski final_* fayllar yangisi
+  tayyor bo'lganda o'chiriladi.
+- Yangi kodlash profili `korish` (2 Mbit/s VBR, preset p1), faqat ko'rish uchun. O'lchov (DSBA8971, 60 s bo'lak,
+  1500 kadr, ishga tushish bilan): web/p7 81.5 s, 35.7 MB; korish/p1 78.3 s, 14.8 MB — tezlikni enkoder
+  belgilamaydi, hajm 2.4x kichik. Butun dars (23 878 chiqish kadri): web/p7 435 s, 592 MB; korish/p1 **319 s,
+  232 MB** (~75 kadr/s; 144.8 kadr/s benchmarkdan sekin — sababi o'rganilmagan). UI matnida "~7 daqiqa".
+- Sinxron tekshiruvi (headless Chrome, uch nuqta): asl 2446/11010/19574 -> chiqish 2373/10765/19155, tayyor video
+  aynan shu kadrlarda; uzunlik 23 878 kadr = kutilgan.
+- Topilgan xato: "Haqiqiy ko'rinish" asl video vaqtini chiqish vaqti deb yuborardi — kesishlar bo'lsa boshqa joy
+  render qilinardi (DSBA8971 oxirida ~420 kadr, 17 s siljish). Endi server asl kadrni TimeMap orqali o'giradi.
+
+---
+
 ## 2026-10-28 — Batafsil tahrir: timeline qayta qurildi
 
 - Boshqaruv: Alt (yoki Ctrl) + g'ildirak — kursor ostidagi kadr atrofida masshtab (oldinga — yaqin, orqaga — uzoq);

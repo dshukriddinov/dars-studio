@@ -98,3 +98,39 @@ def test_waveform_one_value_per_frame(tmp_path: Path, test_media: dict[str, Any]
         assert r.status_code == 200
         frames = c.get("/api/projects/d3").json()["project"]["total_frames"]
         assert abs(len(r.content) - frames) <= 1 and max(r.content) > 200
+
+
+def test_final_preview_stale_after_edit(tmp_path: Path, test_media: dict[str, Any]) -> None:
+    from darsstudio.jobs.tasks import final_key
+    from darsstudio.project import importer
+    from darsstudio.project.store import atomic_write_json
+    importer.import_project(Path(test_media["av_offset.mov"]["path"]), Path(test_media["lesson.pptx"]["path"]),
+                            "demo", tmp_path, name="d4")
+    root = tmp_path / "d4"
+    with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
+        assert c.get("/api/projects/d4/final-preview").json() == {"file": None}
+        # render vazifasi natijasi (GPU'siz taqlid): mp4 + render paytidagi holat
+        d = root / "cache" / "preview"
+        d.mkdir(parents=True)
+        (d / f"final_{final_key(root)}.mp4").write_bytes(b"x")
+        atomic_write_json(d / f"final_{final_key(root)}.json", {"key": final_key(root), "keep": [[0, 300]]})
+        r = c.get("/api/projects/d4/final-preview").json()
+        assert r["keep"] == [[0, 300]] and not r["stale"] and r["file"].startswith("cache/preview/final_")
+        c.post("/api/projects/d4/commands", json={"label": "x", "values": {"key.tolerance": 0.3}})
+        assert c.get("/api/projects/d4/final-preview").json()["stale"]
+
+
+def test_preview_start_maps_source_time_past_cuts(tmp_path: Path, test_media: dict[str, Any]) -> None:
+    """"Haqiqiy ko'rinish": start_s asl video vaqti, render boshi esa kesishlardan keyingi chiqish kadri."""
+    from darsstudio.project import importer
+    importer.import_project(Path(test_media["av_offset.mov"]["path"]), Path(test_media["lesson.pptx"]["path"]),
+                            "demo", tmp_path, name="d5")
+    with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
+        cuts = [{"start": 25, "end": 75, "reason": "manual", "status": "tasdiqlangan"}]
+        assert c.post("/api/projects/d5/commands", json={"label": "k", "values": {"cuts": cuts}}).status_code == 200
+        fps = c.get("/api/projects/d5").json()["project"]["fps"]
+        num, den = (int(x) for x in fps.split("/"))
+        r = c.post("/api/projects/d5/preview", params={"start_s": 100 * den / num, "duration_s": 2}).json()
+        assert r["file"].endswith("preview_50_2000.mp4")      # 100-kadr: oldidan 50 kadr kesilgan
+        r = c.post("/api/projects/d5/preview", params={"start_s": 40 * den / num, "duration_s": 2}).json()
+        assert r["file"].endswith("preview_25_2000.mp4")      # kesilgan joy ichida: keyingi saqlangan kadr

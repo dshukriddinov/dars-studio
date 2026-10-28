@@ -1,6 +1,7 @@
 """Vazifa turlari: worker ichida bajariladigan funksiya + resurs e'loni (FR-20). Funksiya: (args, emit) -> natija.
 args da doim `project` (loyiha papkasi) bor."""
 
+import contextlib
 import json
 import time
 from pathlib import Path
@@ -69,9 +70,30 @@ def t_proxy(args: dict[str, Any], emit: Any) -> dict[str, Any]:
 def t_render(args: dict[str, Any], emit: Any) -> dict[str, Any]:
     from darsstudio import pipeline
     st = _stack(args)
-    return pipeline.render_project(st, Path(args["out"]), profile=args.get("profile", "web"),
-                                   start=int(args.get("start", 0)), frames=args.get("frames"),
-                                   on_progress=lambda d, t: emit.progress(d / max(t, 1)))
+    from darsstudio.project.cuts import timemap
+    from darsstudio.project.store import atomic_write_json
+    out = Path(args["out"])
+    # butun dars ko'rinishi (Batafsil tahrir 3-ekrani): render boshlangandagi holat yoziladi
+    meta = {"key": final_key(st.store.root), "keep": [list(r) for r in timemap(st.project).ranges]}
+    final = bool(args.get("final"))
+    # ko'rish nusxasi: intro/outro va SRT'siz (asl kadr bilan 1:1 moslanadi), yengil kodlash
+    r = pipeline.render_project(st, out, profile=args.get("profile", "web"), preset="p1" if final else "p7",
+                                start=int(args.get("start", 0)), frames=args.get("frames"),
+                                bumpers_on=not final, subtitles=not final,
+                                on_progress=lambda d, t: emit.progress(d / max(t, 1)))
+    if final:
+        atomic_write_json(out.with_suffix(".json"), meta)
+        for old in out.parent.glob("final_*.*"):   # eski ko'rinishlar (~100 MB); ochiq bo'lsa keyingi safar
+            if old.stem != out.stem:
+                with contextlib.suppress(OSError):
+                    old.unlink()
+    return r
+
+
+def final_key(project_root: Path) -> str:
+    """Tayyor ko'rinishga ta'sir qiladigan holat (project.json) xeshi: o'zgarsa ko'rinish eskirgan."""
+    import hashlib
+    return hashlib.sha1((project_root / "project.json").read_bytes()).hexdigest()[:12]
 
 
 def t_export(args: dict[str, Any], emit: Any) -> dict[str, Any]:

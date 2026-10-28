@@ -38,6 +38,9 @@ export const api = {
   stopJob: (id: number) => req<Job>("POST", `/api/jobs/${id}/stop`),
   resumeJob: (id: number) => req<Job>("POST", `/api/jobs/${id}/resume`),
   keySuggest: (name: string, frame: number) => req<ProjectView>("POST", `${p(name)}/key/suggest?frame=${frame}`),
+  finalPreview: (name: string) =>
+    req<{ file: string | null; keep?: [number, number][]; stale?: boolean }>("GET", `${p(name)}/final-preview`),
+  finalPreviewStart: (name: string) => req<{ id: number }>("POST", `${p(name)}/final-preview`),
   preview: (name: string, startS: number, durS: number) =>
     req<{ id: number; file: string }>("POST", `${p(name)}/preview?start_s=${startS}&duration_s=${durS}`),
   exports: (name: string) =>

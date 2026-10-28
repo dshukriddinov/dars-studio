@@ -43,6 +43,8 @@ PROFILES = {
     # TZ FR-16
     "web": ["-rc", "vbr", "-b:v", "8M", "-maxrate", "12M", "-bufsize", "16M"],
     "arxiv": ["-rc", "vbr", "-cq", "19", "-b:v", "0", "-maxrate", "16M", "-bufsize", "32M"],
+    # Batafsil tahrirdagi "Tayyor video" ekrani uchun (faqat ko'rish, eksport emas)
+    "korish": ["-rc", "vbr", "-b:v", "2M", "-maxrate", "4M", "-bufsize", "8M"],
 }
 
 

@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from darsstudio import doctor, paths
 from darsstudio.jobs.queue_db import Job, Queue
 from darsstudio.jobs.scheduler import Scheduler, enqueue_prepare
-from darsstudio.jobs.tasks import TASKS, resources_for
+from darsstudio.jobs.tasks import TASKS, final_key, resources_for
 from darsstudio.media.probe import MediaError
 from darsstudio.project import importer
 from darsstudio.project.commands import CommandStack
@@ -348,14 +348,38 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
     @app.post("/api/projects/{name}/preview")
     def preview(name: str, start_s: float, duration_s: float = 10.0) -> dict[str, Any]:
         """"Haqiqiy ko'rinish" (FR-15): oraliq render navbatga (alohida jarayon); natija /files orqali."""
+        from darsstudio.project.cuts import timemap
         s = store(name)
         p = s.load()
         fps = float(p.fps_frac)
-        out = s.root / "cache" / "preview" / f"preview_{int(start_s * 1000)}_{int(duration_s * 1000)}.mp4"
-        args = {"out": str(out), "start": max(0, int(start_s * fps)), "frames": max(1, int(duration_s * fps)),
-                "profile": "web"}
+        # start_s — asl video vaqti; render esa chiqish (kesishlardan keyingi) kadrlarida
+        tm = timemap(p)
+        src = min(max(0, int(start_s * fps)), p.total_frames - 1)
+        g = next((a for a, _ in tm.map_span(src, p.total_frames)), max(0, tm.out_total - 1))
+        out = s.root / "cache" / "preview" / f"preview_{g}_{int(duration_s * 1000)}.mp4"
+        args = {"out": str(out), "start": g, "frames": max(1, int(duration_s * fps)), "profile": "web"}
         return {"id": queue.add("render", str(s.root), args, resources_for("render", args)),
                 "file": str(out.relative_to(s.root)).replace("\\", "/")}
+
+    @app.get("/api/projects/{name}/final-preview")
+    def final_preview(name: str) -> dict[str, Any]:
+        """Butun dars tayyor ko'rinishi (3-ekran): eng so'nggi render, uning saqlangan oraliqlari, eskirganmi."""
+        s = store(name)
+        d = s.root / "cache" / "preview"
+        done = sorted((f for f in d.glob("final_*.mp4") if f.with_suffix(".json").is_file()),
+                      key=lambda f: f.stat().st_mtime) if d.is_dir() else []
+        if not done:
+            return {"file": None}
+        f = done[-1]
+        meta = json.loads(f.with_suffix(".json").read_text(encoding="utf-8"))
+        return {"file": f"cache/preview/{f.name}", "keep": meta["keep"], "stale": meta["key"] != final_key(s.root)}
+
+    @app.post("/api/projects/{name}/final-preview")
+    def final_preview_start(name: str) -> dict[str, Any]:
+        s = store(name)
+        out = s.root / "cache" / "preview" / f"final_{final_key(s.root)}.mp4"
+        args = {"out": str(out), "profile": "korish", "final": True}
+        return {"id": queue.add("render", str(s.root), args, resources_for("render", args))}
 
     @app.get("/api/projects/{name}/files/{path:path}")
     def project_file(name: str, path: str) -> FileResponse:

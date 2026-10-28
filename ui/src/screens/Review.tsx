@@ -12,6 +12,7 @@ import * as E from "../lib/edits";
 import { Timeline, laneMaxLen, type Item, type Lane } from "../components/Timeline";
 import { SuspiciousList } from "../components/SuspiciousList";
 import { TextEdit } from "../components/TextEdit";
+import { FinalView } from "../components/FinalView";
 import { StatusBadge } from "../components/StatusBadge";
 import type { CutProposal, Project } from "../lib/types";
 
@@ -20,6 +21,17 @@ const CUT_LABELS: Record<CutProposal["reason"], string> = {
   pause: "pauza", manual: "qoʻlda", bosh: "dars boshi", oxir: "dars oxiri", "yo'tal": "yoʻtal", aksa: "aksa",
   "to'ldiruvchi": "toʻldiruvchi", takror: "takror", qism: "qismlar ulanishi",
 };
+type Panes = { src: boolean; slide: boolean; final: boolean };
+const PANES: [keyof Panes, string][] = [["src", "Asl video"], ["slide", "Slayd"], ["final", "Tayyor video"]];
+const PANES_KEY = "dars.review.panes";
+function loadPanes(): Panes {
+  const def = { src: true, slide: true, final: false };
+  try {
+    const v = { ...def, ...JSON.parse(localStorage.getItem(PANES_KEY) ?? "{}") } as Panes;
+    return v.src || v.slide || v.final ? v : def;
+  } catch { return def; }
+}
+
 export function Review() {
   const name = useStore((s) => s.name);
   const view = useStore((s) => s.view);
@@ -50,6 +62,11 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
   const [markIn, setMarkIn] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [wave, setWave] = useState<Uint8Array | null>(null);
+  const [panes, setPanesState] = useState<Panes>(loadPanes);
+  const setPanes = (v: Panes) => {
+    setPanesState(v);
+    try { localStorage.setItem(PANES_KEY, JSON.stringify(v)); } catch { /* saqlanmasa ham ishlaydi */ }
+  };
 
   useEffect(() => {
     let live = true;
@@ -154,15 +171,29 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
     <div className="review">
       <div className="review-top">
         <section className="panel media">
-          <div className="media-pair">
-            <figure>
+          <div className="pane-toggle" role="group" aria-label="Ekranlar">
+            <span className="caption dim">Ekranlar:</span>
+            {PANES.map(([k, label]) => (
+              <button key={k} className={`btn-secondary sm${panes[k] ? " on" : ""}`} aria-pressed={panes[k]}
+                disabled={panes[k] && Object.values(panes).filter(Boolean).length === 1}
+                onClick={() => setPanes({ ...panes, [k]: !panes[k] })}>{label}</button>
+            ))}
+          </div>
+          <div className="media-pair" style={{ gridTemplateColumns: `repeat(${Object.values(panes).filter(Boolean).length}, 1fr)` }}>
+            <figure hidden={!panes.src}>
               <video ref={videoRef} src={urls.proxy(name)} preload="auto" onClick={() => player.toggle()} />
-              <figcaption className="caption dim">Proxy</figcaption>
+              <figcaption className="caption dim">Asl video (proxy)</figcaption>
             </figure>
-            <figure>
+            <figure hidden={!panes.slide}>
               {slideNo ? <img src={urls.slide(name, slideNo)} alt={`${slideNo}-slayd`} /> : <div className="noslide" />}
               <figcaption className="caption dim">{slideNo ? `${slideNo}-slayd` : "Slayd yoʻq"}</figcaption>
             </figure>
+            {panes.final ? (
+              <figure>
+                <FinalView name={name} fps={fps} />
+                <figcaption className="caption dim">Tayyor video (kesishlar, fon, slayd bilan)</figcaption>
+              </figure>
+            ) : null}
           </div>
           <div className="transport">
             <button className="btn-icon" onClick={() => player.step(-1)} aria-label="Oldingi kadr"><SkipBack size={16} /></button>

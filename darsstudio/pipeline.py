@@ -96,7 +96,7 @@ COPYRIGHT_TAIL_S = 15
 
 def render_project(stack: CommandStack, out: Path, *, template: str | None = None, profile: str = "web",
                    preset: str = "p7", chunk_sec: int = 60, start: int = 0, frames: int | None = None,
-                   eye: bool = True, subtitles: bool = True,
+                   eye: bool = True, subtitles: bool = True, bumpers_on: bool = True,
                    on_progress: Callable[[int, int], None] | None = None) -> dict[str, Any]:
     """FR-16: tayyor loyihani render qiladi (kesishlar, ko'z patchlari, tozalangan audio, lower-third) + SRT."""
     p = stack.project
@@ -150,7 +150,7 @@ def render_project(stack: CommandStack, out: Path, *, template: str | None = Non
                           opts, extra)
     full = start == 0 and frames is None
     lead, tail = (bumpers.wrap(out, tpl, p.fps_frac, profile, stack.store.cache("render"), extra.audio_wav)
-                  if full else (0, 0))
+                  if full and bumpers_on else (0, 0))
     srt_path = None
     if ws and full and subtitles:
         srt_path = out.with_suffix(".srt")
