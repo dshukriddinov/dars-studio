@@ -34,10 +34,25 @@ def t_asr(args: dict[str, Any], emit: Any) -> dict[str, Any]:
     from darsstudio.asr import glossary
     from darsstudio.asr.run import task
     st = _stack(args)
-    terms = glossary.load(paths.ROOT / "glossary.json", st.store.root / "glossary.json")
-    return task({"wav16k": str(st.store.cache("audio") / "asr_16k.wav"), "engine": args.get("engine", DEFAULT_ASR),
-                 "align": args.get("align", DEFAULT_ALIGN), "hotwords": glossary.hotwords(terms) if terms else None,
+    lang = lesson_lang(st.project.meta)
+    terms = [t for t in glossary.load(paths.ROOT / "glossary.json", st.store.root / "glossary.json") if t.lang == lang]
+    engine, align = asr_models(lang, args)
+    return task({"wav16k": str(st.store.cache("audio") / "asr_16k.wav"), "engine": engine, "align": align,
+                 "hotwords": glossary.hotwords(terms) if terms else None, "language": lang,
                  "out_dir": str(st.store.cache("asr"))}, emit)
+
+
+def lesson_lang(meta: dict[str, str]) -> str:
+    """Dars tili (meta["til"]): "uz" yoki "en"; boshqasi/yo'q — "uz"."""
+    return "en" if meta.get("til", "").strip().lower() in ("en", "ingliz", "ingliz tili", "english") else "uz"
+
+
+def asr_models(lang: str, args: dict[str, Any]) -> tuple[str, str | None]:
+    """O'zbekcha: o'zbek modeli + o'zbek CTC so'z tekislash. Inglizcha: Whisper large-v3, so'z vaqtlari o'zidan
+    (o'zbek CTC inglizcha so'zlarni tekislay olmaydi)."""
+    if lang == "en":
+        return args.get("engine", EN_ASR), args.get("align")
+    return args.get("engine", DEFAULT_ASR), args.get("align", DEFAULT_ALIGN)
 
 
 def t_eyecontact(args: dict[str, Any], emit: Any) -> dict[str, Any]:
@@ -124,9 +139,10 @@ def t_sleep(args: dict[str, Any], emit: Any) -> dict[str, Any]:
 
 DEFAULT_ASR = "rubaistt-v2-medium-ct2"
 DEFAULT_ALIGN = "sarahai-uzbek-stt-3"
+EN_ASR = "whisper-large-v3-ct2"
 
 
-def model_vram(*names: str) -> int:
+def model_vram(*names: str | None) -> int:
     try:
         data = json.loads((paths.models_dir() / "manifest.json").read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -154,6 +170,5 @@ def resources_for(task: str, args: dict[str, Any]) -> Resources:
         return Resources.model_validate(args["resources"])
     r = TASKS[task][1]
     if task == "asr":
-        return r.model_copy(update={"vram_mb": model_vram(args.get("engine", DEFAULT_ASR),
-                                                          args.get("align", DEFAULT_ALIGN))})
+        return r.model_copy(update={"vram_mb": model_vram(*asr_models(args.get("lang", "uz"), args))})
     return r

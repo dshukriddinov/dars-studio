@@ -14,6 +14,22 @@ export const LESSON_FIELDS: { key: string; label: string; hint: string }[] = [
   { key: "dars", label: "Dars raqami", hint: "5" },
 ];
 
+/** Dars tili (meta.til): nutqni tanish modeli shunga qarab tanlanadi. */
+export const LANGS: [string, string][] = [["uz", "Oʻzbek tili"], ["en", "Ingliz tili"]];
+export const langLabel = (m: Record<string, string>) => (LANGS.find(([k]) => k === m.til) ?? LANGS[0])[1];
+
+export function LangField({ meta, onChange }: { meta: Record<string, string>; onChange: (m: Record<string, string>) => void }) {
+  return (
+    <label className="field">
+      <span className="label">Dars tili (oʻqituvchi nutqi)</span>
+      <select value={meta.til ?? "uz"} onChange={(e) => onChange({ ...meta, til: e.target.value })}>
+        {LANGS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+      </select>
+      <span className="caption dim">Ingliz tili: orada oʻzbekcha soʻzlar boʻlsa ham shu tanlansin</span>
+    </label>
+  );
+}
+
 /** Kiritishda oddiy apostrofni oʻ/gʻ uchun U+02BB ga almashtiradi (CLAUDE.md 10-qoida). */
 export const fixOkina = (s: string) => s.replace(/([OoGg])['’‘`]/g, "$1ʻ");
 

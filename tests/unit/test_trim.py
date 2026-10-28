@@ -161,3 +161,25 @@ def test_reread_needs_strong_match_without_cue() -> None:
     ws = _seq("soliq kodeksi soliqlarning toʻqqiz turini belgilaydi.", 0, 450) + \
         _seq("soliq kodeksi mahalliy soliqlarni ham alohida tartibga soladi.", 8000, 450)
     assert cuts.reread_cuts(ws, Fraction(25)) == []
+
+
+def test_reread_english_cue() -> None:
+    """Ingliz tili darsi: "sorry, again" deb gap qayta aytilgan — eski gap va signal kesiladi."""
+    ws = _seq("today we talk about brands. a strong brand builds trust with its customers over many years. sorry, "
+              "again. a strong brand builds loyalty with its customers over many years.", 0, 450)
+    assert _kept(ws, cuts.reread_cuts(ws, Fraction(25))) == (
+        "today we talk about brands. a strong brand builds loyalty with its customers over many years.")
+
+
+def test_reread_after_abandoned_sentence_and_pause() -> None:
+    """Ingliz tili darsi (264 s): gap chala qolib pauza, keyin shu boshlanish bilan qayta — 5 mos so'z yetarli."""
+    ws = _seq("we saw the title. okay for the next slide we are going to do a short reading. we will do the "
+              "summary the some", 0, 450) + _seq("for the next slide we will do the reading part.", 13000, 450)
+    assert _kept(ws, cuts.reread_cuts(ws, Fraction(25))) == "we saw the title. for the next slide we will do the reading part."
+
+
+def test_finished_sentence_still_needs_strong_match() -> None:
+    # oldingi gap tugagan: "for the next slide we..." har slaydda aytiladi — yumshoq moslik qo'llanmaydi
+    ws = _seq("for the next slide we are going to do a short reading.", 0, 450) + \
+        _seq("for the next slide we will learn some grammar.", 9000, 450)
+    assert cuts.reread_cuts(ws, Fraction(25)) == []

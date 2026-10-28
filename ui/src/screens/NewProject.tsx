@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FolderOpen } from "lucide-react";
 import { useStore } from "../store";
 import { api } from "../lib/api";
-import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS } from "../components/TeacherForm";
+import { LESSON_FIELDS, LangField, LowerThirdPreview, MetaFields, TEACHER_FIELDS } from "../components/TeacherForm";
 
 const DEFAULT_TEMPLATE = "akademiya";
 
@@ -66,6 +66,9 @@ export function NewProject() {
             onPick={() => void pick("slides")} placeholder="D:\darslar\dars01.pptx" />
           <h2 className="h2">Dars</h2>
           <MetaFields fields={LESSON_FIELDS} meta={meta} onChange={setMeta} />
+          <div className="grid2">
+            <LangField meta={meta} onChange={setMeta} />
+          </div>
           <div className="grid2">
             <label className="field">
               <span className="label">Studiya shabloni</span>

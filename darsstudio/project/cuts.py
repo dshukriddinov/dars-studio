@@ -95,7 +95,7 @@ def stutter_cuts(words: Sequence[Word], fps: Fraction, max_gap_ms: int = 700) ->
 RETAKE_MAX_WORDS = 10      # tashlab ketilgan urinish uzunligi (so'z)
 RETAKE_MAX_S = 12.0
 PHRASE_GAP_MS = 500        # shundan uzun pauza — yangi ibora boshi
-CORRECTION_CUES = ("adashdim", "adashibman", "adashdik", "kechirasiz", "uzr", "qaytadan")
+CORRECTION_CUES = ("adashdim", "adashibman", "adashdik", "kechirasiz", "uzr", "qaytadan", "sorry")
 CORRECTION_PAIRS = (("noto'g'ri", "aytdim"), ("xato", "aytdim"), ("noto'g'ri", "aytdik"))
 FILLERS = ("demak", "xo'sh", "ya'ni", "endi", "mana")
 CORRECTION_LOOKBACK_S = 30.0
@@ -403,7 +403,8 @@ def _part_overlap(before: Sequence[Word], after: Sequence[Word]) -> tuple[Word, 
     return None
 
 
-REREAD_CUES = re.compile(r"^(qayta(dan|tdan)|boshqa(tdan|ttan)|boshidan|yangidan|adash\w*|kechirasiz|uzr)$")
+REREAD_CUES = re.compile(r"^(qayta(dan|tdan)|boshqa(tdan|ttan)|boshidan|yangidan|adash\w*|kechirasiz|uzr"
+                         r"|again|sorry|restart)$")
 REREAD_LOOKBACK_S = 90.0
 REREAD_PAUSE_MS = 1500     # signal so'zsiz: shundan uzun pauzadan keyin qayta boshlash
 REREAD_HITS = (5, 7)       # 8 so'zlik oynada tartibli mos so'zlar: signal bilan / signalsiz
@@ -465,8 +466,10 @@ def reread_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
             cue = j - 1 if REREAD_CUES.match(k[j - 1]) else None
             cands = [x for x in range(j, min(n - 1, j + 16)) if phrase(x)
                      and ws[x].start_ms - ws[j - 1].end_ms <= 15000] if cue is not None else [j]
+            # pauzadan oldingi gap chala qolgan ("...we will do the summary the some" + 2.7 s): yumshoqroq moslik
+            need = REREAD_HITS[0] if cue is not None or not _ends_sentence(ws[j - 1]) else REREAD_HITS[1]
             for x in cands:
-                a = match(x, cue if cue is not None else x, REREAD_HITS[0] if cue is not None else REREAD_HITS[1])
+                a = match(x, cue if cue is not None else x, need)
                 if a is not None:
                     hit = (_sentence_start(ws, a), x)
                     break

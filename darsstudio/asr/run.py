@@ -56,7 +56,7 @@ class GpuMemPeak:
 
 
 def task(args: dict[str, Any], emit: Any) -> dict[str, Any]:
-    """args: wav16k, engine (manifest nomi), align (CTC model nomi yoki None), hotwords, out_dir."""
+    """args: wav16k, engine (manifest nomi), align (CTC model nomi yoki None), hotwords, out_dir, language."""
     import os
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
     os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
@@ -70,7 +70,8 @@ def task(args: dict[str, Any], emit: Any) -> dict[str, Any]:
     mem = GpuMemPeak()
     t0 = time.time()
     ent = model_entry(args["engine"])
-    eng = load_engine(ent["kind"], model_dir(args["engine"]), device=args.get("device", "cuda"))
+    kw = {"language": args["language"]} if args.get("language") and ent["kind"] == "asr-ct2" else {}
+    eng = load_engine(ent["kind"], model_dir(args["engine"]), device=args.get("device", "cuda"), **kw)
     emit.log(f"model yuklandi: {args['engine']}")
     segs = eng.transcribe(wav, hotwords=args.get("hotwords"), on_progress=lambda x: emit.progress(0.7 * x))
     t_asr = time.time() - t0

@@ -4,6 +4,35 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — Ingliz tili darslari (dars tili `meta.til`)
+
+- Foydalanuvchi: ingliz tili darsi deyarli to'liq inglizcha, orada o'zbekcha so'zlar bo'lishi mumkin. Yangi dars
+  formasida "Dars tili" (O'zbek / Ingliz); `meta["til"] = "en"` (sxema o'zgarmadi, `meta` da "til" ko'zda tutilgan).
+  Keyin o'zgartirilmaydi (qayta tayyorlash qo'lda tahrirlarni yo'qotadi), 1-qadamda faqat ko'rsatiladi.
+- ASR: inglizcha — `whisper-large-v3-ct2` (manifestda bor, MIT), `language="en"`, so'z vaqtlari Whisper'dan (o'zbek CTC
+  inglizcha so'zlarni tekislay olmaydi); lug'atdan faqat shu tildagi atamalar. VRAM e'loni tilga qarab (3.6 GB).
+  `cli asr` ham dars tiliga qaraydi.
+- Signal so'zlar bitta ro'yxatda (aralash nutq uchun): qayta o'qish "sorry/again/restart", slayd o'tishi
+  "next/following slide/page" (+ "so, okay, for the" kirish so'zlari), xayrlashuv "thank you / goodbye".
+- So'z takrori ("brand brand") kesish taklifi inglizchada o'chirilgan: Whisper ikki so'zga 0.2 s beradi — kesish
+  so'zni qirqadi. Gap darajasidagi takror va qayta o'qish qoladi.
+- Qayta o'qish qoidasi: pauzadan oldingi gap chala qolgan bo'lsa (nuqtasiz) signal so'zsiz ham 5 mos so'z yetarli
+  (avval 7). O'zbekcha darslarda eski/yangi taqqoslandi: DSBA9359 +1 (1218 s), DSBA9607 +2 (238 s, 1184 s) — uchalasi
+  qo'lda tekshirildi, haqiqiy qayta o'qish; DSBA8971, namuna o'zgarmadi.
+- **O'lchov (haqiqiy dars):** "Unit 1 Understanding Brands" (DSBA8969.MOV, 11:49, 15 slayd) — montajchining Premiere
+  loyihasi (english1.prproj) etalon: video yo'laklaridagi klip In/Out'laridan saqlangan oraliqlar va slayd PNG'lari
+  boshlanishi asl video vaqtiga o'girildi. Tayyorlash (import+proxy, audio, ASR, sinxron, kesish) 258 s; ASR RTF 0.10,
+  1753 so'z, matn sifati yuqori (ism, Dior, CEO to'g'ri).
+  - Slayd chegaralari (13 ta, montajchi kesgan oraliq ichiga tushsa farq 0): signal so'zlarsiz ±2 s 4/13, o'rtacha
+    3.8 s; "next slide" bilan **±2 s 8/13, ±5 s 10/13, o'rtacha 2.4 s**. Qoldi: 2-slayd (10 s, reja) topilmadi;
+    10/12/14 4–6 s erta (12: 11-slayddagi misol gap 12-slayd mashqida ham bor). O'zbekcha namuna o'zgarmadi
+    (±2 s 94%, median 1.26 s — avvalgi kod bilan aynan shu).
+  - Kesishlar: montajchi 11 joy (35.9 s) — 9/11 topildi (264–274 s qayta boshlash ham); takliflar 18 ta, 9 tasi
+    montajchida yo'q (10.8 s: 1–1.6 s pauzalar, 2 "mmm") — taklif, inson hal qiladi. Topilmadi: 31–34 s ("let's get
+    started" ikkinchi marta), 85–87 s (gap ichidagi 1.6 s pauza).
+
+---
+
 ## 2026-10-28 — Batafsil tahrir: 3-ekran "Tayyor video", ekranlarni yoqish/o'chirish
 
 - Ekranlar: "Asl video", "Slayd", "Tayyor video" — har biri alohida yoqiladi (kamida bittasi qoladi), tanlov

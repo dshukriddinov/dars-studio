@@ -51,7 +51,7 @@ def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
     return out
 
 
-THANKS = ("rahmat", "e'tibor", "etibor")
+THANKS = ("rahmat", "e'tibor", "etibor", "thank", "attention")
 FAREWELL_SEARCH_S = 60
 
 
@@ -66,7 +66,8 @@ def thanks_slide(spans: list[SlideSpan], slides: list[Slide], words: list[Word],
     if last.index in {s.slide for s in spans} or not any(k in text for k in map(uz_text.normalize, THANKS)):
         return spans
     ws = sorted(words, key=lambda w: w.start_ms)
-    bye = {uz_text.normalize(x) for x in ("rahmat", "ko'rishguncha", "ko'rishgunimizcha")}
+    bye = {uz_text.normalize(x) for x in ("rahmat", "ko'rishguncha", "ko'rishgunimizcha",
+                                          "thank", "thanks", "goodbye", "bye")}
     end_ms = int(Fraction(total) / fps * 1000)
     hit = next((i for i in range(len(ws) - 1, -1, -1) if ws[i].start_ms >= end_ms - FAREWELL_SEARCH_S * 1000
                 and uz_text.normalize(ws[i].text).strip(".,!") in bye), None)

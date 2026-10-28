@@ -168,8 +168,10 @@ class Scheduler:
 def enqueue_prepare(q: Queue, project: str, asr: dict[str, Any] | None = None, eye: bool = True,
                     proxy: bool = False) -> list[int]:
     """"Tekshiruvgacha tayyorlash" zanjiri: (slaydlar ‖ audio -> ASR ‖ Eye Contact) -> sinxron -> kesish takliflari."""
-    from darsstudio.jobs.tasks import resources_for
-    a = asr or {}
+    from darsstudio.jobs.tasks import lesson_lang, resources_for
+    from darsstudio.project.store import ProjectStore
+    # til — VRAM e'loni uchun (inglizcha dars Whisper large-v3 bilan, ~3.6 GB)
+    a = {"lang": lesson_lang(ProjectStore(Path(project)).load().meta), **(asr or {})}
     ids = {}
     ids["slides"] = q.add("slides", project, {}, resources_for("slides", {}))
     ids["audio"] = q.add("audio", project, {}, resources_for("audio", {}))

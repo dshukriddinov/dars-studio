@@ -192,13 +192,16 @@ def cmd_audio(a: argparse.Namespace) -> int:
 def cmd_asr(a: argparse.Namespace) -> int:
     """FR-05: transkripsiya + CTC so'z vaqtlari, alohida jarayonda."""
     from darsstudio.asr import glossary
+    from darsstudio.jobs.tasks import asr_models, lesson_lang
     from darsstudio.jobs.worker import run_isolated
     store = ProjectStore(Path(a.project))
+    lang = lesson_lang(store.load().meta)
+    engine, align = asr_models(lang, {k: v for k, v in (("engine", a.engine), ("align", a.align)) if v})
     wav = store.cache("audio") / "asr_16k.wav"
     if not wav.is_file():
         raise MediaError("Avval audio tayyorlang: python -m darsstudio.cli audio LOYIHA")
-    terms = glossary.load(paths.ROOT / "glossary.json", store.root / "glossary.json")
-    st = run_isolated("asr_raw", {"wav16k": str(wav), "engine": a.engine, "align": a.align,
+    terms = [t for t in glossary.load(paths.ROOT / "glossary.json", store.root / "glossary.json") if t.lang == lang]
+    st = run_isolated("asr_raw", {"wav16k": str(wav), "engine": engine, "align": align, "language": lang,
                               "hotwords": glossary.hotwords(terms) if terms else None,
                               "out_dir": str(store.cache("asr"))},
                       on_progress=lambda x: print(f"\r{100 * x:.0f}%", end="", file=sys.stderr, flush=True))
@@ -299,8 +302,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("asr", help="transkripsiya + so'z vaqtlari (FR-05)")
     s.add_argument("project")
-    s.add_argument("--engine", default="rubaistt-v2-medium-ct2", help="models/manifest.json dagi nom")
-    s.add_argument("--align", default="sarahai-uzbek-stt-3", help="CTC model (so'z vaqtlari)")
+    s.add_argument("--engine", help="models/manifest.json dagi nom (standart: dars tiliga qarab)")
+    s.add_argument("--align", help="CTC model (so'z vaqtlari; standart: o'zbekcha darsda sarahai-uzbek-stt-3)")
     s.set_defaults(fn=cmd_asr)
 
     s = sub.add_parser("sync", help="slayd vaqtlari: jurnal (bo'lsa) yoki AI + sahna tavsiyasi (FR-07/08)")

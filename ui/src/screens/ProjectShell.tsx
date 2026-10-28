@@ -5,7 +5,7 @@ import { useStore, type Step } from "../store";
 import { api, urls } from "../lib/api";
 import { frameToSec, parseFps, type Fps } from "../lib/time";
 import type { Job, Project as P } from "../lib/types";
-import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS } from "../components/TeacherForm";
+import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS, langLabel } from "../components/TeacherForm";
 import { StepReview } from "./StepReview";
 
 const projName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
@@ -95,6 +95,7 @@ function StepFiles({ name, p, fps, busy }: { name: string; p: P; fps: Fps; busy:
           {dirty ? <button className="btn-ghost" onClick={() => setMeta(p.meta)}>Bekor qilish</button> : null}
           <span className="caption dim">Keyingi eksportda qoʻllanadi</span>
         </div>
+        <p className="caption dim">Dars tili: {langLabel(p.meta)} (yangi dars ochishda tanlanadi)</p>
       </section>
       <section className="block">
         <h2 className="h2">Video</h2>

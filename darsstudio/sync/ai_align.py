@@ -273,9 +273,9 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
     return AlignResult(spans, bounds, susp)
 
 
-CUE_NEXT = re.compile(r"^(keyingi|navbatdagi|keyinggi)$")
-CUE_SLIDE = re.compile(r"^slayd")
-CUE_LEAD = re.compile(r"^(xo.p|xo.sh|endi|demak)$")
+CUE_NEXT = re.compile(r"^(keyingi|navbatdagi|keyinggi|next|following)$")   # + ingliz tili darslari
+CUE_SLIDE = re.compile(r"^(slayd|slide|page)")
+CUE_LEAD = re.compile(r"^(xo.p|xo.sh|endi|demak|so|okay|ok|now|alright|the|for|to|on|our|let.s|move|go)$")
 
 
 def cue_starts(words: list[Word]) -> list[int]:
