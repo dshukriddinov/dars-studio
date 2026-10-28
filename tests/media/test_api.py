@@ -134,3 +134,22 @@ def test_preview_start_maps_source_time_past_cuts(tmp_path: Path, test_media: di
         assert r["file"].endswith("preview_50_2000.mp4")      # 100-kadr: oldidan 50 kadr kesilgan
         r = c.post("/api/projects/d5/preview", params={"start_s": 40 * den / num, "duration_s": 2}).json()
         assert r["file"].endswith("preview_25_2000.mp4")      # kesilgan joy ichida: keyingi saqlangan kadr
+
+
+def test_relayout_follows_slides_keeps_manual(tmp_path: Path, test_media: dict[str, Any]) -> None:
+    """Slayd chegarasi qo'lda surilgandan keyin: tavsiya sahnalari yangi chegaradan, qo'lda qo'yilgani saqlanadi."""
+    from darsstudio.project import importer
+    importer.import_project(Path(test_media["av_offset.mov"]["path"]), Path(test_media["lesson.pptx"]["path"]),
+                            "demo", tmp_path, name="d6")
+    with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
+        sl = lambda a, b, k: {"start": a, "end": b, "slide": k, "source": "manual", "confidence": 1.0,  # noqa: E731
+                              "approved": False}
+        ls = [{"start": 0, "end": 100, "layout": "A", "suggested": True},
+              {"start": 100, "end": 200, "layout": "B", "suggested": True},
+              {"start": 200, "end": 300, "layout": "B", "suggested": False}]   # inson qo'ygan
+        r = c.post("/api/projects/d6/commands", json={"label": "x", "values": {
+            "slide_spans": [sl(0, 120, 1), sl(120, 300, 2)], "layout_spans": ls}})
+        assert r.status_code == 200, r.text
+        out = c.post("/api/projects/d6/relayout").json()["project"]["layout_spans"]
+        # demo shabloni: "words" siyosati, 1-2-slaydlar matni qisqa — A; eski 100-kadrdagi B tavsiyasi yo'qoldi
+        assert out == [{"start": 0, "end": 200, "layout": "A", "suggested": True}, ls[-1]]

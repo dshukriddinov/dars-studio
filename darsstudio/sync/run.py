@@ -52,6 +52,30 @@ def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
     return out
 
 
+def relayout(stack: CommandStack) -> list[LayoutSpan]:
+    """Tavsiya sahnalari hozirgi slayd chegaralari bo'yicha qayta; inson o'zgartirgan (suggested=False) oraliqlar
+    ustidan saqlanadi. Slayd chegaralari qo'lda surilgandan keyin sahna eski joyda qolmasin (DSBA9600)."""
+    out = suggest_layouts(stack)
+    for m in (s for s in stack.project.layout_spans if not s.suggested):
+        cut: list[LayoutSpan] = []
+        for s in out:
+            if s.end <= m.start or s.start >= m.end:
+                cut.append(s)
+                continue
+            if s.start < m.start:
+                cut.append(s.model_copy(update={"end": m.start}))
+            if s.end > m.end:
+                cut.append(s.model_copy(update={"start": m.end}))
+        out = sorted(cut + [m], key=lambda s: s.start)
+    merged: list[LayoutSpan] = []
+    for s in out:
+        if merged and merged[-1].layout == s.layout and merged[-1].suggested == s.suggested:
+            merged[-1] = merged[-1].model_copy(update={"end": s.end})
+        else:
+            merged.append(s)
+    return merged
+
+
 THANKS = ("rahmat", "e'tibor", "etibor", "thank", "attention")
 FAREWELL_SEARCH_S = 60
 

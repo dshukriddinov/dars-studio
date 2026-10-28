@@ -184,3 +184,44 @@ def test_finished_sentence_still_needs_strong_match() -> None:
     ws = _seq("for the next slide we are going to do a short reading.", 0, 450) + \
         _seq("for the next slide we will learn some grammar.", 9000, 450)
     assert cuts.reread_cuts(ws, Fraction(25)) == []
+
+
+def test_restart_after_truncated_attempt_with_period() -> None:
+    """DSBA9600 (qo'lda belgilangan): chala urinishga ASR nuqta qo'ygan, gap boshidagi so'zlar qayta aytilgan."""
+    ws = _seq("muammolar ham uchrab turibdi. ikki ming yigirma toʻrtinchi yilda qiziltepada. "
+              "muammolar ham uchrab turibdi. ikki ming yigirma toʻrtinchi yilda qiziltepa hokimi oʻrinbosari.", 0, 450)
+    assert _kept(ws, cuts.retake_cuts(ws, Fraction(25))) == (
+        "muammolar ham uchrab turibdi. ikki ming yigirma toʻrtinchi yilda qiziltepa hokimi oʻrinbosari.")
+
+
+def test_enumeration_and_years_are_not_restarts() -> None:
+    # "undan keyin esa ..." — sanash; "ikki ming yigirma ..." — boshqa yil: boshida mazmunli so'z yo'q
+    for text in ("undan keyin esa rivojlantirish bosqichi bor. undan keyin esa yakunlash bosqichi bor.",
+                 "ikki ming yigirma toʻrtinchi yilda baza kengaydi. ikki ming yigirma oltinchi yilda stavka tushdi."):
+        ws = _seq(text, 0, 450)
+        assert cuts.retake_cuts(ws, Fraction(25)) == [], text
+
+
+def test_question_then_explanation_is_not_restart() -> None:
+    # DSBA8971 370 s: savol, tushuntirish, keyin savol kengaytirib qayta — tushuntirish kesilmasin
+    ws = _seq("nima muammolar bor? yerlarni, demak, kadastrni tuzilgandan keyin yerdan foydalanish boʻyicha, "
+              "nima muammolar bor va qanday imkoniyatlar borligi toʻgʻrisida gaplashamiz.", 0, 450)
+    assert cuts.retake_cuts(ws, Fraction(25)) == []
+
+
+def test_restart_without_pause_needs_exact_words() -> None:
+    # DSBA9600 364 s: pauzasiz qayta boshlash (aynan 3 so'z) — kesiladi
+    ws = _seq("tizimga byudjetdan tashqari element tizimga byudjetdan tashqari elementlar ham kiradi.", 0, 400)
+    assert _kept(ws, cuts.retake_cuts(ws, Fraction(25))) == "tizimga byudjetdan tashqari elementlar ham kiradi."
+    # DSBA8971 422 s: "manbalarni" ~ "masalan" o'xshash, lekin bu davomi — kesilmaydi
+    ws = _seq("mana shu manbalarni ham oʻrganib oʻtishimiz, sizlar bilan birgalikda mana shu, masalan, yer maydoni.",
+              0, 400)
+    assert cuts.retake_cuts(ws, Fraction(25)) == []
+
+
+def test_long_word_stutter_with_comma_and_longer_gap() -> None:
+    w = lambda t, s, e: Word(text=t, start_ms=s, end_ms=e, conf=0.9)  # noqa: E731
+    ws = [w("olgan", 0, 300), w("byudjet,", 660, 1000), w("byudjet", 1900, 2200), w("uchun", 2260, 2400)]
+    assert _kept(ws, cuts.stutter_cuts(ws, Fraction(25))) == "olgan byudjet uchun"
+    short = [w("rais,", 0, 300), w("rais", 500, 800), w("oʻrinbosari", 850, 1300)]   # ro'yxat — kesilmaydi
+    assert cuts.stutter_cuts(short, Fraction(25)) == []

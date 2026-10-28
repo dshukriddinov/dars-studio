@@ -82,9 +82,12 @@ def stutter_cuts(words: Sequence[Word], fps: Fraction, max_gap_ms: int = 700) ->
         a, b = ws[i - 1], ws[i]
         # yolg'on takrorlar (sinov videosi): nol uzunlikli so'z — CTC tekislash artefakti; ".uch" — kasr (93.3);
         # "rais, rais o'rinbosari" — tinish belgisidan keyingi takror ro'yxat
+        # uzun so'z (>= 6 harf) — ro'yxat emas, takror ("byudjet, byudjet uchun", "avstraliyada avstraliyada" 0.76 s)
+        long = len(norm[i]) >= 6
         artefact = (min(a.end_ms - a.start_ms, b.end_ms - b.start_ms) < 60 or b.text.startswith(".")
-                    or a.text.rstrip()[-1:] in ",.;:")
-        if norm[i] == norm[i - 1] and len(norm[i]) > 1 and b.start_ms - a.end_ms <= max_gap_ms and not artefact:
+                    or (a.text.rstrip()[-1:] in ",.;:" and not (long and a.text.rstrip()[-1:] == ",")))
+        gap_ok = b.start_ms - a.end_ms <= (max(max_gap_ms, STUTTER_LONG_GAP_MS) if long else max_gap_ms)
+        if norm[i] == norm[i - 1] and len(norm[i]) > 1 and gap_ok and not artefact:
             lo = ws[i - 2].end_ms if i >= 2 else ws[i - 1].start_ms
             cs, ce = math.ceil(Fraction(lo, 1000) * fps), math.floor(Fraction(ws[i].start_ms, 1000) * fps)
             if ce > cs:
@@ -92,7 +95,9 @@ def stutter_cuts(words: Sequence[Word], fps: Fraction, max_gap_ms: int = 700) ->
     return out
 
 
+STUTTER_LONG_GAP_MS = 1200
 RETAKE_MAX_WORDS = 10      # tashlab ketilgan urinish uzunligi (so'z)
+RETAKE_LONG_WORDS = 18     # boshidagi >= 3 so'z qayta aytilgan bo'lsa (DSBA9600: "...o'n to'qqiz butun oltmish tr.")
 RETAKE_MAX_S = 12.0
 PHRASE_GAP_MS = 500        # shundan uzun pauza — yangi ibora boshi
 CORRECTION_CUES = ("adashdim", "adashibman", "adashdik", "kechirasiz", "uzr", "qaytadan", "sorry")
@@ -136,6 +141,41 @@ def _restart_match(k: list[str], i: int, j: int) -> bool:
     if k[j] == k[i] and k[j + 1] == k[i + 1]:
         return True
     return j + 2 < len(k) and i + 2 < j and all(_alike(k[j + d], k[i + d]) for d in range(3))
+
+
+LEAD_STOP = set("undan keyin esa uchun bilan lekin ammo yoki hamda ya'ni demak endi mana shunday shuning "
+                "keyingi birinchi ikkinchi uchinchi then also".split())
+
+
+def _lead(k: list[str], i: int, j: int) -> int:
+    """Ikki iboraning boshidan nechta so'z o'xshash (ketma-ket)."""
+    m = 0
+    while j + m < len(k) and i + m < j and _alike(k[i + m], k[j + m]):
+        m += 1
+    return m
+
+
+def _strong_lead(k: list[str], i: int, j: int, exact: bool = False) -> bool:
+    """Boshidagi >= 3 so'z qayta aytilgan, ular orasida mazmunli so'z bor ("undan keyin esa ..." — sanash,
+    "ikki ming yigirma ..." — boshqa yil emas). exact: pauzasiz qayta boshlash uchun so'zlar aynan teng
+    ("mana shu manbalarni ... | mana shu, masalan" — o'xshash, lekin davomi)."""
+    m = _lead(k, i, j)
+    if exact:
+        m = next((d for d in range(m) if k[i + d] != k[j + d]), m)
+    return m >= 3 and any(len(x) >= 4 and x not in LEAD_STOP and not _is_number(x) for x in k[i:i + m])
+
+
+def _abandoned(ws: Sequence[Word], k: list[str], i: int, j: int) -> bool:
+    """[i, j) — tashlab ketilgan urinish: gap oxiriga yetmagan va qisqa. Boshidagi >= 3 so'z qayta aytilsa — uzunroq
+    bo'lishi va oxirgi so'zida nuqta bo'lishi mumkin (ASR chala urinishga ham qo'yadi: "qiziltepada.", "ikki.")."""
+    m = _lead(k, i, j)
+    strong = _strong_lead(k, i, j)
+    if j - i > (RETAKE_LONG_WORDS if strong else RETAKE_MAX_WORDS):
+        return False
+    ends = [m for m in range(i, j) if _ends_sentence(ws[m])]
+    # ichidagi gap oxirlari qayta aytilgan qismda bo'lsa ("...turibdi. ... qiziltepada." ikkalasi qayta)
+    # ("nima muammolar bor? yerlarni, kadastrni..." — savoldan keyin davom etgan: takror nuqtadan keyin ham >= 2 so'z)
+    return not ends or (strong and all(x == j - 1 or x - i + 2 < m for x in ends))
 
 
 def _ends_sentence(w: Word) -> bool:
@@ -249,10 +289,10 @@ def retake_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
         last = None
         cur = i
         while phrase_start(cur):
-            nxt = next((j for j in range(cur + 2, min(n - 1, cur + RETAKE_MAX_WORDS + 1))
-                        if phrase_start(j) and _restart_match(k, cur, j)
+            nxt = next((j for j in range(cur + 2, min(n - 1, cur + RETAKE_LONG_WORDS + 1))
+                        if (phrase_start(j) or _strong_lead(k, cur, j, exact=True)) and _restart_match(k, cur, j)
                         and ws[j].start_ms - ws[cur].start_ms <= RETAKE_MAX_S * 1000
-                        and not any(_ends_sentence(ws[m]) for m in range(cur, j))), None)
+                        and _abandoned(ws, k, cur, j)), None)
             if nxt is None:
                 break
             last, cur = nxt, nxt

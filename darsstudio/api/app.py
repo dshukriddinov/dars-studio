@@ -364,6 +364,14 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         return {"id": queue.add("render", str(s.root), args, resources_for("render", args)),
                 "file": str(out.relative_to(s.root)).replace("\\", "/")}
 
+    @app.post("/api/projects/{name}/relayout")
+    def relayout_scenes(name: str) -> dict[str, Any]:
+        """Sahnalarni slaydlarga moslash (qo'lda o'zgartirilganlari saqlanadi)."""
+        from darsstudio.sync.run import relayout
+        st = stack(name)
+        st.do("Sahnalarni slaydlarga moslash", {"layout_spans": [s.model_dump(mode="json") for s in relayout(st)]})
+        return project_view(st)
+
     @app.get("/api/projects/{name}/final-preview")
     def final_preview(name: str) -> dict[str, Any]:
         """Butun dars tayyor ko'rinishi (3-ekran): eng so'nggi render, uning saqlangan oraliqlari, eskirganmi."""

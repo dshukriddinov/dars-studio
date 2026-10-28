@@ -4,6 +4,39 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-28 — DSBA9600 (inson tahriri) bo'yicha: eksport xatosi, takror aniqligi, sahnalar slaydga ergashishi
+
+- **Eksport xatosi** ("4 ta kesish o'qituvchi so'zining ustiga tushadi, 19:57"): matndan qo'lda kesish; ASR'da
+  "etaman." 1197.18 s da tugaydi va "musiqa" shu zahoti boshlanadi (bo'shliq 0) — kadrga yaxlitlangan chegara so'zga
+  20 ms kirib qolardi. Qo'lda kesish chegarasi uchun 1 kadr chidam (avtomatik kesishlar qat'iy qoldi). Bir xil
+  kesish 3 marta qo'shilgan edi — endi takror qo'shilmaydi.
+- **Takror/qayta boshlash (etalon — foydalanuvchi qo'lda kesgan 22 joy):** topiladi 4 -> **13**.
+  - `retake_cuts`: boshidagi >= 3 so'z qayta aytilsa (orasida mazmunli so'z bo'lishi shart) — tashlab ketilgan
+    urinish 18 so'zgacha va oxirgi so'zida nuqta bo'lishi mumkin (ASR chala urinishga ham qo'yadi: "qiziltepada.",
+    "ikki."); ichidagi gap oxiri qayta aytilgan qismda va undan keyin >= 2 so'z davom etsa ham; aynan 3 so'z
+    qaytsa pauzasiz ham ("tizimga byudjetdan tashqari element tizimga…").
+  - `stutter_cuts`: >= 6 harfli so'z uchun vergul to'siq emas va pauza 1.2 s gacha ("byudjet, byudjet",
+    "avstraliyada avstraliyada" 0.76 s).
+  - Yolg'on topilmalar qo'lda tekshirildi va qoidaga aylandi (testlar bilan): "undan keyin esa X… undan keyin esa Y"
+    (sanash, DSBA8971), "ikki ming yigirma to'rtinchi… ikki ming yigirma oltinchi" (yillar, DSBA9359),
+    "nima muammolar bor? <tushuntirish> nima muammolar bor va…" (DSBA8971), "mana shu manbalarni… mana shu,
+    masalan" (o'xshash, lekin davomi). Boshqa darslarda yangi takliflar: DSBA9359 +9, DSBA9607 +7, DSBA8971 +1 —
+    ko'rib chiqilganlari haqiqiy takror (bittasi dars boshidan oldingi gap).
+  - Topilmay qoldi (9): bitta so'zli qayta boshlash ("poytaxtda eto, poytaxtda esa"), boshiga so'z qo'shilgan qayta
+    boshlash ("mavzu nima uchun… | ushbu mavzu nima uchun…"), son takrori ("o'n to'qqiz. o'n to'qqiz.").
+- **Sahnalar slaydga ergashmasdi:** sahna tavsiyasi (slayd almashganda A, 10 s dan keyin B) slayd chegarasi
+  qo'lda surilganda eski joyda qolardi (DSBA9600: 36/37 oraliq, 7 s gacha farq). Endi chegara surilganda unga
+  bog'langan tavsiya sahnalari ham suriladi (bitta buyruq); "Slaydlarga moslash" tugmasi
+  (`POST /relayout`) tavsiyani qayta joylaydi, qo'lda o'zgartirilganlar saqlanadi. Topilgan xato: bir xil sahnali
+  qo'shnilar birlashganda qo'lda belgisi yo'qolardi (moslash uni qaytarardi) — tuzatildi.
+- **Slayd chegaralari (DSBA9600, AI vs inson):** ±2 s 16/25, AI 9 marta erta (2–20 s), kech 0. Sinab ko'rildi:
+  yangi slayd sarlavhasi so'zlari tilga olingan gapga ko'chirish — jami 5 darsda ±2 s 58/85 -> 52–54/85
+  (yomonlashdi: erta holatlarda o'qituvchi sarlavhani aytmaydi), **qaytarildi**. Ochiq masala.
+- Batafsil tahrir: kesish chetlarini sudrash (so'z ichiga tushsa bo'shliqqa), sahna chegarasini sudrash va ikki
+  bosish A <-> B, C — kesish asbobi, transkript ijroda o'zi suriladi.
+
+---
+
 ## 2026-10-28 — Slayd animatsiyasi: javob o'qituvchi aytganda chiqadi; ingliz tili 3 unit bo'yicha o'lchov
 
 **Talab (foydalanuvchi):** topshiriq slaydlarida javoblar PowerPoint animatsiyasi bilan chiqadi — topshiriqni

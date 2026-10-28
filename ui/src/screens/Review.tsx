@@ -283,6 +283,9 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
             onClick={() => run(E.setSceneCmd(p, player.frame, "A"))} title="1">A</button>
           <button className={`btn-secondary sm${curLayout === "B" ? " on" : ""}`}
             onClick={() => run(E.setSceneCmd(p, player.frame, "B"))} title="2">B</button>
+          <button className="btn-secondary sm" title="Tavsiya sahnalarini hozirgi slayd chegaralari boʻyicha qayta joylash (qoʻlda oʻzgartirilganlari saqlanadi)"
+            onClick={() => api.relayout(name).then((v) => useStore.getState().setView(v)).catch((e) => useStore.getState().fail(e))}>
+            Slaydlarga moslash</button>
         </div>
 
         <div className="group">

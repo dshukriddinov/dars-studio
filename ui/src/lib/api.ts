@@ -29,6 +29,7 @@ export const api = {
     req<ProjectView>("POST", `${p(name)}/commands`, { label, values }),
   undo: (name: string) => req<ProjectView>("POST", `${p(name)}/undo`),
   redo: (name: string) => req<ProjectView>("POST", `${p(name)}/redo`),
+  relayout: (name: string) => req<ProjectView>("POST", `${p(name)}/relayout`),
   words: (name: string) => req<Word[]>("GET", `${p(name)}/words`),
   suspicious: (name: string) => req<Suspicious[]>("GET", `${p(name)}/suspicious`),
   prepare: (name: string) => req<{ jobs: number[] }>("POST", `${p(name)}/prepare`),

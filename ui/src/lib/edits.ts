@@ -11,7 +11,26 @@ const changed = <T>(a: T[], b: T[]) => a !== b;
 /** b-chegarani `to` kadrga surish (server qoplash invariantini tekshiradi; bu yerda ham saqlanadi). */
 export function moveBoundaryCmd(p: Project, b: number, to: number): Cmd | null {
   const spans = moveBoundary(p.slide_spans, b, to, manual);
-  return changed(spans, p.slide_spans) ? { label: "Chegarani surish", values: { slide_spans: spans } } : null;
+  if (!changed(spans, p.slide_spans)) return null;
+  const layout = followSlide(p.layout_spans, p.slide_spans[b].end, spans[b].end, spans[b + 1].end);
+  return { label: "Chegarani surish", values: layout ? { slide_spans: spans, layout_spans: layout } : { slide_spans: spans } };
+}
+
+/** Slayd chegarasi old -> neu surilganda shu chegaraga bog'langan tavsiya sahnalari (A boshi va undan keyingi
+ * A->B) ham birga suriladi — aks holda sahna slayddan oldin/keyin almashadi (DSBA9600: 7 s). Qo'lda o'zgartirilgan
+ * sahnaga tegilmaydi. */
+function followSlide(ls: LayoutSpan[], old: number, neu: number, slideEnd: number): LayoutSpan[] | null {
+  const k = ls.findIndex((s, i) => i > 0 && s.start === old && s.suggested && ls[i - 1].suggested);
+  if (k < 0) return null;
+  const d = neu - old;
+  let out = ls;
+  const next = ls[k + 1];
+  // A->B chegarasi (agar shu slayd ichida bo'lsa) — avval, siljish yo'nalishiga qarab tartib buzilmasin
+  const moveNext = () => { if (next && next.suggested && next.start < slideEnd - d) out = moveBoundary(out, k, Math.min(next.start + d, slideEnd - 1)); };
+  if (d > 0) moveNext();
+  out = moveBoundary(out, k - 1, neu);
+  if (d < 0) moveNext();
+  return out === ls ? null : out;
 }
 
 /** Javob (animatsiya qadami) vaqtini surish: shu slaydning qo'shni qadamlari orasida, qo'lda belgilangan. */
@@ -43,14 +62,22 @@ export function setSlideCmd(p: Project, i: number, slide: number): Cmd | null {
   return { label: `Slayd ${slide}`, values: { slide_spans: setRange(p.slide_spans, s.start, s.end, "slide", slide, manual) } };
 }
 
+/** setRange bir xil sahnali qo'shnilarni birlashtiradi va chapdagining "suggested" belgisi qoladi — inson tanlovi
+ * yo'qolib, "Slaydlarga moslash" uni qaytarardi. [start, end) ni qamragan oraliq qo'lda deb belgilanadi. */
+function markManual(spans: LayoutSpan[], start: number, end: number): LayoutSpan[] {
+  return spans.map((s) => (s.start < end && start < s.end ? { ...s, suggested: false } : s));
+}
+
 /** Playhead ostidagi slayd oralig'i uchun sahna turi (layout_spans kerak bo'lsa bo'linadi). */
 export function setSceneCmd(p: Project, frame: number, layout: LayoutSpan["layout"]): Cmd | null {
   const si = indexAt(p.slide_spans, frame);
   const [start, end] = si >= 0 ? [p.slide_spans[si].start, p.slide_spans[si].end] : [0, p.total_frames];
   const base: LayoutSpan[] = p.layout_spans.length
     ? p.layout_spans : [{ start: 0, end: p.total_frames, layout: "A", suggested: true }];
-  const spans = setRange(base, start, end, "layout", layout, { suggested: false });
-  if (JSON.stringify(spans) === JSON.stringify(p.layout_spans)) return null;
+  const raw = setRange(base, start, end, "layout", layout, { suggested: false });
+  const same = (xs: LayoutSpan[]) => JSON.stringify(xs.map((s) => [s.start, s.end, s.layout]));
+  if (p.layout_spans.length && same(raw) === same(p.layout_spans)) return null;   // sahna o'zgarmadi
+  const spans = markManual(raw, start, end);
   return { label: `Sahna ${layout}`, values: { layout_spans: spans } };
 }
 
@@ -120,5 +147,6 @@ export function toggleSceneCmd(p: Project, i: number): Cmd | null {
   const s = p.layout_spans[i];
   if (!s) return null;
   const layout = s.layout === "A" ? "B" : "A";
-  return { label: `Sahna ${layout}`, values: { layout_spans: setRange(p.layout_spans, s.start, s.end, "layout", layout, { suggested: false }) } };
+  const spans = markManual(setRange(p.layout_spans, s.start, s.end, "layout", layout, { suggested: false }), s.start, s.end);
+  return { label: `Sahna ${layout}`, values: { layout_spans: spans } };
 }

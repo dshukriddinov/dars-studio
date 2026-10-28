@@ -105,3 +105,29 @@ describe("timeline tahriri", () => {
     expect(t.every((s) => s.layout === "A")).toBe(true);
   });
 });
+
+describe("slayd chegarasi surilganda tavsiya sahnalari ergashadi", () => {
+  const base = () => ({ ...project(), slide_spans: [span(0, 100, 1), span(100, 300, 2)],
+    layout_spans: [{ start: 0, end: 100, layout: "B" as const, suggested: true },
+      { start: 100, end: 125, layout: "A" as const, suggested: true },
+      { start: 125, end: 300, layout: "B" as const, suggested: true }] });
+  const bounds = (c: E.Cmd) => (c.values.layout_spans as { start: number }[]).map((s) => s.start);
+  it("oldinga va orqaga", () => {
+    expect(bounds(E.moveBoundaryCmd(base(), 0, 120)!)).toEqual([0, 120, 145]);
+    expect(bounds(E.moveBoundaryCmd(base(), 0, 90)!)).toEqual([0, 90, 115]);
+  });
+  it("qo'lda o'zgartirilgan sahnaga tegilmaydi", () => {
+    const p = base();
+    p.layout_spans[1] = { ...p.layout_spans[1], suggested: false };
+    expect(E.moveBoundaryCmd(p, 0, 120)!.values.layout_spans).toBeUndefined();
+  });
+});
+
+describe("sahna tanlovi birlashganda ham qo'lda qoladi", () => {
+  it("B -> A qo'shni A lar bilan birlashadi, natija suggested=false", () => {
+    const p = { ...project(), layout_spans: [{ start: 0, end: 100, layout: "A" as const, suggested: true },
+      { start: 100, end: 200, layout: "B" as const, suggested: true },
+      { start: 200, end: 300, layout: "A" as const, suggested: true }] };
+    expect(E.toggleSceneCmd(p, 1)!.values.layout_spans).toEqual([{ start: 0, end: 300, layout: "A", suggested: false }]);
+  });
+});
