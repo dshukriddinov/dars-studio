@@ -235,3 +235,31 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
   box-shadow: inset 2px 0 0 var(--danger), inset -2px 0 0 var(--danger); pointer-events: none; z-index: 4; }
 .ntl-range span { position: absolute; top: 2px; left: 4px; padding: 1px 6px; border-radius: 4px; background: var(--danger);
   color: #fff; font: 11px var(--font-mono); white-space: nowrap; }
+
+/* Tayyorlash (maket 2026-10-29) */
+.prep-cols { align-items: flex-start; }
+.info-card { background: var(--surface-200); max-width: 360px; }
+.info-card p { margin: 0 0 var(--space-2); }
+.prep-st { font-weight: 600; white-space: nowrap; }
+.prep-st-tayyor { color: var(--success); }
+.prep-st-ishlanmoqda { color: var(--accent); }
+.prep-st-navbatda, .prep-st-kutilmoqda { color: var(--muted); }
+.prep-st-stop { color: var(--danger); }
+
+/* Ko'rib chiqish (maket 2026-10-29) */
+.rv-video { position: relative; }
+.rv-src { position: absolute; left: 12px; top: 10px; color: #E9F5EC; background: rgba(13, 20, 36, .55);
+  border-radius: 6px; padding: 2px 8px; font-weight: 600; pointer-events: none; }
+
+/* Yangi dars: lower-third ramkasi (maket 2026-10-29) */
+.lt-frame { position: relative; display: flex; align-items: center; border-radius: var(--radius-md); overflow: hidden; }
+.lt-frame img { display: block; width: 100%; }
+.lt-bar { position: absolute; left: 12px; top: 22%; bottom: 22%; width: 6px; border-radius: 3px; background: var(--accent); }
+.lt-tpl { position: absolute; right: 12px; top: 8px; font-size: 11px; font-weight: 600; letter-spacing: .22em;
+  color: #AFC2EE; pointer-events: none; }
+
+/* Kalibrlash (maket 2026-10-29) */
+.calib-wrap { position: relative; border-radius: var(--radius-md); overflow: hidden; }
+.calib-wrap.checker { background: repeating-conic-gradient(#AEB7C6 0% 25%, #8F99AB 0% 50%) 0 0 / 24px 24px; }
+.calib-wrap .calib-img { display: block; width: 100%; }
+.ntl .tl-item.low { background: color-mix(in srgb, var(--warn) 22%, #fff); }

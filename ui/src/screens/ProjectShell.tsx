@@ -18,6 +18,36 @@ const PREP: [string, string, string][] = [
   ["sync", "Slaydlar vaqti", "Har slayd qachon koʻrinishi aniqlanadi"],
   ["cuts", "Kesish takliflari", "Pauza, takror, “mmm” va boshqalar topiladi"],
 ];
+/** Tayyor bosqich natijasi — maketdagi kabi bitta jumla ("18 slayd rasmga aylantirildi"). */
+function resultText(type: string, r: Record<string, unknown> | null | undefined): string | null {
+  if (!r) return null;
+  const n = (k: string) => (typeof r[k] === "number" ? (r[k] as number) : null);
+  switch (type) {
+    case "slides": return n("slides") !== null ? `${n("slides")} slayd rasmga aylantirildi` : null;
+    case "audio": {
+      const ev = n("events") ?? 0, ov = n("other_voice") ?? 0;
+      return "Shovqin tozalandi" + (ev ? `, ${ev} ta yoʻtal/aksa topildi` : "") + (ov ? `, ${ov} joyda boshqa ovoz` : "");
+    }
+    case "asr": return n("words") !== null ? `${n("words")} ta soʻz vaqti bilan yozildi` : null;
+    case "eyecontact": return "Nigoh kameraga toʻgʻrilandi";
+    case "sync": return "Slayd vaqtlari topildi" + (n("suspicious") ? `, ${n("suspicious")} shubhali joy` : "");
+    case "cuts": return n("proposals") !== null ? `${n("proposals")} ta kesish taklifi topildi` : null;
+    default: return null;
+  }
+}
+
+/** Qolgan vaqt bahosi (daqiqa): bosqich ulushlari o'lchovlardan (20 daqiqalik dars ~10-15 daqiqa). */
+function minutesLeft(lessonMin: number, states: { done: boolean; progress: number; perMin: number; fix: number }[]): number {
+  let s = 0;
+  for (const x of states) {
+    if (!x.done) s += (x.fix + x.perMin * lessonMin) * (1 - x.progress);
+  }
+  return Math.max(1, Math.round(s));
+}
+const PREP_COST: Record<string, [number, number]> = {   // [doimiy daqiqa, dars daqiqasiga daqiqa]
+  slides: [0.3, 0], audio: [0.2, 0.04], asr: [0.2, 0.04], eyecontact: [0.3, 0.18], sync: [0.2, 0.01], cuts: [0.1, 0.01],
+};
+
 const STEP_LABELS: [Step, string][] = [[1, "Fayllar va oʻqituvchi"], [2, "Tayyorlash"], [3, "Koʻrib chiqish"], [4, "Eksport"]];
 
 export function ProjectShell() {
@@ -183,7 +213,15 @@ function StepPrepare({ name, p, jobs }: { name: string; p: P; jobs: Job[] }) {
   const latest = (t: string) => jobs.filter((j) => j.type === t).sort((a, b) => b.id - a.id)[0];
   const busy = jobs.some((j) => j.status === "ishlanmoqda" || j.status === "navbatda");
   const finished = PREP.every(([t]) => latest(t)?.status === "tayyor") || (!busy && p.slide_spans.length > 0);
+  const fps = parseFps(p.fps);
+  const lessonMin = p.total_frames / (fps.num / fps.den) / 60;
+  const left = minutesLeft(lessonMin, PREP.map(([t]) => {
+    const j = latest(t);
+    return { done: j?.status === "tayyor", progress: j?.status === "ishlanmoqda" ? j.progress : 0,
+      fix: PREP_COST[t]?.[0] ?? 0.2, perMin: PREP_COST[t]?.[1] ?? 0.02 };
+  }));
   return (
+    <div className="cols prep-cols">
     <section className="block narrow">
       <h2 className="h2">Avtomatik tayyorlash</h2>
       <p className="dim">20 daqiqalik dars uchun taxminan 10–15 daqiqa. Kompyuterni oʻchirmang, oynani yopsangiz ham ish
@@ -192,19 +230,21 @@ function StepPrepare({ name, p, jobs }: { name: string; p: P; jobs: Job[] }) {
         {PREP.map(([t, label, hint]) => {
           const j = latest(t);
           const st = j?.status ?? "kutilmoqda";
+          const done = st === "tayyor";
           return (
             <li key={t} className={`prep-row st-${st === "toʻxtatildi" ? "stop" : st}`}>
               <span className="prep-mark" aria-hidden />
               <div className="prep-text">
                 <div className="strong">{label}</div>
                 <div className="caption dim">{j?.status === "xato" ? friendlyError(j.error)
-                  : st === "ishlanmoqda" && j ? `${Math.round(j.progress * 100)}%` : hint}</div>
+                  : done ? (resultText(t, j?.result) ?? hint)
+                    : st === "ishlanmoqda" && j ? `${hint} — ${Math.round(j.progress * 100)}%` : hint}</div>
                 {st === "ishlanmoqda" && j ? <div className="bar"><div style={{ width: `${j.progress * 100}%` }} /></div> : null}
               </div>
               {j && (j.status === "xato" || j.status === "toʻxtatildi") ? (
                 <button className="btn-secondary sm" onClick={() => api.resumeJob(j.id).then(upsertJob).catch(fail)}>
                   <RotateCw size={14} /> Qayta urinish</button>
-              ) : null}
+              ) : <span className={`caption prep-st prep-st-${st === "toʻxtatildi" ? "stop" : st}`}>{st}</span>}
             </li>
           );
         })}
@@ -214,9 +254,18 @@ function StepPrepare({ name, p, jobs }: { name: string; p: P; jobs: Job[] }) {
           <button className="btn-primary" onClick={() => api.prepare(name).catch(fail)}><Play size={16} /> Tayyorlashni boshlash</button>
         ) : null}
         {finished ? <button className="btn-primary" onClick={() => setStep(3)}>Koʻrib chiqishga oʻtish</button> : null}
-        {busy ? <span className="dim">Ishlanmoqda…</span> : null}
+        {busy ? <span className="dim">Ishlanmoqda… qolgan vaqt taxminan {left} daqiqa</span> : null}
       </div>
     </section>
+    <section className="block info-card">
+      <h2 className="h2" style={{ fontSize: 15 }}>Bu vaqtda nima qilinadi?</h2>
+      <p className="dim">Dastur oʻqituvchini yashil fondan ajratadi, nutqni matnga aylantiradi va har bir slayd
+        videoning qaysi joyida koʻrinishini topadi. Soʻng uzun pauzalar, takrorlar va “mmm” kabi joylarni kesishga
+        taklif qiladi — yakuniy qaror sizda.</p>
+      <p className="dim">Tayyor boʻlgach <strong>Koʻrib chiqish</strong> qadami ochiladi: shubhali joylar
+        roʻyxatidan boshlang.</p>
+    </section>
+    </div>
   );
 }
 
@@ -263,13 +312,13 @@ function StepExport({ name, jobs }: { name: string; jobs: Job[] }) {
         </div>
         {running && job ? (
           <div><div className="bar"><div style={{ width: `${job.progress * 100}%` }} /></div>
-            <p className="caption dim">{Math.round(job.progress * 100)}%</p></div>
+            <p className="caption dim">{Math.round(job.progress * 100)}% — bitta render oʻtishi{exportEta(job)}</p></div>
         ) : null}
         {job?.status === "xato" ? <p className="note err">{friendlyError(job.error)}</p> : null}
       </section>
       <section className="block">
         <h2 className="h2">Tayyor videolar</h2>
-        {!videos.length ? <p className="dim">Hali yoʻq. Chapdagi tugma bilan yarating.</p> : (
+        {!videos.length ? <p className="dim">Hali yoʻq. Chapdagi tugma bilan yarating.</p> : (<>
           <ul className="exports">
             {videos.map((f, i) => (
               <li key={f.file}>
@@ -286,10 +335,20 @@ function StepExport({ name, jobs }: { name: string; jobs: Job[] }) {
               </li>
             ))}
           </ul>
-        )}
+          <p className="caption dim">Har eksport <code>{"exports\\v" + videos[0]?.version + "\\"}</code> papkasida: MP4,
+            SRT, slayd vaqtlari jadvali va QA hisobot.</p>
+        </>)}
       </section>
     </div>
   );
+}
+
+/** Ishlayotgan eksportdan qolgan vaqt: o'tgan vaqt * (1-p)/p (5% dan keyin ko'rsatiladi). */
+function exportEta(job: Job): string {
+  if (job.status !== "ishlanmoqda" || job.progress < 0.05) return "";
+  const elapsed = Date.now() / 1000 - job.created;
+  const min = Math.max(1, Math.round(elapsed * (1 - job.progress) / job.progress / 60));
+  return `, taxminan ${min} daqiqa qoldi`;
 }
 
 /** Vazifa xatosidan foydalanuvchiga tushunarli qator: "...Error: xabar" (traceback emas). */

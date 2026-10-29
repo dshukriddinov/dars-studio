@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Tayyorlash</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Roboto+Slab:wght@600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F7FB;color:#17223B;font:400 13px/19px 'Noto Sans',system-ui,sans-serif}
+a{color:#1F4FD8}a:hover{color:#173EA9}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;min-height:32px;padding:8px 12px;font-weight:600;border:none;box-sizing:border-box}
+.btn-p{background:#1F4FD8;color:#fff}
+.btn-s{background:#fff;color:#17223B;border:1px solid #C9D1DE}
+.btn-g{background:transparent;color:#5B6782}
+.lbl{font-size:12px;line-height:16px;font-weight:600;color:#5B6782;letter-spacing:.02em}
+.cap{font-size:11px;line-height:15px;color:#5B6782}
+.h2{font:600 17px/24px 'Roboto Slab',serif;margin:0}
+.card{background:#fff;border:1px solid #E1E6EF;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stp{flex:1;display:flex;align-items:center;gap:12px;background:transparent;border:none;min-height:52px;padding:0 16px;font-weight:600;color:#5B6782;text-align:left}
+.stpn{width:26px;height:26px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #C9D1DE;font-size:13px;flex:none;box-sizing:border-box}
+</style>
+</helmet>
+<div style="display:flex;flex-wrap:wrap;min-height:880px;align-items:stretch">
+
+  <aside style="flex:1 1 232px;max-width:280px;background:#fff;border-right:1px solid #E1E6EF;display:flex;flex-direction:column">
+    <div style="font:700 18px/24px 'Roboto Slab',serif;color:#173EA9;padding:24px 16px 12px">Dars Studio</div>
+    <button class="btn btn-p" style="margin:0 16px 12px;min-height:38px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Yangi dars
+    </button>
+    <nav aria-label="Darslar" style="flex:1;overflow:auto;padding:0 8px;display:flex;flex-direction:column;gap:2px">
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:#E6EDFD;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600;color:#173EA9">Hujayra tuzilishi</span>
+        <span aria-hidden="true" style="grid-column:2;grid-row:1/span 2;align-self:center;width:8px;height:8px;border-radius:99px;background:#1F4FD8"></span>
+        <span class="cap ell" style="grid-column:1">Dilnoza Karimova</span>
+      </button>
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Kvadrat tenglamalar</span>
+        <span class="cap ell" style="grid-column:1">Akmal Rahimov</span>
+      </button>
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Oʻrta Osiyo xonliklari</span>
+        <span class="cap ell" style="grid-column:1">Nodira Yusupova</span>
+      </button>
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Fotosintez</span>
+        <span class="cap ell" style="grid-column:1">Dilnoza Karimova</span>
+      </button>
+    </nav>
+    <div style="border-top:1px solid #E1E6EF;padding:12px 12px 16px;display:flex;flex-direction:column;gap:8px">
+      <span class="cap" style="padding:0 8px">Ishlanmoqda: nutq matni · navbatda 2</span>
+      <button class="btn btn-g" style="justify-content:flex-start">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M19.4 4.6l-2.1 2.1M6.7 17.3l-2.1 2.1"/></svg>
+        Sozlamalar
+      </button>
+    </div>
+  </aside>
+
+  <main style="flex:999 1 560px;min-width:0;padding:24px 32px 32px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <header style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <h1 style="font:600 26px/32px 'Roboto Slab',serif;letter-spacing:-0.01em;margin:0">Hujayra tuzilishi</h1>
+        <p style="margin:4px 0 0;color:#5B6782">Dilnoza Karimova, Biologiya, 24 daqiqa, 18 slayd</p>
+      </div>
+      <ol aria-label="Qadamlar" style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid #E1E6EF;border-radius:12px;background:#fff;overflow:hidden">
+        <li style="display:flex"><button class="stp">
+          <span class="stpn" style="background:#2F8A5B;border-color:#2F8A5B;color:#fff"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M4 12l5 5 11-11"/></svg></span>
+          Fayllar va oʻqituvchi</button></li>
+        <li style="display:flex;border-left:1px solid #E1E6EF"><button class="stp" aria-current="step" style="color:#173EA9;background:#E6EDFD;box-shadow:inset 0 -3px 0 #1F4FD8">
+          <span class="stpn" style="background:#1F4FD8;border-color:#1F4FD8;color:#fff">2</span>
+          Tayyorlash</button></li>
+        <li style="display:flex;border-left:1px solid #E1E6EF"><button class="stp">
+          <span class="stpn">3</span>
+          Koʻrib chiqish</button></li>
+        <li style="display:flex;border-left:1px solid #E1E6EF"><button class="stp">
+          <span class="stpn">4</span>
+          Eksport</button></li>
+      </ol>
+    </header>
+
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+      <section class="card" style="flex:2 1 460px;max-width:720px;min-width:0">
+        <h2 class="h2">Avtomatik tayyorlash</h2>
+        <p style="margin:0;color:#5B6782">20 daqiqalik dars uchun taxminan 10–15 daqiqa. Kompyuterni oʻchirmang —
+          oynani yopsangiz ham ish davom etadi.</p>
+        <ol style="list-style:none;margin:8px 0 0;padding:0">
+          <li style="display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #E1E6EF">
+            <span aria-hidden="true" style="width:14px;height:14px;margin-top:4px;border-radius:99px;background:#2F8A5B;border:2px solid #2F8A5B;box-sizing:border-box"></span>
+            <span><span style="display:block;font-weight:600">Slaydlar</span><span class="cap">18 slayd rasmga aylantirildi</span></span>
+            <span class="cap" style="color:#2F8A5B;font-weight:600">tayyor</span>
+          </li>
+          <li style="display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #E1E6EF">
+            <span aria-hidden="true" style="width:14px;height:14px;margin-top:4px;border-radius:99px;background:#2F8A5B;border:2px solid #2F8A5B;box-sizing:border-box"></span>
+            <span><span style="display:block;font-weight:600">Ovoz</span><span class="cap">Shovqin tozalandi, 2 ta yoʻtal topildi</span></span>
+            <span class="cap" style="color:#2F8A5B;font-weight:600">tayyor</span>
+          </li>
+          <li style="display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #E1E6EF">
+            <span aria-hidden="true" style="width:14px;height:14px;margin-top:4px;border-radius:99px;border:2px solid #1F4FD8;border-right-color:transparent;box-sizing:border-box"></span>
+            <span style="min-width:0"><span style="display:block;font-weight:600">Nutq matni</span>
+              <span class="cap">Oʻqituvchi soʻzlari vaqti bilan yozilmoqda — 62%</span>
+              <span style="display:block;height:6px;background:#DFE5EF;border-radius:99px;overflow:hidden;margin-top:8px"><span style="display:block;height:100%;width:62%;background:#1F4FD8"></span></span>
+            </span>
+            <span class="cap" style="color:#1F4FD8;font-weight:600">ishlanmoqda</span>
+          </li>
+          <li style="display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #E1E6EF">
+            <span aria-hidden="true" style="width:14px;height:14px;margin-top:4px;border-radius:99px;border:2px dashed #C9D1DE;box-sizing:border-box"></span>
+            <span><span style="display:block;font-weight:600">Koʻz kontakti</span><span class="cap">Nigoh kameraga toʻgʻrilanadi</span></span>
+            <span class="cap">navbatda</span>
+          </li>
+          <li style="display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #E1E6EF">
+            <span aria-hidden="true" style="width:14px;height:14px;margin-top:4px;border-radius:99px;border:2px solid #C9D1DE;box-sizing:border-box"></span>
+            <span><span style="display:block;font-weight:600">Slaydlar vaqti</span><span class="cap">Har slayd qachon koʻrinishi aniqlanadi</span></span>
+            <span class="cap">kutilmoqda</span>
+          </li>
+          <li style="display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #E1E6EF">
+            <span aria-hidden="true" style="width:14px;height:14px;margin-top:4px;border-radius:99px;border:2px solid #C9D1DE;box-sizing:border-box"></span>
+            <span><span style="display:block;font-weight:600">Kesish takliflari</span><span class="cap">Pauza, takror, “mmm” va boshqalar topiladi</span></span>
+            <span class="cap">kutilmoqda</span>
+          </li>
+        </ol>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="color:#5B6782">Ishlanmoqda… qolgan vaqt taxminan 6 daqiqa</span>
+        </div>
+      </section>
+
+      <section class="card" style="flex:1 1 300px;min-width:0;background:#EEF2F8;border-color:#E1E6EF">
+        <h2 class="h2" style="font-size:15px">Bu vaqtda nima qilinadi?</h2>
+        <p style="margin:0;color:#5B6782">Dastur oʻqituvchini yashil fondan ajratadi, nutqni matnga aylantiradi va har bir
+          slayd videoning qaysi joyida koʻrinishini topadi. Soʻng uzun pauzalar, takrorlar va “mmm” kabi joylarni kesishga
+          taklif qiladi — yakuniy qaror sizda.</p>
+        <p style="margin:0;color:#5B6782">Tayyor boʻlgach <strong>Koʻrib chiqish</strong> qadami ochiladi: shubhali
+          joylar roʻyxatidan boshlang.</p>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

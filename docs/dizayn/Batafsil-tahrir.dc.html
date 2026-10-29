@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Batafsil tahrir</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Roboto+Slab:wght@600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F7FB;color:#17223B;font:400 13px/19px 'Noto Sans',system-ui,sans-serif}
+a{color:#1F4FD8}a:hover{color:#173EA9}
+button{font:inherit;cursor:pointer}
+select{font:inherit;color:#17223B;background:#EEF2F8;border:1px solid #C9D1DE;border-radius:8px;min-height:28px;padding:2px 8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;min-height:32px;padding:8px 12px;font-weight:600;border:none;box-sizing:border-box}
+.btn-p{background:#1F4FD8;color:#fff}
+.btn-s{background:#fff;color:#17223B;border:1px solid #C9D1DE}
+.btn-g{background:transparent;color:#5B6782}
+.sm{min-height:28px;padding:4px 8px}
+.cap{font-size:11px;line-height:15px;color:#5B6782}
+.lbl{font-size:12px;line-height:16px;font-weight:600;color:#5B6782}
+.stat{font:600 12px/18px Consolas,ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.panel{background:#fff;border:1px solid #E1E6EF;border-radius:12px;padding:16px;box-sizing:border-box}
+.grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lane{position:relative;height:30px;border-top:1px solid #E1E6EF}
+.lane.tall{height:40px}
+.li{position:absolute;top:4px;bottom:4px;border-radius:4px;overflow:hidden;font-size:11px;line-height:20px;display:flex;align-items:center;gap:4px;padding:0 4px;box-sizing:border-box;border:1px solid rgba(23,34,59,.1)}
+.lhead{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:#5B6782;border-top:1px solid #E1E6EF;white-space:nowrap;box-sizing:border-box}
+.bnd{position:absolute;top:0;bottom:0;width:5px;margin-left:-2px;background:#5B6782;opacity:.55}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.w{border-radius:3px}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;min-height:1060px">
+
+  <div style="display:flex;align-items:center;gap:12px;padding:8px 16px;background:#fff;border-bottom:1px solid #E1E6EF">
+    <button class="btn btn-g">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Koʻrib chiqishga qaytish
+    </button>
+    <span style="color:#5B6782">Batafsil tahrir: slayd chegaralari, sahnalar, kesishlarni kadrgacha surish</span>
+  </div>
+
+  <div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:12px;box-sizing:border-box;min-width:0">
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:stretch">
+      <section class="panel" style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="cap">Ekranlar:</span>
+          <button class="btn btn-s sm" aria-pressed="true" style="border-color:#173EA9;color:#1F4FD8;background:#E6EDFD">Asl video</button>
+          <button class="btn btn-s sm" aria-pressed="true" style="border-color:#173EA9;color:#1F4FD8;background:#E6EDFD">Slayd</button>
+          <button class="btn btn-s sm" aria-pressed="false">Tayyor video</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <figure style="margin:0;display:flex;flex-direction:column;gap:4px;min-width:0">
+            <div style="aspect-ratio:16/9;border-radius:8px;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 42%, #4BAE68 0%, #3C965A 55%, #2F7A49 100%)">
+              <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMax meet" style="position:absolute;inset:0;width:100%;height:100%" role="img" aria-label="Yashil fondagi oʻqituvchi kadri">
+                <ellipse cx="160" cy="196" rx="58" ry="62" fill="#1D2B3A"/>
+                <circle cx="160" cy="118" r="26" fill="#2A3B4E"/>
+                <rect x="130" y="146" width="60" height="10" rx="5" fill="#1D2B3A"/>
+              </svg>
+            </div>
+            <figcaption class="cap">Asl video (proxy)</figcaption>
+          </figure>
+          <figure style="margin:0;display:flex;flex-direction:column;gap:4px;min-width:0">
+            <div style="aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#fff;border:1px solid #E1E6EF;padding:7% 8%;box-sizing:border-box;display:flex;flex-direction:column;gap:8%">
+              <span style="font:600 clamp(12px,1.6vw,20px)/1.2 'Roboto Slab',serif;color:#17306E">Mitoxondriya — energiya markazi</span>
+              <span aria-hidden="true" style="height:5%;width:34%;border-radius:99px;background:#1F4FD8"></span>
+              <span aria-hidden="true" style="height:4%;width:82%;border-radius:99px;background:#DFE5EF"></span>
+              <span aria-hidden="true" style="height:4%;width:74%;border-radius:99px;background:#DFE5EF"></span>
+              <span aria-hidden="true" style="height:4%;width:66%;border-radius:99px;background:#DFE5EF"></span>
+              <span style="margin-top:auto;align-self:flex-end;font:600 11px/15px 'Noto Sans',sans-serif;color:#8790A6">7 / 18</span>
+            </div>
+            <figcaption class="cap">7-slayd · 2 ta javob koʻrinadi</figcaption>
+          </figure>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-s" style="width:32px;padding:0" aria-label="Oldingi kadr">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 4v16L7 12zM5 4h2v16H5z"/></svg></button>
+          <button class="btn btn-s" style="width:32px;padding:0" aria-label="Ijro">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg></button>
+          <button class="btn btn-s" style="width:32px;padding:0" aria-label="Keyingi kadr">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 4v16l12-8zM17 4h2v16h-2z"/></svg></button>
+          <span class="stat">12:40.05 · 22802 / 43200 kadr</span>
+          <span class="cap">Sahna A</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-p">Haqiqiy koʻrinish</button>
+        </div>
+      </section>
+
+      <section class="panel" style="flex:1 1 320px;max-width:420px;min-width:0;display:flex;flex-direction:column;gap:8px">
+        <h2 style="font:600 15px/22px 'Roboto Slab',serif;margin:0">Shubhali joylar <span class="cap">4</span></h2>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+          <li><button style="width:100%;display:grid;grid-template-columns:1fr auto;gap:0 12px;text-align:left;background:#E6EDFD;border:none;border-radius:8px;padding:8px 12px">
+            <span style="font-weight:600;color:#173EA9">Slayd 7→8 chegarasi ishonchsiz</span><span class="stat" style="color:#5B6782">12:40</span>
+            <span class="cap" style="grid-column:1">Nutq ikkala slayd matniga ham yaqin</span></button></li>
+          <li><button style="width:100%;display:grid;grid-template-columns:1fr auto;gap:0 12px;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+            <span style="font-weight:600">Past ishonchli soʻzlar</span><span class="stat" style="color:#5B6782">3:05</span>
+            <span class="cap" style="grid-column:1">ASR 3 ta soʻzga ishonmadi</span></button></li>
+          <li><button style="width:100%;display:grid;grid-template-columns:1fr auto;gap:0 12px;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+            <span style="font-weight:600">Sahna juda tez almashadi</span><span class="stat" style="color:#5B6782">15:27</span>
+            <span class="cap" style="grid-column:1">A→B→A 4 soniyada</span></button></li>
+          <li><button style="width:100%;display:grid;grid-template-columns:1fr auto;gap:0 12px;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+            <span style="font-weight:600">11-slayd juda qisqa</span><span class="stat" style="color:#5B6782">18:02</span>
+            <span class="cap" style="grid-column:1">Ekranda 2 soniyagina koʻrinadi</span></button></li>
+        </ul>
+        <h2 style="font:600 15px/22px 'Roboto Slab',serif;margin:8px 0 0">Transkript: soʻzlarni belgilab kesish</h2>
+        <p style="margin:0;font-size:14px;line-height:26px;overflow:auto">
+          <span class="stat" style="color:#8790A6;margin-right:8px">12:31</span>Endi hujayraning energiya markazi —
+          mitoxondriyaga oʻtamiz. <span class="w" style="color:#C8413A;text-decoration:line-through;text-decoration-thickness:2px;background:#FBE9E7">Mitoxondriya degani bu endi</span>
+          mitoxondriya <span class="w" style="background:#E6EDFD;color:#173EA9;box-shadow:inset 0 -2px 0 #1F4FD8">ikki</span> qavatli
+          membrana bilan oʻralgan. Ichki qavati <span class="w" style="color:#C8413A">kristalar</span> deb ataladigan
+          burmalarni hosil qiladi…
+        </p>
+      </section>
+    </div>
+
+    <section class="panel" style="display:flex;flex-wrap:wrap;gap:8px 32px;align-items:center">
+      <div class="grp">
+        <button class="btn btn-s">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+          Bekor qilish: Kesish</button>
+        <button class="btn btn-s" style="color:#8790A6">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></svg>
+          Qaytarish</button>
+      </div>
+      <div class="grp">
+        <span class="lbl">Chegara</span>
+        <span class="stat">7→8 · 12:40.05</span>
+        <button class="btn btn-s sm">−0.5 s</button>
+        <button class="btn btn-s sm">−1 kadr</button>
+        <button class="btn btn-s sm">+1 kadr</button>
+        <button class="btn btn-s sm">+0.5 s</button>
+        <button class="btn btn-s sm">Playhead'ga</button>
+      </div>
+      <div class="grp">
+        <label class="lbl" for="sl">Slayd raqami</label>
+        <select id="sl"><option>7</option><option>8</option></select>
+        <span class="lbl">Sahna</span>
+        <button class="btn btn-s sm" style="border-color:#173EA9;color:#1F4FD8;background:#E6EDFD">A</button>
+        <button class="btn btn-s sm">B</button>
+      </div>
+      <div class="grp">
+        <span class="lbl" style="display:inline-flex;align-items:center;gap:4px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.2 7.6 20 19M8.2 16.4 20 5"/></svg>
+          Kesish</span>
+        <button class="btn btn-s sm">Tasdiqlash</button>
+        <button class="btn btn-s sm">Rad etish</button>
+        <button class="btn btn-s sm">Hammasini tasdiqlash (5)</button>
+      </div>
+      <div class="grp">
+        <span class="lbl">Eye Contact oʻchiq</span>
+        <button class="btn btn-s sm">Boshi</button>
+        <button class="btn btn-s sm">Oxiri va qoʻshish</button>
+      </div>
+    </section>
+
+    <section class="panel" style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <div style="position:relative;height:14px;border-radius:7px;background:#EEF2F8;overflow:hidden" role="img" aria-label="Umumiy koʻrinish">
+        <span style="position:absolute;top:3px;bottom:3px;left:15%;width:1%;background:#C8413A;opacity:.55"></span>
+        <span style="position:absolute;top:3px;bottom:3px;left:33%;width:.6%;background:#C8413A;opacity:.55"></span>
+        <span style="position:absolute;top:3px;bottom:3px;left:50%;width:.8%;background:#C8413A;opacity:.55"></span>
+        <span style="position:absolute;top:3px;bottom:3px;left:82%;width:1%;background:#C8413A;opacity:.55"></span>
+        <span style="position:absolute;top:0;bottom:0;left:38%;width:30%;border-radius:7px;background:rgba(31,79,216,.14);box-shadow:inset 0 0 0 2px #1F4FD8"></span>
+      </div>
+
+      <div style="display:flex;border:1px solid #E1E6EF;border-radius:8px;overflow:hidden;background:#F5F7FB;min-width:0">
+        <div style="flex:none;width:150px;background:#fff;border-right:1px solid #E1E6EF">
+          <div class="lhead" style="height:24px;border-top:0">Vaqt</div>
+          <div class="lhead tall" style="height:40px">Slayd</div>
+          <div class="lhead" style="height:30px">Sahna (A/B)</div>
+          <div class="lhead" style="height:30px">Kesishlar</div>
+          <div class="lhead" style="height:30px">Javoblar (anim.)</div>
+          <div class="lhead" style="height:30px">Eye Contact oʻchiq</div>
+          <div class="lhead" style="height:30px">Ovoz</div>
+          <div class="lhead" style="height:30px">Subtitr</div>
+        </div>
+        <div style="flex:1;min-width:0;position:relative">
+          <div style="position:relative;height:24px;background:#fff;border-bottom:1px solid #E1E6EF">
+            <span class="stat" style="position:absolute;left:1%;bottom:2px;color:#5B6782;font-weight:400">10:00</span>
+            <span class="stat" style="position:absolute;left:21%;bottom:2px;color:#5B6782;font-weight:400">11:00</span>
+            <span class="stat" style="position:absolute;left:41%;bottom:2px;color:#5B6782;font-weight:400">12:00</span>
+            <span class="stat" style="position:absolute;left:61%;bottom:2px;color:#5B6782;font-weight:400">13:00</span>
+            <span class="stat" style="position:absolute;left:81%;bottom:2px;color:#5B6782;font-weight:400">14:00</span>
+          </div>
+          <div class="lane tall">
+            <span class="li" style="left:0;width:26%;background:#fff">
+              <span aria-hidden="true" style="width:42px;height:100%;flex:none;background:linear-gradient(#17306E 30%, #fff 30%);border-radius:3px 0 0 3px"></span>6 · Ribosomalar</span>
+            <span class="bnd" style="left:26%"></span>
+            <span class="li" style="left:26%;width:34%;background:#fff">
+              <span aria-hidden="true" style="width:42px;height:100%;flex:none;background:linear-gradient(#17306E 30%, #fff 30%);border-radius:3px 0 0 3px"></span>7 · Mitoxondriya</span>
+            <span class="bnd" style="left:60%;background:#173EA9;opacity:1"></span>
+            <span class="li" style="left:60%;width:24%;background:#FBF1DC;color:#7A4F0F">
+              <span aria-hidden="true" style="width:42px;height:100%;flex:none;background:linear-gradient(#7A4F0F 30%, #FBF1DC 30%);border-radius:3px 0 0 3px"></span>8 · ishonch past</span>
+            <span class="bnd" style="left:84%"></span>
+            <span class="li" style="left:84%;width:16%;background:#fff">
+              <span aria-hidden="true" style="width:42px;height:100%;flex:none;background:linear-gradient(#17306E 30%, #fff 30%);border-radius:3px 0 0 3px"></span>9</span>
+          </div>
+          <div class="lane">
+            <span class="li" style="left:0;width:18%;background:#DFE5EF">A</span>
+            <span class="li" style="left:18%;width:22%;background:#EDF0F5;color:#5B6782">B · slayd toʻliq ekran</span>
+            <span class="li" style="left:40%;width:34%;background:#DFE5EF">A</span>
+            <span class="li" style="left:74%;width:12%;background:#EDF0F5;color:#5B6782">B</span>
+            <span class="li" style="left:86%;width:14%;background:#DFE5EF">A</span>
+          </div>
+          <div class="lane">
+            <span class="li" style="left:9%;width:4%;background:#FBE9E7;color:#C8413A">takror</span>
+            <span class="li" style="left:33%;width:2.6%;background:#E6EDFD;color:#1F4FD8">pauza</span>
+            <span class="li" style="left:50%;width:3%;background:#FBE9E7;color:#C8413A;box-shadow:inset 0 0 0 2px #173EA9">yoʻtal</span>
+            <span class="li" style="left:71%;width:2.4%;background:#E6EDFD;color:#1F4FD8">“mmm”</span>
+            <span class="li" style="left:90%;width:3%;background:#EDF0F5;color:#6B7690">rad etilgan</span>
+          </div>
+          <div class="lane">
+            <span class="li" style="left:30%;width:6%;background:#E4F3EB;color:#2F8A5B">7.1 Savol</span>
+            <span class="li" style="left:46%;width:6%;background:#E4F3EB;color:#2F8A5B">7.2 Javob</span>
+            <span class="li" style="left:66%;width:6%;background:#E6EDFD;color:#173EA9">8.1 qoʻlda</span>
+          </div>
+          <div class="lane">
+            <span class="li" style="left:62%;width:11%;background:#EDF0F5;color:#5B6782">slaydga qaraydi</span>
+          </div>
+          <div class="lane" style="background:#fff">
+            <svg width="100%" height="30" viewBox="0 0 400 28" preserveAspectRatio="none" role="img" aria-label="Ovoz toʻlqini" style="display:block">
+              <path stroke="#7E95D8" stroke-width="2.4" fill="none" d="M4 24V12M12 26V8M20 22V10M28 25V6M36 20V12M44 26V4M52 23V9M60 19V13M68 26V7M76 24V10M84 21V12M92 27V5M100 23V8M108 18V13M116 25V9M124 26V6M132 22V11M140 24V8M148 20V12M156 27V4M164 23V9M172 25V7M180 19V13M188 26V6M196 22V10M204 24V8M212 27V5M220 21V12M228 25V7M236 23V9M244 18V14M252 26V6M260 24V9M268 22V11M276 25V7M284 20V12M292 27V4M300 23V8M308 25V9M316 21V11M324 26V6M332 24V8M340 19V13M348 26V5M356 22V10M364 25V7M372 23V9M380 27V5M388 20V12M396 24V8"/>
+            </svg>
+          </div>
+          <div class="lane">
+            <span class="li" style="left:1%;width:9%;background:#EEF2F8;color:#5B6782">Endi hujayraning…</span>
+            <span class="li" style="left:11%;width:10%;background:#EEF2F8;color:#5B6782">energiya markazi…</span>
+            <span class="li" style="left:23%;width:9%;background:#EEF2F8;color:#5B6782">mitoxondriyaga…</span>
+            <span class="li" style="left:37%;width:10%;background:#EEF2F8;color:#5B6782">ikki qavatli…</span>
+            <span class="li" style="left:49%;width:9%;background:#EEF2F8;color:#5B6782">membrana bilan…</span>
+            <span class="li" style="left:61%;width:10%;background:#EEF2F8;color:#5B6782">ichki qavati…</span>
+            <span class="li" style="left:74%;width:9%;background:#EEF2F8;color:#5B6782">kristalar deb…</span>
+            <span class="li" style="left:86%;width:10%;background:#EEF2F8;color:#5B6782">burmalarni hosil…</span>
+          </div>
+          <span aria-hidden="true" style="position:absolute;top:0;bottom:0;left:52%;width:2px;background:#C8413A;z-index:5"></span>
+          <span aria-hidden="true" style="position:absolute;top:0;left:calc(52% - 6px);width:14px;height:12px;background:#C8413A;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%);z-index:5"></span>
+        </div>
+      </div>
+      <p class="cap" style="margin:0">J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash ·
+        Ctrl+Z/Y · Alt+gʻildirak masshtab · \ butun dars · C kesish asbobi · kesish chetlarini sudrang · sahnani ikki bosish A↔B</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

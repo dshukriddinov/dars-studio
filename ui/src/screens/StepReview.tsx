@@ -100,6 +100,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
       <div className="rv-media">
         <div className="rv-video">
           <video ref={videoRef} src={urls.proxy(name)} preload="auto" onClick={() => player.toggle()} />
+          <span className="rv-src caption">Asl video (proxy) · 1080p {Math.round(fps.num / fps.den)} kadr/s</span>
         </div>
         <div className="rv-controls">
           <button className="btn-icon" onClick={() => player.toggle()} aria-label={playing ? "Toʻxtatish" : "Oʻynatish"}>
@@ -114,6 +115,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
         {E.slideMismatch(p) ? <p className="note warn strong">{E.slideMismatch(p)}</p> : null}
         <CutMap p={p} items={shown.map((x) => x.c)} selected={shown[sel]?.c} />
         <p className="caption dim">Tasdiqlangan kesishlar: {approved.length} ta, video {mmss(savedSec)} ga qisqaradi.
+          Ingichka chiziqlar — slayd almashgan joylar.
           {unshown.length ? ` Koʻrsatilmagan slaydlar: ${unshown.map((s) => s.index).join(", ")}.` : ""}</p>
         <div className="rv-done">
         <div>

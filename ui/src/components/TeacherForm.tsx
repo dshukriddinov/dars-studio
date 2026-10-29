@@ -91,6 +91,7 @@ export function MetaFields({ fields, meta, onChange, teachers }: {
 
 /** Lower-third ko'rinishi: kiritish to'xtagandan 400 ms keyin yangilanadi. */
 export function LowerThirdPreview({ template, meta }: { template: string; meta: Record<string, string> }) {
+  // maket (2026-10-29): chapda aksent chiziq, o'ng yuqorida shablon belgisi
   const [url, setUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const key = JSON.stringify([template, TEACHER_FIELDS.map((f) => meta[f.key] ?? "")]);
@@ -109,8 +110,12 @@ export function LowerThirdPreview({ template, meta }: { template: string; meta: 
   }, [key]);
   return (
     <figure className="lt-preview">
-      {url ? <img src={url} alt="Lower-third koʻrinishi" /> : <div className="noslide" />}
-      <figcaption className="caption dim">{err ?? "Dars boshida ~8 s koʻrinadi"}</figcaption>
+      <div className="lt-frame">
+        <span className="lt-bar" aria-hidden />
+        {url ? <img src={url} alt="Lower-third koʻrinishi" /> : <div className="noslide" />}
+        <span className="lt-tpl">{template.toUpperCase()}</span>
+      </div>
+      <figcaption className="caption dim">{err ?? "Dars boshida koʻrinadigan yozuv — shablondan, jonli koʻrinish"}</figcaption>
     </figure>
   );
 }

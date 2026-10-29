@@ -34,6 +34,7 @@ export type JobStatus = "navbatda" | "ishlanmoqda" | "tayyor" | "xato" | "toʻxt
 export interface Job {
   id: number; type: string; project: string; status: JobStatus; progress: number; message: string;
   error: string | null; args: Record<string, unknown>; created: number;
+  result?: Record<string, unknown> | null;
 }
 
 export interface ProjectSummary {

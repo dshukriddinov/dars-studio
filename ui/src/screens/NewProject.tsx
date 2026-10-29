@@ -96,6 +96,7 @@ export function NewProject() {
             <button className="btn-primary big" disabled={busy || !video || !slides || !meta.oqituvchi?.trim()}>
               {busy ? "Fayllar oʻqilmoqda…" : "Darsni yaratish"}
             </button>
+            <span className="caption dim">20 daqiqalik dars uchun tayyorlash 10–15 daqiqa davom etadi</span>
           </div>
         </section>
       </div>

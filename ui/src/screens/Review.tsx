@@ -104,7 +104,8 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
       arr.map((x, i) => ({ start: x.start, end: x.end, i, ...f(x, i) }))
         .sort((a, b) => a.start - b.start);
     const slide = items(p.slide_spans, (s) => ({
-      text: String(s.slide), cls: `src-${s.source}${s.confidence < 0.6 ? " low" : ""}`, thumb: urls.slide(name, s.slide),
+      text: `${s.slide} · ${p.slides.find((x) => x.index === s.slide)?.title.replace(//g, " ").slice(0, 40) ?? ""}`,
+      cls: `src-${s.source}${s.confidence < 0.6 ? " low" : ""}`, thumb: urls.slide(name, s.slide),
     }));
     const scene = items(p.layout_spans, (s) => ({ text: s.layout, cls: `scene-${s.layout}` }));
     const cuts = items(p.cuts, (c) => ({ cls: `cut-${c.status}`, text: CUT_LABELS[c.reason] }));

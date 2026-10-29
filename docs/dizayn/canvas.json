@@ -1,0 +1,27 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-29T10:48:00Z"},
+  "title": "Dars Studio Desktop",
+  "launch": {"view": "canvas"},
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 920, "title": "1 · Yangi dars", "expand": "fill"},
+    "Tayyorlash.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 880, "title": "2 · Tayyorlash", "expand": "fill"},
+    "Korib-chiqish.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 1000, "title": "3 · Koʻrib chiqish", "expand": "fill"},
+    "Eksport.dc.html": {"x": 4560, "y": 0, "w": 1440, "h": 880, "title": "4 · Eksport", "expand": "fill"},
+    "Batafsil-tahrir.dc.html": {"x": 0, "y": 1420, "w": 1440, "h": 1060, "title": "Batafsil tahrir (timeline)", "expand": "fill"},
+    "Kalibrlash.dc.html": {"x": 1520, "y": 1420, "w": 1440, "h": 900, "title": "Sozlamalar · Yashil fon kalibrlash", "expand": "fill"}
+  },
+  "order": [
+    "Main.dc.html",
+    "Tayyorlash.dc.html",
+    "Korib-chiqish.dc.html",
+    "Eksport.dc.html",
+    "Batafsil-tahrir.dc.html",
+    "Kalibrlash.dc.html"
+  ],
+  "notes": {
+    "t1": {"x": 0, "y": -300, "text": "Dars Studio — desktop ilova dizayni: asosiy oqim", "kind": "title1", "maxW": 6000},
+    "t2": {"x": 0, "y": 1150, "text": "Chuqur tahrir va kalibrlash", "kind": "title1", "maxW": 2960}
+  },
+  "pages": []
+}

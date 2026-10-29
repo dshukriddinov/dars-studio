@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Yangi dars</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Roboto+Slab:wght@600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F7FB;color:#17223B;font:400 13px/19px 'Noto Sans',system-ui,sans-serif}
+a{color:#1F4FD8}a:hover{color:#173EA9}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit;color:#17223B;background:#EEF2F8;border:1px solid #C9D1DE;border-radius:8px;min-height:32px;padding:4px 10px;box-sizing:border-box}
+input::placeholder{color:#5B6782}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;min-height:32px;padding:8px 12px;font-weight:600;border:none;box-sizing:border-box}
+.btn-p{background:#1F4FD8;color:#fff}
+.btn-s{background:#fff;color:#17223B;border:1px solid #C9D1DE}
+.btn-g{background:transparent;color:#5B6782}
+.lbl{font-size:12px;line-height:16px;font-weight:600;color:#5B6782;letter-spacing:.02em}
+.cap{font-size:11px;line-height:15px;color:#5B6782}
+.h2{font:600 17px/24px 'Roboto Slab',serif;margin:0}
+.card{background:#fff;border:1px solid #E1E6EF;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:4px}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</helmet>
+<div style="display:flex;flex-wrap:wrap;min-height:920px;align-items:stretch">
+
+  <aside style="flex:1 1 232px;max-width:280px;background:#fff;border-right:1px solid #E1E6EF;display:flex;flex-direction:column">
+    <div style="font:700 18px/24px 'Roboto Slab',serif;color:#173EA9;padding:24px 16px 12px">Dars Studio</div>
+    <button class="btn btn-p" style="margin:0 16px 12px;min-height:38px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Yangi dars
+    </button>
+    <nav aria-label="Darslar" style="flex:1;overflow:auto;padding:0 8px;display:flex;flex-direction:column;gap:2px">
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Hujayra tuzilishi</span>
+        <span class="cap ell" style="grid-column:1">Dilnoza Karimova</span>
+      </button>
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Kvadrat tenglamalar</span>
+        <span aria-hidden="true" style="grid-column:2;grid-row:1/span 2;align-self:center;width:8px;height:8px;border-radius:99px;background:#1F4FD8"></span>
+        <span class="cap ell" style="grid-column:1">Akmal Rahimov</span>
+      </button>
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Oʻrta Osiyo xonliklari</span>
+        <span class="cap ell" style="grid-column:1">Nodira Yusupova</span>
+      </button>
+      <button style="display:grid;grid-template-columns:1fr auto;text-align:left;background:transparent;border:none;border-radius:8px;padding:8px 12px">
+        <span class="ell" style="font-weight:600">Fotosintez</span>
+        <span class="cap ell" style="grid-column:1">Dilnoza Karimova</span>
+      </button>
+    </nav>
+    <div style="border-top:1px solid #E1E6EF;padding:12px 12px 16px;display:flex;flex-direction:column;gap:8px">
+      <span class="cap" style="padding:0 8px">Ishlanmoqda: nutq matni · navbatda 2</span>
+      <button class="btn btn-g" style="justify-content:flex-start">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M19.4 4.6l-2.1 2.1M6.7 17.3l-2.1 2.1"/></svg>
+        Sozlamalar
+      </button>
+    </div>
+  </aside>
+
+  <main style="flex:999 1 560px;min-width:0;padding:24px 32px 32px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <header>
+      <h1 style="font:600 26px/32px 'Roboto Slab',serif;letter-spacing:-0.01em;margin:0">Yangi dars</h1>
+      <p style="margin:4px 0 0;color:#5B6782">Oʻqituvchi videosi va taqdimotni tanlang. Qolganini dastur oʻzi tayyorlaydi.</p>
+    </header>
+
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+      <section class="card" style="flex:1 1 440px;min-width:0">
+        <h2 class="h2">Fayllar</h2>
+        <div class="field">
+          <span class="lbl">Video (oʻqituvchi, yashil fon) *</span>
+          <span style="display:flex;gap:8px">
+            <input style="flex:1;min-width:0" value="D:\darslar\biologiya\dars05.mov">
+            <button class="btn btn-s">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Tanlash
+            </button>
+          </span>
+        </div>
+        <div class="field">
+          <span class="lbl">Davomi, agar dars keyingi faylda davom etgan boʻlsa</span>
+          <span style="display:flex;gap:8px">
+            <input style="flex:1;min-width:0" placeholder="Ixtiyoriy">
+            <button class="btn btn-s">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Tanlash
+            </button>
+          </span>
+        </div>
+        <div class="field">
+          <span class="lbl">Taqdimot (PPTX yoki PDF) *</span>
+          <span style="display:flex;gap:8px">
+            <input style="flex:1;min-width:0" value="D:\darslar\biologiya\dars05.pptx">
+            <button class="btn btn-s">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Tanlash
+            </button>
+          </span>
+        </div>
+
+        <h2 class="h2" style="margin-top:12px">Dars</h2>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <label class="field"><span class="lbl">Fan</span><input value="Biologiya"></label>
+          <label class="field"><span class="lbl">Mavzu</span><input value="Hujayra tuzilishi"></label>
+          <label class="field"><span class="lbl">Dars tili</span>
+            <select><option>Oʻzbek</option><option>Rus</option><option>Qoraqalpoq</option></select></label>
+          <label class="field"><span class="lbl">Studiya shabloni</span>
+            <select><option>akademiya</option><option>studio1</option></select></label>
+          <label class="field"><span class="lbl">Loyiha nomi</span><input placeholder="Fayl nomidan olinadi"></label>
+        </div>
+      </section>
+
+      <section class="card" style="flex:1 1 440px;min-width:0">
+        <h2 class="h2">Dars boshidagi yozuv</h2>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <label class="field"><span class="lbl">Oʻqituvchi *</span><input value="Dilnoza Karimova"></label>
+          <label class="field"><span class="lbl">Lavozim</span><input value="Biologiya oʻqituvchisi"></label>
+        </div>
+        <figure style="margin:0;display:flex;flex-direction:column;gap:4px">
+          <div style="aspect-ratio:1160/260;border-radius:8px;overflow:hidden;background:linear-gradient(120deg,#0E1B3C,#17306E);display:flex;align-items:center;gap:20px;padding:0 28px;box-sizing:border-box">
+            <span aria-hidden="true" style="width:6px;height:56%;border-radius:3px;background:#1F4FD8;flex:none"></span>
+            <span style="min-width:0">
+              <span class="ell" style="display:block;font:600 30px/36px 'Roboto Slab',serif;color:#fff">Dilnoza Karimova</span>
+              <span class="ell" style="display:block;font:400 15px/22px 'Noto Sans',sans-serif;color:#AFC2EE;margin-top:2px">Biologiya oʻqituvchisi</span>
+            </span>
+            <span style="margin-left:auto;font:600 12px/16px 'Noto Sans',sans-serif;letter-spacing:.22em;color:#51639B">AKADEMIYA</span>
+          </div>
+          <figcaption class="cap">Dars boshida koʻrinadigan yozuv — shablondan, jonli koʻrinish</figcaption>
+        </figure>
+        <label style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" checked style="min-height:0;width:16px;height:16px;accent-color:#1F4FD8">
+          Yaratilgach darhol tayyorlashni boshlash
+        </label>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-p" style="min-height:42px;padding:0 24px;font-size:15px">Darsni yaratish</button>
+          <span class="cap">20 daqiqalik dars uchun tayyorlash 10–15 daqiqa davom etadi</span>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

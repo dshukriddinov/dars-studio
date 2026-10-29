@@ -2,9 +2,15 @@ import { fmtFrame, type Fps } from "../lib/time";
 import type { Suspicious } from "../lib/types";
 
 const KIND: Record<string, string> = {
-  slayd_chegarasi: "Slayd chegarasi",
-  qisqa_slayd: "Qisqa slayd",
+  slayd_chegarasi: "Slayd chegarasi ishonchsiz",
+  qisqa_slayd: "Slayd juda qisqa",
   past_ishonchli_soz: "Past ishonchli soʻz",
+};
+// maket (2026-10-29): har qatorda sabab izohi
+const REASON: Record<string, string> = {
+  slayd_chegarasi: "Nutq ikkala slayd matniga ham yaqin",
+  qisqa_slayd: "Ekranda juda qisqa koʻrinadi",
+  past_ishonchli_soz: "ASR bu soʻzga ishonmadi",
 };
 
 export const kindLabel = (k: string) => KIND[k] ?? k.replace(/_/g, " ");
@@ -22,7 +28,7 @@ export function SuspiciousList({ items, fps, onJump }: { items: Suspicious[]; fp
           <button className="row-btn" onClick={() => onJump(s.frame)} title="Shu joyga oʻtish">
             <span className="body-strong">{kindLabel(s.kind)}</span>
             <span className="stat dim">{fmtFrame(s.frame, fps)}</span>
-            <span className="caption dim ellipsis">{s.text}</span>
+            <span className="caption dim ellipsis">{REASON[s.kind] ?? ""}{s.text ? ` — ${s.text}` : ""}</span>
             <span className="caption stat dim">{s.score.toFixed(2)}</span>
           </button>
         </li>
