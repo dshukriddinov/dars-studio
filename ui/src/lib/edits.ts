@@ -137,6 +137,18 @@ export function addCutCmd(p: Project, start: number, end: number, label = "Timel
   return { label, values: { cuts: [...p.cuts, { start: s, end: e, reason: "manual", status: "tasdiqlangan" }] } };
 }
 
+/** Tanlangan kesishni olib tashlash: qo'lda qo'shilgani ro'yxatdan o'chadi, avtomatik taklif rad etiladi
+ * (tarixda qoladi, "qoldirilgan" sifatida ko'rinadi). */
+export function removeCutCmd(p: Project, i: number): Cmd | null {
+  const c = p.cuts[i];
+  if (!c) return null;
+  if (c.reason === "manual") {
+    return { label: "Kesishni oʻchirish", values: { cuts: p.cuts.filter((_, k) => k !== i) } };
+  }
+  if (c.status === "rad_etilgan") return null;
+  return { label: "Kesishni rad etish", values: { [`cuts.${i}.status`]: "rad_etilgan" } };
+}
+
 /** Kesishni cheti bo'yicha kengaytirish/toraytirish: inson qarori — qo'lda, tasdiqlangan. */
 export function resizeCutCmd(p: Project, i: number, edge: "start" | "end", to: number): Cmd | null {
   const c = p.cuts[i];

@@ -141,3 +141,13 @@ describe("slideMismatch", () => {
     expect(E.slideMismatch(project())).toBeNull();   // kam slayd (< 8) — ogohlantirilmaydi
   });
 });
+
+describe("removeCutCmd (Delete tugmasi)", () => {
+  it("qo'lda kesish ro'yxatdan o'chadi, avtomatik taklif rad etiladi", () => {
+    const p = { ...project(), cuts: [{ start: 10, end: 20, reason: "manual" as const, status: "tasdiqlangan" as const },
+      { start: 50, end: 60, reason: "pause" as const, status: "taklif" as const }] };
+    expect(E.removeCutCmd(p, 0)!.values.cuts).toEqual([p.cuts[1]]);
+    expect(E.removeCutCmd(p, 1)!.values).toEqual({ "cuts.1.status": "rad_etilgan" });
+    expect(E.removeCutCmd({ ...p, cuts: [{ ...p.cuts[1], status: "rad_etilgan" as const }] }, 0)).toBeNull();
+  });
+});

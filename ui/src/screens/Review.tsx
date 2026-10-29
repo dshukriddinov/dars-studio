@@ -163,6 +163,10 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
       case "sceneA": run(E.setSceneCmd(p, player.frame, "A")); break;
       case "sceneB": run(E.setSceneCmd(p, player.frame, "B")); break;
       case "approveCut": approveCut("tasdiqlangan"); break;
+      case "deleteCut":
+        // transkriptda so'z belgilangan bo'lsa Delete o'sha yerga tegishli (TextEdit o'zi kesadi)
+        if (selCut >= 0 && !document.querySelector(".textedit .w.sel")) { run(E.removeCutCmd(p, selCut)); setSelCut(-1); }
+        break;
       case "undo": void undo(); break;
       case "redo": void redo(); break;
     }
@@ -324,7 +328,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
           onRangeCut={(a, b) => run(E.addCutCmd(p, E.snapOutOfWord(a, sortedWords, fps), E.snapOutOfWord(b, sortedWords, fps)))}
           onSeek={(f) => player.seek(f)} waveform={wave} overview={cutMarks} />
         <p className="caption dim hint">
-          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End · C kesish asbobi · kesish chetlarini sudrang · sahnani ikki bosish A↔B
+          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End · Delete tanlangan kesishni olib tashlaydi · C kesish asbobi · kesish chetlarini sudrang · sahnani ikki bosish A↔B
         </p>
       </section>
     </div>

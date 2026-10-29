@@ -1,7 +1,7 @@
 // Tekshirish ekrani klaviaturasi (FR-14). Sof funksiya: hodisa -> amal nomi.
 export type KeyAction =
   | "reverse" | "pause" | "play" | "toggle" | "prevFrame" | "nextFrame" | "back1s" | "fwd1s"
-  | "boundaryLeft" | "boundaryRight" | "sceneA" | "sceneB" | "approveCut" | "undo" | "redo";
+  | "boundaryLeft" | "boundaryRight" | "sceneA" | "sceneB" | "approveCut" | "deleteCut" | "undo" | "redo";
 
 export interface KeyLike {
   key: string; shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean; target?: EventTarget | null;
@@ -33,6 +33,7 @@ export function keyToAction(e: KeyLike): KeyAction | null {
     case "1": return "sceneA";
     case "2": return "sceneB";
     case "Enter": return "approveCut";
+    case "Delete": return "deleteCut";
   }
   return null;
 }
