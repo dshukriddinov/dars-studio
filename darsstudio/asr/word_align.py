@@ -116,3 +116,23 @@ def align(segments: list[Segment], em: Emissions) -> tuple[list[Word], int]:
             words[i - 1] = p.model_copy(update={"end_ms": mid})
             words[i] = w.model_copy(update={"start_ms": mid, "end_ms": max(w.end_ms, mid + 1)})
     return words, ok
+
+
+def clip_to_speech(words: list[Word], speech: list[tuple[int, int]]) -> list[Word]:
+    """CTC tekislashsiz (Whisper) so'z vaqtlari pauzaga cho'ziladi ("everyone," 0.92–4.30 s) — pauza kesishi
+    so'z ustiga tushgandek ko'rinib, eksport to'xtardi (DSBA8915). So'z VAD nutq oraliqlari bilan kesishmasining
+    eng kattasiga qisqartiriladi; nutq bilan kesishmasa (VAD o'tkazib yuborgan) — o'zgarmaydi."""
+    import bisect
+    starts = [s for s, _ in speech]
+    out = []
+    for w in words:
+        k = max(0, bisect.bisect_right(starts, w.start_ms) - 1)
+        best = None
+        for s, e in speech[k:]:
+            if s >= w.end_ms:
+                break
+            a, b = max(s, w.start_ms), min(e, w.end_ms)
+            if b > a and (best is None or b - a > best[1] - best[0]):
+                best = (a, b)
+        out.append(w.model_copy(update={"start_ms": best[0], "end_ms": best[1]}) if best else w)
+    return out

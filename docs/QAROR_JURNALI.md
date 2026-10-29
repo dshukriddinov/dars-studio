@@ -4,6 +4,28 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-29 — "Xorijiy til 1" (DSBA8915): slaydlar adashdi — til tanlanmagan va taqdimot videoga mos emas
+
+- **Sabab 1 — til:** dars "Dars tili" tanlanmay yaratilgan -> o'zbek modeli (rubaistt) inglizcha nutqni buzib
+  yozdi ("yevrop", "demokratik", "koreya"). Endi til tanlanmasa slaydlar matnidan aniqlanadi (`guess_lang`:
+  inglizcha yordamchi so'zlar >= 15 va o'zbekchasidan 3x) va loyihaga yoziladi. 12 loyihada tekshirildi — hammasi
+  to'g'ri (4 ingliz, 8 o'zbek).
+- **Sabab 2 — taqdimot:** o'qituvchi videoda boshqa (qisqaroq) taqdimot bilan o'tgan: 9 marta "next slide"
+  (~10–11 slayd), mavzular — idiomalar ("think outside the box"), "four boxes" xulosasi, consensus — `Unit_4_.pptx`
+  (36 slayd) da umuman yo'q. Kompyuterda boshqa mos fayl topilmadi. Bunday holatda slaydlarni to'g'ri qo'yib
+  bo'lmaydi. Endi: videoda slaydlarning < 60% i topilsa ogohlantirish (DSBA8915 / Unit 4: 42%; boshqa darslar
+  79–100%; 2 daqiqalik qirqim 21% — u ham ogohlantiriladi) va 1-qadamda "Taqdimotni almashtirish"
+  (`POST /slides-file`): slaydlar qayta o'qiladi, slayd vaqtlari/qadamlar/sahnalar tozalanadi, `slides` + `sync`
+  navbatga; kesishlar saqlanadi.
+- **Topilgan xato — Whisper so'z vaqtlari pauzaga cho'ziladi** ("everyone," 0.92–4.30 s, "is" 1.8 s): DSBA8915 ni
+  inglizcha qayta ishlaganda tasdiqlangan 25 pauza kesishi "so'z ustida" bo'lib eksport to'xtardi. CTC tekislashsiz
+  (Whisper) so'zlar VAD nutq oraliqlari bilan kesishmasining eng kattasiga qisqartiriladi (`clip_to_speech`):
+  25 -> 3; qolgan 3 tasi (aksa/to'ldiruvchi, buzuq o'zbekcha matndan) haqiqatan inglizcha so'zlarni kesardi
+  ("strict", "structure", "warehouse") — rad etildi. Ingliz 1–3 qayta ishlandi: slayd sinxroni jami 58/85 o'zgarmadi
+  (Unit 1 8 -> 9, Unit 3 8 -> 9, Unit 2 8 -> 7), animatsiya qadamlari 20/22 o'zgarmadi.
+
+---
+
 ## 2026-10-28 — DSBA9600 (inson tahriri) bo'yicha: eksport xatosi, takror aniqligi, sahnalar slaydga ergashishi
 
 - **Eksport xatosi** ("4 ta kesish o'qituvchi so'zining ustiga tushadi, 19:57"): matndan qo'lda kesish; ASR'da

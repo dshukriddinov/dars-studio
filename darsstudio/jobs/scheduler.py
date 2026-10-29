@@ -171,7 +171,8 @@ def enqueue_prepare(q: Queue, project: str, asr: dict[str, Any] | None = None, e
     from darsstudio.jobs.tasks import lesson_lang, resources_for
     from darsstudio.project.store import ProjectStore
     # til — VRAM e'loni uchun (inglizcha dars Whisper large-v3 bilan, ~3.6 GB)
-    a = {"lang": lesson_lang(ProjectStore(Path(project)).load().meta), **(asr or {})}
+    pr = ProjectStore(Path(project)).load()
+    a = {"lang": lesson_lang(pr.meta, pr.slides), **(asr or {})}
     ids = {}
     ids["slides"] = q.add("slides", project, {}, resources_for("slides", {}))
     ids["audio"] = q.add("audio", project, {}, resources_for("audio", {}))

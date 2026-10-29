@@ -109,6 +109,28 @@ def read_slide_titles(path: Path) -> list[Slide]:
     raise MediaError(f"{path.name}: slaydlar PPTX yoki PDF bo'lishi kerak.")
 
 
+def replace_slides(stack: Any, path: Path) -> None:
+    """Taqdimot faylini almashtirish (video boshqa taqdimot bilan yozilgan bo'lsa): slaydlar qayta o'qiladi, slayd
+    vaqtlari, animatsiya qadamlari va sahnalar tozalanadi — keyin `slides` va `sync` vazifalari qayta bajariladi.
+    Kesishlar (nutq bo'yicha) saqlanadi."""
+    path = Path(path).resolve()
+    if not path.is_file():
+        raise MediaError(f"{path} topilmadi: faylni qayta tanlang.")
+    if path.suffix.lower() not in SLIDE_EXT:
+        raise MediaError(f"{path.name}: slaydlar PPTX yoki PDF bo'lishi kerak.")
+    if path.suffix.lower() == ".pptx":
+        from darsstudio.slides.extract import extract_pptx
+        slides, _ = extract_pptx(path)
+    else:
+        slides = read_slide_titles(path)
+    p = stack.project
+    assets = [a for a in p.assets if a.kind not in ("pptx", "pdf")]
+    assets.append(MediaAsset(id=probe.file_id(path), path=str(path), kind=path.suffix.lower().lstrip(".")))
+    stack.do("Taqdimotni almashtirish", {"assets": [a.model_dump(mode="json") for a in assets],
+                                         "slides": [s.model_dump(mode="json") for s in slides],
+                                         "slide_spans": [], "anim_steps": [], "layout_spans": []})
+
+
 def import_project(video: Path | list[Path], slides: Path, template_id: str, workdir: Path, *, name: str | None = None,
                    meta: dict[str, str] | None = None, slide_log: Path | None = None, copy: bool = False,
                    make_proxy: bool = True, on_step: Callable[[str], None] = lambda s: None) -> ProjectStore:

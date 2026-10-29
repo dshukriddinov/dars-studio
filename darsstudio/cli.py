@@ -195,7 +195,8 @@ def cmd_asr(a: argparse.Namespace) -> int:
     from darsstudio.jobs.tasks import asr_models, lesson_lang
     from darsstudio.jobs.worker import run_isolated
     store = ProjectStore(Path(a.project))
-    lang = lesson_lang(store.load().meta)
+    pr = store.load()
+    lang = lesson_lang(pr.meta, pr.slides)
     engine, align = asr_models(lang, {k: v for k, v in (("engine", a.engine), ("align", a.align)) if v})
     wav = store.cache("audio") / "asr_16k.wav"
     if not wav.is_file():

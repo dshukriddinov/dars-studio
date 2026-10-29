@@ -107,6 +107,18 @@ export function removeEyeOffCmd(p: Project, i: number): Cmd | null {
   return { label: "Eye Contact oraligʻini oʻchirish", values: { eye_off: p.eye_off.filter((_, j) => j !== i) } };
 }
 
+/** Videoda slaydlarning 60% idan kami topilgan bo'lsa — taqdimot fayli videodagisidan farq qiladi
+ * (DSBA8915: 36 tadan 15 tasi; boshqa darslarda 79–100%). null — hammasi joyida yoki hali sinxron qilinmagan. */
+export function slideMismatch(p: Project): string | null {
+  const n = p.slides.length;
+  if (!p.slide_spans.length || n < 8) return null;
+  const shown = new Set(p.slide_spans.map((s) => s.slide)).size;
+  return shown / n < 0.6
+    ? `Videoda ${n} ta slayddan faqat ${shown} tasi topildi: taqdimot fayli videodagi taqdimotdan farq qilayotganga ` +
+      "oʻxshaydi — 1-qadamda toʻgʻri faylni tanlang (“Taqdimotni almashtirish”)."
+    : null;
+}
+
 /** Kadr so'z ichida bo'lsa — eng yaqin so'zlar orasidagi bo'shliq o'rtasiga (kesish so'zni qirqmasin). */
 export function snapOutOfWord(frame: number, words: Word[], fps: Fps): number {
   const ms = frameToSec(frame, fps) * 1000;

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, FolderOpen, Play, RotateCw } from "lucide-react";
 import { useStore, type Step } from "../store";
 import { api, urls } from "../lib/api";
+import * as E from "../lib/edits";
 import { frameToSec, parseFps, type Fps } from "../lib/time";
 import type { Job, Project as P } from "../lib/types";
 import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS, langLabel } from "../components/TeacherForm";
@@ -141,9 +142,24 @@ function Slides({ name, p }: { name: string; p: P }) {
   const shown = new Set(p.slide_spans.map((s) => s.slide));
   const synced = p.slide_spans.length > 0;
   const missing = synced ? p.slides.filter((s) => !shown.has(s.index)) : [];
+  const mismatch = E.slideMismatch(p);
+  const { setView, fail } = useStore.getState();
+  const replace = async () => {
+    try {
+      const { path } = await api.pickFile("slides");
+      if (path) setView(await api.replaceSlides(name, path));
+    } catch (e) { fail(e); }
+  };
   return (
     <>
-      {missing.length ? (
+      <div className="row">
+        <button className="btn-secondary sm" onClick={() => void replace()}
+          title="Video boshqa taqdimot bilan yozilgan boʻlsa: slaydlar va ularning vaqti qayta tayyorlanadi, kesishlar saqlanadi">
+          Taqdimotni almashtirish</button>
+        <span className="caption dim ellipsis" title={p.assets.find((a) => a.kind === "pptx" || a.kind === "pdf")?.path}>
+          {p.assets.find((a) => a.kind === "pptx" || a.kind === "pdf")?.path.split(/[\\/]/).pop()}</span>
+      </div>
+      {mismatch ? <p className="note warn strong">{mismatch}</p> : missing.length ? (
         <p className="note warn">Videoda koʻrsatilmagan: {missing.map((s) => s.index).join(", ")}-slayd.
           Oʻqituvchi ularni gapirmagan boʻlishi mumkin.</p>
       ) : null}

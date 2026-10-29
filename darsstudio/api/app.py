@@ -364,6 +364,17 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
         return {"id": queue.add("render", str(s.root), args, resources_for("render", args)),
                 "file": str(out.relative_to(s.root)).replace("\\", "/")}
 
+    @app.post("/api/projects/{name}/slides-file")
+    def replace_slides_file(name: str, r: dict[str, str]) -> dict[str, Any]:
+        """Taqdimotni almashtirish; keyin slaydlar va sinxron vazifalari navbatga (nutq qayta ishlanmaydi)."""
+        from darsstudio.project.importer import replace_slides
+        st = stack(name)
+        replace_slides(st, Path(r.get("path", "")))
+        root = str(st.store.root)
+        sl = queue.add("slides", root, {}, resources_for("slides", {}))
+        queue.add("sync", root, {}, resources_for("sync", {}), [sl])
+        return project_view(st)
+
     @app.post("/api/projects/{name}/relayout")
     def relayout_scenes(name: str) -> dict[str, Any]:
         """Sahnalarni slaydlarga moslash (qo'lda o'zgartirilganlari saqlanadi)."""

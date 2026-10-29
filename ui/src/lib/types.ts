@@ -16,6 +16,7 @@ export interface Project {
   id: string; name: string; meta: Record<string, string>; fps: string; total_frames: number; template_id: string;
   slides: { index: number; title: string; body?: string; anim?: string[] }[];
   anim_steps?: AnimStep[];
+  assets: { path: string; kind: string }[];
   slide_spans: SlideSpan[]; layout_spans: LayoutSpan[]; cuts: CutProposal[]; eye_off: EyeOffSpan[];
   parts?: { path: string; start: number; frames: number }[];
   exports?: { version: number; path: string; qa: string }[];

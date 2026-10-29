@@ -12,7 +12,7 @@ const project = (): Project => ({
   slide_spans: [span(0, 100, 1), span(100, 200, 2), span(200, 300, 3)],
   layout_spans: [{ start: 0, end: 300, layout: "A", suggested: true }],
   cuts: [{ start: 10, end: 20, reason: "pause", status: "taklif" }, { start: 50, end: 60, reason: "pause", status: "taklif" }],
-  eye_off: [], key: { key_cbcr: [0, 0], tolerance: 0, softness: 0, spill: 0, choke_px: 0, feather_px: 0 }, eye_contact: {},
+  eye_off: [], key: { key_cbcr: [0, 0], tolerance: 0, softness: 0, spill: 0, choke_px: 0, feather_px: 0 }, eye_contact: {}, assets: [],
 });
 
 describe("command payload builders", () => {
@@ -129,5 +129,15 @@ describe("sahna tanlovi birlashganda ham qo'lda qoladi", () => {
       { start: 100, end: 200, layout: "B" as const, suggested: true },
       { start: 200, end: 300, layout: "A" as const, suggested: true }] };
     expect(E.toggleSceneCmd(p, 1)!.values.layout_spans).toEqual([{ start: 0, end: 300, layout: "A", suggested: false }]);
+  });
+});
+
+describe("slideMismatch", () => {
+  it("slaydlarning 60% idan kami topilsa — ogohlantirish", () => {
+    const many = { ...project(), slides: Array.from({ length: 10 }, (_, i) => ({ index: i + 1, title: "" })) };
+    expect(E.slideMismatch(many)).toContain("10 ta slayddan faqat 3 tasi");
+    const ok = { ...many, slide_spans: Array.from({ length: 10 }, (_, i) => span(i * 30, i * 30 + 30, i + 1)) };
+    expect(E.slideMismatch(ok)).toBeNull();
+    expect(E.slideMismatch(project())).toBeNull();   // kam slayd (< 8) — ogohlantirilmaydi
   });
 });

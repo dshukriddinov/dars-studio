@@ -85,6 +85,8 @@ def task(args: dict[str, Any], emit: Any) -> dict[str, Any]:
             em = ctc.emissions(wav, on_progress=lambda x: emit.progress(0.7 + 0.3 * x))
             ctc.close()
         words, aligned = word_align.align(segs, em)
+    elif (vf := Path(args["wav16k"]).parent / "vad.json").is_file():   # Whisper vaqtlari pauzaga cho'zilmasin
+        words = word_align.clip_to_speech(words, [(int(s), int(e)) for s, e in json.loads(vf.read_text())])
     out = {"engine": args["engine"], "align": args.get("align"), "audio_s": round(dur, 2),
            "asr_s": round(t_asr, 2), "total_s": round(time.time() - t0, 2), "rtf": round(t_asr / max(dur, 1e-9), 4),
            "gpu_mem_peak_mb": mem.stop(), "segments": len(segs), "aligned_segments": aligned, "words": len(words)}

@@ -4,6 +4,7 @@ args da doim `project` (loyiha papkasi) bor."""
 import contextlib
 import json
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,9 @@ def t_asr(args: dict[str, Any], emit: Any) -> dict[str, Any]:
     from darsstudio.asr import glossary
     from darsstudio.asr.run import task
     st = _stack(args)
-    lang = lesson_lang(st.project.meta)
+    lang = lesson_lang(st.project.meta, st.project.slides)
+    if not st.project.meta.get("til"):   # aniqlangan til loyihada ko'rinsin (1-qadam, keyingi ishlar)
+        st.do("Dars tili (slaydlardan)", {"meta": {**st.project.meta, "til": lang}})
     terms = [t for t in glossary.load(paths.ROOT / "glossary.json", st.store.root / "glossary.json") if t.lang == lang]
     engine, align = asr_models(lang, args)
     return task({"wav16k": str(st.store.cache("audio") / "asr_16k.wav"), "engine": engine, "align": align,
@@ -42,9 +45,26 @@ def t_asr(args: dict[str, Any], emit: Any) -> dict[str, Any]:
                  "out_dir": str(st.store.cache("asr"))}, emit)
 
 
-def lesson_lang(meta: dict[str, str]) -> str:
-    """Dars tili (meta["til"]): "uz" yoki "en"; boshqasi/yo'q — "uz"."""
-    return "en" if meta.get("til", "").strip().lower() in ("en", "ingliz", "ingliz tili", "english") else "uz"
+def lesson_lang(meta: dict[str, str], slides: Sequence[Any] = ()) -> str:
+    """Dars tili (meta["til"]): "uz" yoki "en". Tanlanmagan bo'lsa — slaydlar matnidan (inglizcha slaydli dars
+    o'zbek modeliga tushib, nutq buzilib yozilardi: DSBA8915 "yevrop", slaydlar adashdi)."""
+    til = meta.get("til", "").strip().lower()
+    if til:
+        return "en" if til in ("en", "ingliz", "ingliz tili", "english") else "uz"
+    return guess_lang(" ".join(f"{s.title} {s.body}" for s in slides))
+
+
+EN_MARK = set("the and of to is are you your what how with for in on this that it can will be do".split())
+UZ_MARK = set("va bilan uchun bu ham esa yoki bo'yicha hamda qilish etish orqali kerak mumkin".split())
+
+
+def guess_lang(text: str) -> str:
+    """Slayd matni tili: inglizcha yordamchi so'zlar o'zbekchasidan 3 baravar ko'p (va >= 15) — "en"."""
+    import re
+    toks = re.findall(r"[a-zʻʼ'`]+", text.lower().replace("ʻ", "'").replace("ʼ", "'"))
+    en = sum(t in EN_MARK for t in toks)
+    uz = sum(t in UZ_MARK for t in toks) + sum(t.endswith(("ning", "lari", "larni", "ga", "da")) for t in toks) // 3
+    return "en" if en >= 15 and en >= 3 * uz else "uz"
 
 
 def asr_models(lang: str, args: dict[str, Any]) -> tuple[str, str | None]:

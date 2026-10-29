@@ -110,6 +110,7 @@ export function StepReview({ name, p }: { name: string; p: P }) {
           <span className="spacer" />
           <button className="btn-ghost" onClick={() => setTab("review")}><SlidersHorizontal size={16} /> Batafsil tahrir</button>
         </div>
+        {E.slideMismatch(p) ? <p className="note warn strong">{E.slideMismatch(p)}</p> : null}
         <CutMap p={p} items={shown.map((x) => x.c)} selected={shown[sel]?.c} />
         <p className="caption dim">Tasdiqlangan kesishlar: {approved.length} ta, video {mmss(savedSec)} ga qisqaradi.
           {unshown.length ? ` Koʻrsatilmagan slaydlar: ${unshown.map((s) => s.index).join(", ")}.` : ""}</p>

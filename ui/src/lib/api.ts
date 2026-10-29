@@ -30,6 +30,7 @@ export const api = {
   undo: (name: string) => req<ProjectView>("POST", `${p(name)}/undo`),
   redo: (name: string) => req<ProjectView>("POST", `${p(name)}/redo`),
   relayout: (name: string) => req<ProjectView>("POST", `${p(name)}/relayout`),
+  replaceSlides: (name: string, path: string) => req<ProjectView>("POST", `${p(name)}/slides-file`, { path }),
   words: (name: string) => req<Word[]>("GET", `${p(name)}/words`),
   suspicious: (name: string) => req<Suspicious[]>("GET", `${p(name)}/suspicious`),
   prepare: (name: string) => req<{ jobs: number[] }>("POST", `${p(name)}/prepare`),

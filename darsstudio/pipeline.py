@@ -60,7 +60,7 @@ def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, kee
     ws = words(stack)
     ef = store.cache("audio") / "events.json"
     extra = cuts.retake_cuts(ws, p.fps_frac) + cuts.repeat_cuts(ws, p.fps_frac) + cuts.reread_cuts(ws, p.fps_frac)
-    if lesson_lang(p.meta) == "uz":   # inglizchada so'z vaqtlari Whisper'dan: "brand brand" ga 0.2 s, qirqib yuboradi
+    if lesson_lang(p.meta, p.slides) == "uz":   # inglizchada so'z vaqtlari Whisper'dan, takror qirqib yuboradi
         extra += cuts.stutter_cuts(ws, p.fps_frac)
     if ef.is_file():
         extra += cuts.event_cuts(json.loads(ef.read_text(encoding="utf-8")), ws, p.fps_frac, p.total_frames)

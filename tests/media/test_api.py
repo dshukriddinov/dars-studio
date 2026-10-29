@@ -153,3 +153,22 @@ def test_relayout_follows_slides_keeps_manual(tmp_path: Path, test_media: dict[s
         out = c.post("/api/projects/d6/relayout").json()["project"]["layout_spans"]
         # demo shabloni: "words" siyosati, 1-2-slaydlar matni qisqa — A; eski 100-kadrdagi B tavsiyasi yo'qoldi
         assert out == [{"start": 0, "end": 200, "layout": "A", "suggested": True}, ls[-1]]
+
+
+def test_replace_slides_file_resets_timing_keeps_cuts(tmp_path: Path, test_media: dict[str, Any]) -> None:
+    """Video boshqa taqdimot bilan yozilgan: taqdimot almashtiriladi, slayd vaqtlari tozalanadi, kesishlar qoladi,
+    slaydlar va sinxron vazifalari navbatga qo'yiladi."""
+    from darsstudio.project import importer
+    importer.import_project(Path(test_media["av_offset.mov"]["path"]), Path(test_media["lesson.pptx"]["path"]),
+                            "demo", tmp_path, name="d7")
+    with TestClient(create_app(tmp_path, start_scheduler=False)) as c:
+        cut = {"start": 10, "end": 20, "reason": "manual", "status": "tasdiqlangan"}
+        c.post("/api/projects/d7/commands", json={"label": "k", "values": {"cuts": [cut], "slide_spans": [
+            {"start": 0, "end": 300, "slide": 1, "source": "ai", "confidence": 1.0, "approved": False}]}})
+        bad = c.post("/api/projects/d7/slides-file", json={"path": str(tmp_path / "yoq.pptx")})
+        assert bad.status_code == 400 and "topilmadi" in bad.json()["detail"]
+        r = c.post("/api/projects/d7/slides-file", json={"path": test_media["lesson.pptx"]["path"]})
+        assert r.status_code == 200, r.text
+        p = r.json()["project"]
+        assert p["slide_spans"] == [] and p["cuts"] == [cut] and len(p["slides"]) == 12
+        assert [j["type"] for j in c.get("/api/jobs", params={"project": "d7"}).json()][-2:] == ["slides", "sync"]
