@@ -6,6 +6,8 @@ import shutil
 import subprocess
 from fractions import Fraction
 
+NO_WINDOW = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW: konsol oynasi ochilmasin (Studio ichidan)
+
 import numpy as np
 import xxhash
 
@@ -37,7 +39,7 @@ def nvenc_ok(enc="h264_nvenc"):
     if enc not in _NVENC_OK:
         r = subprocess.run([FFMPEG, "-v", "error", "-nostdin", "-f", "lavfi", "-i",
                             "color=c=gray:s=256x256:r=25:d=0.04", "-c:v", enc, "-f", "null", "-"],
-                           capture_output=True, encoding="utf-8", errors="replace")
+                           capture_output=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
         _NVENC_OK[enc] = r.returncode == 0 and "nvenc" not in r.stderr.lower()
     return _NVENC_OK[enc]
 
@@ -46,7 +48,7 @@ def probe(path):
     # encoding="utf-8": text=True locale kodlagichini oladi (cp1251). Metadata bayti dekod qilinmasa Windows'da
     # o'qish thread'i uziladi, stdout None bo'lib qaytadi (kod 0) va xato tushunarsiz bo'ladi.
     r = subprocess.run([FFPROBE, "-v", "error", "-show_streams", "-show_format", "-of", "json", path],
-                       capture_output=True, encoding="utf-8", errors="replace")
+                       capture_output=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
     if r.returncode != 0 or not (r.stdout or "").strip():
         # fayl yozilayotgan, band, buzilgan yoki formati noma'lum bo'lsa shu yerga tushadi
         raise RuntimeError(f"ffprobe videoni o'qiy olmadi (kod {r.returncode}): {path}\n"
@@ -60,7 +62,7 @@ def probe(path):
     if not nb:  # MKV kabi konteynerlarda nb_frames yo'q: paketlarni sanaymiz
         c = subprocess.run([FFPROBE, "-v", "error", "-count_packets", "-select_streams", "v:0",
                             "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0", path],
-                           capture_output=True, encoding="utf-8", errors="replace")
+                           capture_output=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
         nb = int((c.stdout or "").strip() or round(dur * fps))
     vfr = v.get("r_frame_rate") != v.get("avg_frame_rate")
     if vfr:
@@ -95,7 +97,7 @@ def _first_frame_time(path, stream_start):
     -ss 2 kadr kech boshlanardi; dekoder birinchi kadrni eng kichik pts da chiqaradi."""
     r = subprocess.run([FFPROBE, "-v", "error", "-select_streams", "v:0", "-read_intervals", "%+#32",
                         "-show_entries", "packet=pts_time", "-of", "csv=p=0", path],
-                       capture_output=True, encoding="utf-8", errors="replace")
+                       capture_output=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
     pts = [float(x.strip(",")) for x in (r.stdout or "").split() if x.strip(",") not in ("", "N/A")]
     return min([stream_start, *pts])
 
@@ -164,7 +166,8 @@ class FrameReader:
         if vf:
             cmd += ["-vf", ",".join(vf)]
         cmd += ["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", pix_fmt, "-"]
-        self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=self.frame_bytes * 4)
+        self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=self.frame_bytes * 4,
+                                     creationflags=NO_WINDOW)
 
     def read(self):
         buf = self.proc.stdout.read(self.frame_bytes)
@@ -227,7 +230,8 @@ class FrameWriter:
         if path.lower().endswith((".mp4", ".mov")):
             cmd += ["-movflags", "+faststart"]
         cmd += [path]
-        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, bufsize=frame_bytes(width, height, pix_fmt) * 4)
+        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, bufsize=frame_bytes(width, height, pix_fmt) * 4,
+                                     creationflags=NO_WINDOW)
 
     def write(self, frame):
         self.proc.stdin.write(memoryview(np.ascontiguousarray(frame)))
@@ -264,7 +268,7 @@ def concat(segments, out, audio_from=None, workdir=None, video_offset=0.0):
     if out.lower().endswith((".mp4", ".mov")):
         cmd += ["-movflags", "+faststart"]
     cmd += [os.path.abspath(out)]
-    subprocess.run(cmd, check=True, cwd=os.path.dirname(lst))
+    subprocess.run(cmd, check=True, cwd=os.path.dirname(lst), creationflags=NO_WINDOW)
 
 
 def split_screen(original, result, out, seconds=None):
@@ -275,4 +279,4 @@ def split_screen(original, result, out, seconds=None):
     # preview faqat ko'rish uchun: audio AAC (PCM MP4 ichida ko'p playerda ovozsiz)
     cmd += ["-filter_complex", "[0:v][1:v]hstack=shortest=1", "-map", "1:a:0?", "-c:a", "aac", "-b:a", "192k",
             *enc, "-pix_fmt", "yuv420p", "-movflags", "+faststart", out]
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, creationflags=NO_WINDOW)
