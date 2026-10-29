@@ -2,7 +2,7 @@
 export interface Span { start: number; end: number }
 export interface SlideSpan extends Span { slide: number; source: "log" | "ai" | "manual"; confidence: number; approved: boolean }
 export interface LayoutSpan extends Span { layout: "A" | "B" | "C"; suggested: boolean }
-export interface CutProposal extends Span { reason: "pause" | "manual" | "bosh" | "oxir" | "yo'tal" | "aksa" | "to'ldiruvchi" | "takror" | "qism"; status: "taklif" | "tasdiqlangan" | "rad_etilgan" }
+export interface CutProposal extends Span { reason: "pause" | "manual" | "bosh" | "oxir" | "yo'tal" | "aksa" | "to'ldiruvchi" | "takror" | "qism" | "boshqa_ovoz"; status: "taklif" | "tasdiqlangan" | "rad_etilgan" }
 export type EyeOffSpan = Span;
 /** Slayd animatsiyasining click-bosishi shu asl kadrda (javob o'qituvchi aytganda chiqadi). */
 export interface AnimStep { slide: number; click: number; frame: number; source: "ai" | "manual" }

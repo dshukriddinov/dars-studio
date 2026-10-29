@@ -19,7 +19,7 @@ import type { CutProposal, Project } from "../lib/types";
 
 const CUT_LABELS: Record<CutProposal["reason"], string> = {
   pause: "pauza", manual: "qoʻlda", bosh: "dars boshi", oxir: "dars oxiri", "yo'tal": "yoʻtal", aksa: "aksa",
-  "to'ldiruvchi": "toʻldiruvchi", takror: "takror", qism: "qismlar ulanishi",
+  "to'ldiruvchi": "toʻldiruvchi", takror: "takror", qism: "qismlar ulanishi", boshqa_ovoz: "boshqa ovoz",
 };
 type Panes = { src: boolean; slide: boolean; final: boolean };
 const PANES: [keyof Panes, string][] = [["src", "Asl video"], ["slide", "Slayd"], ["final", "Tayyor video"]];

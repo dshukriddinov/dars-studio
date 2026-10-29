@@ -11,10 +11,11 @@ import { frameToSec, parseFps, secToFrame } from "../lib/time";
 import type { CutProposal, Project as P, Word } from "../lib/types";
 import { TextEdit } from "../components/TextEdit";
 
-type Group = "all" | "takror" | "yotal" | "mmm" | "pause" | "auto";
+type Group = "all" | "takror" | "boshqa" | "yotal" | "mmm" | "pause" | "auto";
 const GROUPS: [Group, string, CutProposal["reason"][]][] = [
   ["all", "Hammasi", []],
   ["takror", "Takror va qayta aytish", ["takror"]],
+  ["boshqa", "Boshqa ovoz (operator)", ["boshqa_ovoz"]],
   ["yotal", "Yoʻtal, aksa", ["yo'tal", "aksa"]],
   ["mmm", "“mmm”, “eee”", ["to'ldiruvchi"]],
   ["pause", "Uzun pauzalar", ["pause", "manual"]],
@@ -22,7 +23,7 @@ const GROUPS: [Group, string, CutProposal["reason"][]][] = [
 ];
 const KIND: Record<CutProposal["reason"], string> = {
   pause: "Pauza", manual: "Qoʻlda", bosh: "Dars boshi", oxir: "Dars oxiri", "yo'tal": "Yoʻtal", aksa: "Aksa",
-  "to'ldiruvchi": "“mmm”", takror: "Takror", qism: "Qismlar ulanishi",
+  "to'ldiruvchi": "“mmm”", takror: "Takror", qism: "Qismlar ulanishi", boshqa_ovoz: "Boshqa ovoz",
 };
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 

@@ -20,7 +20,7 @@ GREETINGS = ("assalomu", "assalom", "salom", "hurmatli", "aziz", "qadrli")
 FAREWELLS = ("ko'rishguncha", "ko'rishgunimizcha", "xayr", "salomat", "rahmat")
 EVENT_MIN_PROB = 0.6     # yo'tal/aksa ehtimoli (PANNs); pastrog'i ko'pincha oddiy nafas
 EVENT_MIN_GAP_MS = 300
-WORD_CUT_REASONS = ("bosh", "oxir", "takror", "qism")   # so'zni ataylab kesadigan sabablar (TZ 8.2 istisno)
+WORD_CUT_REASONS = ("bosh", "oxir", "takror", "qism", "boshqa_ovoz")   # so'zni ataylab kesadi (TZ 8.2 istisno)
 TRIM_SEARCH_S = 60      # signal dars boshidagi/oxiridagi shuncha soniya ichida izlanadi
 TRIM_PAD_S = (0.3, 0.6)  # salomdan oldin / xayrdan keyin qoldiriladigan bo'shliq
 
@@ -475,7 +475,29 @@ def _loose_tail(k: list[str], a0: int, a1: int, b0: int, b1: int) -> int | None:
     return first if hits >= max(3, 0.4 * (b1 - b0)) else None
 
 
-def reread_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
+def other_voice_cuts(spans: Sequence[tuple[int, int]], words: Sequence[Word], fps: Fraction,
+                     total: int) -> list[CutProposal]:
+    """Diarization topgan "boshqa ovoz" (operator) oraliqlari -> takliflar. Chegaralar o'qituvchining qo'shni
+    so'zlariga tegmaydi: oradagi bo'shliq o'rtasidan; operator so'zlari ataylab kesiladi."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    out: list[CutProposal] = []
+    for s, e in spans:
+        inside = [i for i, w in enumerate(ws) if w.start_ms >= s - 150 and w.start_ms < e]
+        if inside:
+            i, j = inside[0], inside[-1]
+            cs = _mid_frame(ws[i - 1].end_ms, ws[i].start_ms, fps, True) if i else 0
+            ce = (_mid_frame(ws[j].end_ms, ws[j + 1].start_ms, fps, False) if j + 1 < len(ws)
+                  else round(Fraction(ws[j].end_ms, 1000) * fps))
+        else:   # so'zsiz oraliq (ASR yozmagan): diarization chegaralari o'zi
+            cs, ce = round(Fraction(s, 1000) * fps), round(Fraction(e, 1000) * fps)
+        cs, ce = max(0, cs), min(total, ce)
+        if ce > cs:
+            out.append(CutProposal(start=cs, end=ce, reason="boshqa_ovoz"))
+    return out
+
+
+def reread_cuts(words: Sequence[Word], fps: Fraction,
+                other_voice_ms: Sequence[tuple[int, int]] = ()) -> list[CutProposal]:
     """Ma'ruzachi 1–3 gap orqaga qaytib qayta aytgan joy: "qaytadan", "boshqatdan", "boshidan", "adashdim…" signalidan
     keyingi 15 s ichidagi ibora boshi (oraliqda "demak", xodimlar bilan gaplashuv bo'lishi mumkin) yoki uzun
     pauzadan keyingi ibora. Undan keyingi 8 so'z oldingi 90 s dagi nutq bilan tartibli moslanadi; mos kelgan eng
@@ -498,12 +520,21 @@ def reread_cuts(words: Sequence[Word], fps: Fraction) -> list[CutProposal]:
                 return a
         return None
 
+    # operator oralig'i: (oraliqdan keyingi birinchi so'z -> operator boshlanishidan oldingi so'z indeksi)
+    cue_at: dict[int, int] = {}
+    for s, e in other_voice_ms:
+        start = next((i for i, w in enumerate(ws) if w.start_ms >= s - 200), None)
+        after = next((i for i, w in enumerate(ws) if w.start_ms >= e - 200), None)
+        if start is not None and after is not None and 0 < start <= after < n - 1:
+            cue_at[after] = start
     out: list[CutProposal] = []
     j = 1
     while j < n - 1:
         hit = None
-        if REREAD_CUES.match(k[j - 1]) or (ws[j].start_ms - ws[j - 1].end_ms >= REREAD_PAUSE_MS and phrase(j)):
-            cue = j - 1 if REREAD_CUES.match(k[j - 1]) else None
+        op = cue_at.get(j)   # operator gapidan keyingi birinchi so'z: operator gapi ham "qaytadan" kabi signal
+        if REREAD_CUES.match(k[j - 1]) or op is not None \
+                or (ws[j].start_ms - ws[j - 1].end_ms >= REREAD_PAUSE_MS and phrase(j)):
+            cue = j - 1 if REREAD_CUES.match(k[j - 1]) else op
             cands = [x for x in range(j, min(n - 1, j + 16)) if phrase(x)
                      and ws[x].start_ms - ws[j - 1].end_ms <= 15000] if cue is not None else [j]
             # pauzadan oldingi gap chala qolgan ("...we will do the summary the some" + 2.7 s): yumshoqroq moslik

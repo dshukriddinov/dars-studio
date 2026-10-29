@@ -7,6 +7,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from darsstudio import paths
 from darsstudio.audio import mix
 from darsstudio.export import srt
 from darsstudio.media.probe import MediaError, ProbeResult
@@ -27,18 +28,21 @@ def words(stack: CommandStack) -> list[Word]:
 
 def prepare_audio(stack: CommandStack, atten_db: float = 15.0) -> dict[str, Any]:
     """FR-04: 48 kHz + 16 kHz WAV (video 0-kadriga tekislangan), VAD, loudness o'lchovi, denoise."""
-    from darsstudio.audio import denoise, events, extract, loudness, vad
+    from darsstudio.audio import denoise, diarize, events, extract, loudness, vad
     pr = prepare.work_probe(stack.project)
     d = stack.store.cache("audio")
     a48, a16 = extract.extract_all(pr, d)
     sp = vad.detect(extract.read_pcm(a16))
     (d / "vad.json").write_text(json.dumps([[s.start_ms, s.end_ms] for s in sp]), encoding="utf-8")
     m = loudness.measure(a48)
+    n_other = None
+    if (paths.models_dir() / diarize.MODEL).is_file():   # diarization: boshqa ovoz (operator) oraliqlari
+        n_other = len(diarize.run(extract.read_pcm(a16), [(s.start_ms, s.end_ms) for s in sp], d / "diarize.json"))
     method = denoise.denoise(a48, d / "denoised_48k.wav", atten_db)
     n_ev = None
     if events.available():  # yo'tal/aksa (PANNs), denoise'dan oldingi audio'da
         n_ev = len(events.run(a16, d / "events.json"))
-    info = {**m.__dict__, "denoise": method, "speech_segments": len(sp), "events": n_ev}
+    info = {**m.__dict__, "denoise": method, "speech_segments": len(sp), "events": n_ev, "other_voice": n_other}
     (d / "loudness.json").write_text(json.dumps(info), encoding="utf-8")
     return info
 
@@ -59,7 +63,12 @@ def propose_cuts(stack: CommandStack, min_pause_s: float = cuts.MIN_PAUSE_S, kee
                        prefer_fullscreen)
     ws = words(stack)
     ef = store.cache("audio") / "events.json"
-    extra = cuts.retake_cuts(ws, p.fps_frac) + cuts.repeat_cuts(ws, p.fps_frac) + cuts.reread_cuts(ws, p.fps_frac)
+    df = store.cache("audio") / "diarize.json"
+    other = ([(int(s), int(e)) for s, e, *_ in json.loads(df.read_text(encoding="utf-8"))["other"]]
+             if df.is_file() else [])
+    extra = (cuts.retake_cuts(ws, p.fps_frac) + cuts.repeat_cuts(ws, p.fps_frac)
+             + cuts.reread_cuts(ws, p.fps_frac, other)
+             + cuts.other_voice_cuts(other, ws, p.fps_frac, p.total_frames))
     if lesson_lang(p.meta, p.slides) == "uz":   # inglizchada so'z vaqtlari Whisper'dan, takror qirqib yuboradi
         extra += cuts.stutter_cuts(ws, p.fps_frac)
     if ef.is_file():

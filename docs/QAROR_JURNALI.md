@@ -4,6 +4,27 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-29 — Diarization: "boshqa ovoz" (operator) takliflari
+
+- Foydalanuvchi: operator "boshlasangiz bo'ladi" degan yoki xatolikni aytgan joylar kesish taklifi bo'lsin.
+- Model: **wespeaker voxceleb resnet34-LM** (ONNX, 25 MB, CC-BY-4.0 — attribution manifest note'da; CPU,
+  onnxruntime allaqachon bor edi, yangi kutubxona yo'q). Kaldi uslubidagi fbank numpy'da yozildi.
+  Tekshiruv: o'sha o'qituvchi oynalari o'xshashligi 0.59–0.66, boshqa o'qituvchiga 0.21 — chegara 0.42.
+- `audio/diarize.py`: VAD nutqi ichida 2 s oynalar (qadami 1 s), batch ONNX (20 min dars ~25–30 s CPU);
+  o'qituvchi markazi ikki bosqichda (hamma -> chetga chiqqanlarsiz), markazdan uzoq oynalar birlashtiriladi
+  (`cache/audio/diarize.json`). `audio` vazifasida, model bo'lmasa jim o'tadi.
+- Takliflar: `cuts.other_voice_cuts` — chegaralar o'qituvchi so'zlaridan bo'shliq o'rtasida, operator so'zlari
+  ataylab kesiladi (`boshqa_ovoz` WORD_CUT_REASONS'da); so'zsiz oraliq (ASR yozmagan tovush) diarization
+  chegaralari bilan. 2-holat: operator gapi `reread_cuts` uchun signal ("qaytadan" kabi) — operator xatoni
+  aytib, o'qituvchi qayta boshlaganda chala urinish + operator gapi bitta taklif (testda).
+- UI: "Boshqa ovoz (operator)" guruhi (3-qadam), timeline'da yorliq.
+- O'lchov: DSBA9600 — 5 joy topildi: 2 tasi dars boshidagi operator ("boshlasangiz bo'ladi.", "tayyor bo'lmay
+  qoldi.") — "bosh" kesishi ichida; 3 tasi so'zsiz tovush — avval "mmm"/takror sifatida tasdiqlangan joylar bilan
+  ustma-ust. Yangi noto'g'ri taklif 0 — mavjud qarorlar bilan kross-validatsiya. DSBA8971: 1 joy ("boshlasangiz
+  bo'ladi.") — to'g'ri. Yangi darslarda o'rtadagi operator luqmalari endi ko'rinadi.
+
+---
+
 ## 2026-10-29 — Eye Contact submodule'dan asosiy repoga olindi
 
 - Foydalanuvchi so'rovi: "eye contactni to'liq project ichiga ol" — bitta repo, clone oson, push bitta.
