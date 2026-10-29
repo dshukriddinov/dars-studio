@@ -137,8 +137,9 @@ def t_export(args: dict[str, Any], emit: Any) -> dict[str, Any]:
     st = _stack(args)
     r = pipeline.export_project(st, args.get("profile", "web"), bool(args.get("premiere")),
                                 on_progress=lambda d, t: emit.progress(d / max(t, 1)),
-                                subtitles=bool(args.get("subtitles")))
-    return {k: r[k] for k in ("version", "path", "qa", "premiere")}
+                                subtitles=bool(args.get("subtitles")),
+                                max_mb=float(args["max_mb"]) if args.get("max_mb") else None)
+    return {k: r[k] for k in ("version", "path", "qa", "premiere", "size_mb")}
 
 
 def t_sleep(args: dict[str, Any], emit: Any) -> dict[str, Any]:

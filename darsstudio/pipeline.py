@@ -182,9 +182,19 @@ def _unapproved_suspicious(stack: CommandStack) -> int:
     return 0 if approved == len(stack.project.slide_spans) else n
 
 
+def output_seconds(stack: CommandStack) -> float:
+    """Yakuniy fayl uzunligi: kesishlardan keyingi dars + intro/outro (hajm chegarasi uchun)."""
+    from darsstudio.media.probe import probe
+    p = stack.project
+    tpl = templates.load(p.template_id)
+    s = float(Fraction(cuts.timemap(p).out_total) / p.fps_frac)
+    return s + sum(float(probe(tpl.asset(x)).duration) for x in (tpl.intro, tpl.outro) if x)
+
+
 def export_project(stack: CommandStack, profile: str = "web", premiere: bool = False,
                    pattern: str | None = None, on_progress: Callable[[int, int], None] | None = None,
-                   subtitles: bool = False) -> dict[str, Any]:
+                   subtitles: bool = False, max_mb: float | None = None) -> dict[str, Any]:
+    """max_mb: butun fayl shu hajmdan oshmasin (bitreyt uzunlikdan; masalan 16 daqiqa 100 MB -> ~0.7 Mbit/s)."""
     """FR-16/17/18/19: exports/v<N>/<nom>.mp4 + .srt + .slides.csv/.json + qa.json [+ premiere/]."""
     from darsstudio.export import premiere_pkg, qa, tables
     store = stack.store
@@ -194,6 +204,8 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     d = exports / f"v{v}"
     d.mkdir(parents=True, exist_ok=True)
     mp4 = d / f"{name}.mp4"
+    if max_mb:
+        profile = renderer.size_profile(max_mb, output_seconds(stack))
     r = render_project(stack, mp4, profile=profile, subtitles=subtitles, on_progress=on_progress)
     p = stack.project
     tm = cuts.timemap(p)
@@ -201,7 +213,7 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     pngs = sorted((store.cache("slides") / "4k").glob("[0-9][0-9][0-9].png"))   # yakuniy (qadamlarsiz)
     srt_path = Path(r["srt"]) if r["srt"] else None
     report = qa.run(p, mp4, tm, pngs, srt_path, _unapproved_suspicious(stack),
-                    lead=r["intro_frames"], tail=r["outro_frames"])
+                    lead=r["intro_frames"], tail=r["outro_frames"], max_mb=max_mb)
     (d / "qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     pkg = None
     if premiere:
@@ -219,6 +231,7 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
         pkg = premiere_pkg.build(p, tm, tpl, all_pngs, warped, store.cache("audio") / "denoised_48k.wav", pr,
                                  d / "premiere", name, use_ep, on_progress=on_progress, display=display)
     entry = {"version": v, "profile": profile, "path": str(mp4), "qa": report["verdict"],
+             "size_mb": round(mp4.stat().st_size / 2**20, 1),
              "premiere": str(pkg) if pkg else None}
     stack.do(f"eksport v{v}", {"exports": [*stack.project.exports, entry]})
     return {**entry, "qa_report": report, "render": r}

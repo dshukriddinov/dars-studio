@@ -225,6 +225,15 @@ function StepExport({ name, jobs }: { name: string; jobs: Job[] }) {
   const fail = useStore.getState().fail;
   const [subtitles, setSubtitles] = useState(false);
   const [premiere, setPremiere] = useState(false);
+  // hajm chegarasi (odatda 100 MB): bitreyt dars uzunligidan hisoblanadi, video bir o'tishda shu hajmda yoziladi
+  const [limit, setLimitState] = useState<{ on: boolean; mb: number }>(() => {
+    try { return { on: true, mb: 100, ...JSON.parse(localStorage.getItem("dars.export.limit") ?? "{}") }; }
+    catch { return { on: true, mb: 100 }; }
+  });
+  const setLimit = (v: { on: boolean; mb: number }) => {
+    setLimitState(v);
+    try { localStorage.setItem("dars.export.limit", JSON.stringify(v)); } catch { /* saqlanmasa ham ishlaydi */ }
+  };
   const [files, setFiles] = useState<{ file: string; size_mb: number; qa: unknown; version: number; mtime: number }[]>([]);
   const job = jobs.filter((j) => j.type === "export").sort((a, b) => b.id - a.id)[0];
   const running = job && (job.status === "ishlanmoqda" || job.status === "navbatda");
@@ -241,9 +250,15 @@ function StepExport({ name, jobs }: { name: string; jobs: Job[] }) {
           Subtitr fayli (SRT)</label>
         <label className="check"><input type="checkbox" checked={premiere} onChange={(e) => setPremiere(e.target.checked)} />
           Premiere / DaVinci uchun loyiha</label>
+        <label className="check"><input type="checkbox" checked={limit.on} onChange={(e) => setLimit({ ...limit, on: e.target.checked })} />
+          Fayl hajmi koʻpi bilan
+          <input type="number" min={10} max={4000} step={10} value={limit.mb} disabled={!limit.on} style={{ width: 80 }}
+            onChange={(e) => setLimit({ ...limit, mb: Math.max(10, Number(e.target.value) || 100) })} /> MB</label>
         <div className="row">
           <button className="btn-primary" disabled={!!running} onClick={async () => {
-            try { await api.addJob(name, "export", { profile: "web", subtitles, premiere }); } catch (e) { fail(e); }
+            try {
+              await api.addJob(name, "export", { profile: "web", subtitles, premiere, ...(limit.on ? { max_mb: limit.mb } : {}) });
+            } catch (e) { fail(e); }
           }}>{running ? "Yaratilmoqda…" : "Videoni yaratish"}</button>
         </div>
         {running && job ? (

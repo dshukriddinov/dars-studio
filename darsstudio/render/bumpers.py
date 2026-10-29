@@ -11,7 +11,7 @@ from pathlib import Path
 
 from darsstudio.audio import loudness
 from darsstudio.media import ffmpeg, probe
-from darsstudio.render.renderer import BT709_TAGS, encoder_args
+from darsstudio.render.renderer import BT709_TAGS, audio_kbps, encoder_args
 from darsstudio.render.templates import Template
 
 SR = 48000
@@ -51,7 +51,8 @@ def wrap(main: Path, tpl: Template, fps: Fraction, profile: str, cache: Path,
     bump: dict[str, tuple[Path, int]] = {}
     for name in {x for x in (tpl.intro, tpl.outro) if x}:
         src = tpl.asset(name)
-        key = hashlib.sha256(src.read_bytes() + f"{fps}|{tpl.canvas}|{profile}".encode()).hexdigest()[:16]
+        tag = f"{fps}|{tpl.canvas}|{encoder_args(profile)}"     # kodlash sozlamasi o'zgarsa — qayta
+        key = hashlib.sha256(src.read_bytes() + tag.encode()).hexdigest()[:16]
         enc = cache / f"bumper_{key}.mp4"
         bump[name] = (enc, encode(src, enc, fps, tpl.canvas, profile))
     q = probe.probe(main)
@@ -78,7 +79,8 @@ def wrap(main: Path, tpl: Template, fps: Fraction, profile: str, cache: Path,
         f"concat=n={len(parts)}:v=0:a=1[a]"
     tmp = main.with_name(main.stem + ".tmp.mp4")
     ffmpeg.run(["-v", "error", "-nostdin", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), *ins,
-                "-filter_complex", fc, "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                "-filter_complex", fc, "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac",
+                "-b:a", f"{audio_kbps(profile)}k",
                 "-ar", str(SR), *BT709_TAGS, "-movflags", "+faststart", str(tmp)])
     tmp.replace(main)
     body.unlink()

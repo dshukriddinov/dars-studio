@@ -116,8 +116,16 @@ def check_srt(srt_text: str, duration_s: float) -> QaCheck:
     return QaCheck("srt", "ok" if ok else "xato", detail)
 
 
+def check_size(out: Path, max_mb: float) -> QaCheck:
+    mb = out.stat().st_size / 2**20
+    ok = mb <= max_mb
+    return QaCheck("hajm", "ok" if ok else "ogohlantirish",
+                   f"{mb:.1f} MB (chegara {max_mb:g} MB)" + ("" if ok else ": chegaradan oshdi — chegarani kamaytirib "
+                                                             "qayta eksport qiling"))
+
+
 def run(p: Project, out: Path, tm: TimeMap, pngs: Sequence[Path], srt_path: Path | None, n_unapproved: int,
-        loudness_target: float = -16.0, lead: int = 0, tail: int = 0) -> dict[str, Any]:
+        loudness_target: float = -16.0, lead: int = 0, tail: int = 0, max_mb: float | None = None) -> dict[str, Any]:
     """lead/tail: yakuniy fayldagi intro/outro kadrlari."""
     fps = p.fps_frac
     total = tm.out_total + lead + tail
@@ -135,6 +143,8 @@ def run(p: Project, out: Path, tm: TimeMap, pngs: Sequence[Path], srt_path: Path
     checks.append(check_suspicious(n_unapproved, sum(c.status == "taklif" for c in p.cuts)))
     if srt_path is not None:
         checks.append(check_srt(srt_path.read_text(encoding="utf-8"), total / float(fps)))
+    if max_mb:
+        checks.append(check_size(out, max_mb))
     verdict = "xato" if any(c.status == "xato" for c in checks) else (
         "ogohlantirish" if any(c.status == "ogohlantirish" for c in checks) else "ok")
     return {"verdict": verdict, "checks": [asdict(c) for c in checks]}

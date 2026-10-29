@@ -48,12 +48,40 @@ PROFILES = {
 }
 
 
+SIZE_AUDIO_KBPS = 128      # hajm chegarali eksportda ovoz (nutq uchun yetarli)
+SIZE_MARGIN = 0.93         # konteyner, intro/outro va VBR og'ishi uchun zaxira
+
+
+def size_profile(max_mb: float, seconds: float) -> str:
+    """Butun fayl max_mb dan oshmasin: video bitreyti uzunlikdan hisoblanadi ("size850" = 850 kbit/s).
+    Natija PROFILES ga qo'shiladi (render kaliti va intro/outro keshi profil nomi bilan ajraladi)."""
+    kbps = int((max_mb * 1024 * 1024 * 8 * SIZE_MARGIN / max(seconds, 1.0) - SIZE_AUDIO_KBPS * 1000) / 1000)
+    kbps = max(250, min(kbps, 8000))
+    name = f"size{kbps}"
+    PROFILES[name] = size_args(kbps)
+    return name
+
+
+def audio_kbps(profile: str) -> int:
+    return SIZE_AUDIO_KBPS if profile.startswith("size") else 192
+
+
 def encoder_args(profile: str, preset: str = "p7") -> list[str]:
+    if profile.startswith("size") and profile not in PROFILES:   # boshqa jarayonda (render ishchisi) qayta tiklash
+        PROFILES[profile] = size_args(int(profile[4:]))
     if ffmpeg.nvenc_ok():
         return ["-c:v", "h264_nvenc", "-preset", preset, "-tune", "hq", "-profile:v", "high", "-g", "50",
                 *PROFILES[profile], "-pix_fmt", "yuv420p"]
+    if profile.startswith("size"):   # ponytail: NVENC yo'q -> CPU x264, bitreyt bo'yicha
+        return ["-c:v", "libx264", "-preset", "medium", "-b:v", f"{profile[4:]}k", "-g", "50", "-pix_fmt", "yuv420p"]
     crf = "19" if profile == "arxiv" else "21"  # ponytail: NVENC yo'q -> CPU x264 (sekin)
     return ["-c:v", "libx264", "-preset", "medium", "-crf", crf, "-g", "50", "-pix_fmt", "yuv420p"]
+
+
+def size_args(kbps: int) -> list[str]:
+    # maxrate 3x: sahna o'tishi (zoom blur) uchun bit qarzga olinadi — 1.5x da 1 s davomida bloklar ko'rinardi
+    return ["-rc", "vbr", "-b:v", f"{kbps}k", "-maxrate", f"{kbps * 3}k", "-bufsize", f"{kbps * 4}k",
+            "-multipass", "fullres", "-spatial-aq", "1", "-temporal-aq", "1"]
 
 
 @dataclass
@@ -157,7 +185,9 @@ def render_key(project: Project, tpl: Template, slide_files: Sequence[Path], spa
                          "ov": [[hashlib.md5(o.layer).hexdigest(), o.start, o.end, o.fade_frames, o.drift_px_per_frame,
                                  o.slide_in_px, o.slide_frames, o.clip_x]
                                 for o in extra.overlays],
-                         "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset, "chunk": opts.chunk_sec,
+                         "tm": tm.ranges, "profile": opts.profile, "preset": opts.preset,
+                         # profil nomi bir xil bo'lsa ham sozlamasi o'zgargan bo'lishi mumkin ("size679")
+                         "enc": encoder_args(opts.profile, opts.preset), "chunk": opts.chunk_sec,
                          "src": probe.path, "start": opts.start, "sharpen": compositor.TEACHER_SHARPEN,
                          "display": extra.display},
                         sort_keys=True).encode())
@@ -326,7 +356,7 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
             flags[kind] += fr
         done += n
 
-    _mux(segments, probe, tm, opts.start, total, out, wd, extra.audio_wav)
+    _mux(segments, probe, tm, opts.start, total, out, wd, extra.audio_wav, audio_kbps(opts.profile))
     secs = time.time() - t0
     vram = torch.cuda.max_memory_allocated(dev) / 2**20 if dev.type == "cuda" else 0.0
     rep = RenderReport(output=str(out), frames=total, seconds=round(secs, 1), fps=round(total / max(secs, 1e-9), 1),
@@ -336,7 +366,7 @@ def render(project: Project, probe: ProbeResult, tpl: Template, warped: list[Pat
 
 
 def _mux(segments: list[Path], p: ProbeResult, tm: TimeMap, start: int, frames: int, out: Path, wd: Path,
-         audio_wav: Path | None) -> None:
+         audio_wav: Path | None, a_kbps: int = 192) -> None:
     """Segmentlar (-c copy) + audio (AAC 192k).
     audio_wav (chiqish vaqt o'qida) bo'lsa — undan [start, start+frames). Aks holda manbadan: kesishlar yo'q deb
     hisoblanadi, -ss fayl boshiga nisbatan (lab-sync manbadagidek)."""
@@ -356,7 +386,7 @@ def _mux(segments: list[Path], p: ProbeResult, tm: TimeMap, start: int, frames: 
         t0 = p.video.start_time - p.format_start_time + Fraction(src0 + start) / fps
         args += ["-ss", f"{float(t0):.6f}", "-t", f"{float(dur):.6f}", "-i", p.path]
     if audio_wav is not None or p.audio:
-        args += ["-map", "0:v:0", "-map", "1:a:0", "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
+        args += ["-map", "0:v:0", "-map", "1:a:0", "-c:a", "aac", "-b:a", f"{a_kbps}k", "-ar", "48000"]
     args += ["-c:v", "copy", *BT709_TAGS, "-movflags", "+faststart", str(tmp)]
     ffmpeg.run(args)
     tmp.replace(out)

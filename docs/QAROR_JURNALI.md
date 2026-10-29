@@ -4,6 +4,22 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-29 — Eksport: fayl hajmi chegarasi (odatda 100 MB)
+
+- Foydalanuvchi: tayyor video < 100 MB bo'lishi kerak; hozir montajdan keyin Convertilla bilan siqadi. Taklif: alohida
+  qayta siqish emas (ikkinchi kodlash — sifat yo'qoladi, "oraliq videolar yo'q" qoidasiga zid), eksportning o'zida
+  bitreyt dars uzunligidan hisoblanadi: video = hajm * 0.93 / uzunlik - ovoz (128 kbit/s); intro/outro ham shu
+  profil bilan. NVENC VBR + multipass fullres + spatial/temporal AQ, maxrate 3x / bufsize 4x. UI: 4-qadamda
+  "Fayl hajmi ko'pi bilan [100] MB" (standart yoqilgan, eslab qolinadi); QA'da "hajm" tekshiruvi.
+- **O'lchov (DSBA8971, intro/outro bilan 965.8 s, chegara 100 MB -> video 679 kbit/s):** maxrate 1.5x — 82.1 MB,
+  7 min 2 s; sahna o'tishi (zoom blur) ~1 s davomida bloklar. maxrate 3x — **85.7 MB, 6 min 5 s**, o'tish kadri
+  tiniq (v6 4 Mbit/s eksportga yaqin); harakatsiz slayd kadrlari v6 dan deyarli farqsiz (eng mayda yozuv biroz
+  yumshoq). Avvalgi eksport shu dars uchun 411 MB (4 Mbit/s); Premiere'dan to'g'ridan 995 MB–1.56 GB (10–12 Mbit/s).
+- Topilgan xato: render va intro/outro keshi profil **nomi** bilan kalitlanardi — "size679" sozlamasi o'zgarganda
+  eski bo'laklar qayta ishlatilardi (o'lchovda 82.1 MB qaytadan chiqdi). Kalitga kodlash argumentlari qo'shildi.
+
+---
+
 ## 2026-10-29 — A/B sahna: B o'qituvchi slaydni tushuntira boshlaganda (slaydga ishora)
 
 - Foydalanuvchi: slaydni gapirishni boshlaganda A, tushuntirish qismida B bo'lishi kerak. Avval: slayd
