@@ -1,6 +1,7 @@
 """Slayd sinxroni loyihaga (FR-07/08): jurnal bo'lsa beep + jurnal, aks holda AI. Natija buyruq orqali (undo bilan)."""
 
 import json
+import re
 from dataclasses import asdict
 from fractions import Fraction
 from pathlib import Path
@@ -15,6 +16,29 @@ from darsstudio.slides import anim
 from darsstudio.sync import ai_align, beep, slide_log
 
 B_SCENE_WORDS = 60  # TZ FR-12: slayd matni >= 60 so'z yoki jadval -> B tavsiya
+
+
+# o'qituvchi slaydga ishora qiladi -> tushuntirish boshlandi (B): "ushbu slaydda keltirilgan rasmda...",
+# "grafikka qarasak", "ko'rishimiz mumkin", "look at", "you can see"
+POINT = re.compile(r"^(slayd\w*|rasm\w*|taqdimot\w*|grafik\w*|jadval\w*|diagramma\w*|sxema\w*|xarita\w*|"
+                   r"keltirilgan|ko.rishimiz|ko.rib|ko.rsatilgan|qarasak|qarang|qaraydigan|slide|picture|chart|table|"
+                   r"look|see)$")
+POINT_MIN_S = 3.0     # slayd boshidan kamida shuncha A (o'qituvchi slaydni boshlaydi)
+POINT_MAX_S = 30.0    # shundan keyin ishora topilmasa — a_seconds bo'yicha
+
+
+def b_start_ms(words: list[Word], start_ms: int, end_ms: int, fallback_ms: int) -> int:
+    """A -> B payti: slayd boshidan POINT_MIN_S..POINT_MAX_S ichida slaydga birinchi ishora qilgan so'zdan keyin;
+    topilmasa start + a_seconds. O'lchov (7 dars, montajchi A sahnalari 73 ta): ±2 s ichida 19 -> 30."""
+    lo, hi = start_ms + POINT_MIN_S * 1000, min(end_ms, start_ms + POINT_MAX_S * 1000)
+    for w in words:
+        if w.start_ms < lo:
+            continue
+        if w.start_ms > hi:
+            break
+        if POINT.match(re.sub(r"[^\w']", "", uz_text.normalize(w.text).replace("ʼ", "'").replace("ʻ", "'"))):
+            return w.end_ms
+    return fallback_ms
 
 
 def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
@@ -33,11 +57,19 @@ def suggest_layouts(stack: CommandStack) -> list[LayoutSpan]:
         a_fr, min_b = round(Fraction(policy.a_seconds) * p.fps_frac), round(Fraction(policy.min_b_seconds) * p.fps_frac)
         last = p.slide_spans[-1].slide if p.slide_spans else 0
         first = p.slide_spans[0].slide if p.slide_spans else 0
+        wf = stack.store.cache("asr") / "words.json"
+        ws = sorted((Word(**w) for w in json.loads(wf.read_text(encoding="utf-8"))), key=lambda w: w.start_ms) \
+            if wf.is_file() else []
+        def ms(f: int) -> int:
+            return int(Fraction(f) / p.fps_frac * 1000)
+
         for sp in p.slide_spans:
-            if sp.slide in (first, last) or sp.end - sp.start - a_fr < min_b:
+            # A: o'qituvchi slaydni boshlaydi; B: slaydga ishora qilib tushuntirishga o'tgan payt (yo'q — a_seconds)
+            b = round(Fraction(b_start_ms(ws, ms(sp.start), ms(sp.end), ms(sp.start + a_fr)), 1000) * p.fps_frac)
+            if sp.slide in (first, last) or sp.end - b < min_b:
                 spans.append((sp.start, sp.end, "A"))
             else:
-                spans += [(sp.start, sp.start + a_fr, "A"), (sp.start + a_fr, sp.end, "B")]
+                spans += [(sp.start, b, "A"), (b, sp.end, "B")]
     else:
         # TZ FR-12; chegara loyiha meta'sida sozlanadi ("b_scene_words")
         limit = int(p.meta.get("b_scene_words", B_SCENE_WORDS))

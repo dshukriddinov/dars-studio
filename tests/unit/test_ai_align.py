@@ -151,3 +151,16 @@ def test_topic_starts_uzbek_transition_phrases() -> None:
     ws = [Word(text=t, start_ms=i * 400, end_ms=i * 400 + 300, conf=0.9) for i, t in enumerate(text.split())]
     hits = [next(w.text for w in ws if w.start_ms == ms) for ms in topic_starts(ws)]
     assert hits == ["ikkinchi", "grafikka", "endi", "uchinchi"]   # "bu haqda..." kelajak, gap o'rtasi — emas
+
+
+def test_b_scene_starts_when_teacher_points_at_slide() -> None:
+    """Montajchi (nargiza 2): B "mazkur slaydda keltirilgan rasm" degan joyda; ishora yo'q — a_seconds."""
+    from darsstudio.project.model import Word
+    from darsstudio.sync.run import b_start_ms
+    text = "endi yumshatish haqida gaplashamiz. mazkur slaydda keltirilgan rasm yumshatish va moslashuvni ko'rsatadi."
+    ws = [Word(text=t, start_ms=1000 + i * 500, end_ms=1000 + i * 500 + 400, conf=0.9)
+          for i, t in enumerate(text.split())]
+    slayd = next(w for w in ws if w.text == "slaydda")
+    assert b_start_ms(ws, 0, 60000, 9000) == slayd.end_ms          # slayd boshidan 3.5 s: ishora -> B
+    assert b_start_ms(ws[:5], 1000, 60000, 9000) == 9000            # ishora yo'q
+    assert b_start_ms(ws, slayd.start_ms - 1000, 60000, 9000) != slayd.end_ms   # boshidan 3 s ichida — hali A

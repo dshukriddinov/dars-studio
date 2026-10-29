@@ -4,6 +4,25 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-29 — A/B sahna: B o'qituvchi slaydni tushuntira boshlaganda (slaydga ishora)
+
+- Foydalanuvchi: slaydni gapirishni boshlaganda A, tushuntirish qismida B bo'lishi kerak. Avval: slayd
+  almashganda qat'iy 10 s A, keyin B (o'qituvchi gapiga qaramasdan).
+- Etalon: 7 ta montajchi Premiere loyihasi (ingliz 1–3 + o'zbekcha namuna/ nargiza 2, nargiza5, eshankulov3,
+  quvvatov2; o'qituvchi videosi 2 yo'lakda — A/B), slayd boshidagi A sahnalar (birinchi/oxirgi slayddan tashqari)
+  73 ta. A davomiyligi median: ingliz 8.8 s, o'zbek 11.1 s (5–95 s; quvvatov2 montajchisi uzoq A ushlaydi).
+  O'zbekcha B ko'pincha o'qituvchi slaydga ishora qilgan joyda: "ushbu slaydda keltirilgan rasmda…",
+  "taqdimotdagi umumiy strukturaga qarasak", "…ko'rishimiz mumkin".
+- O'lchov (A->B montajchidan ±2 s ichida): qat'iy 10 s — 19/73 (ingliz 10/31, o'zbek 9/42); qat'iy 8 s — 27/73;
+  pauza qoidasi (>= 7 s, 0.5 s pauza) — ingliz 17/31, o'zbek 5/42; **slaydga ishora (3..30 s), topilmasa 8 s —
+  30/73 (ingliz 15/31, o'zbek 15/42)** — olindi; ishora + topilmasa pauzaga moslash — 26/73, olinmadi.
+  akademiya shabloni `a_seconds` 10 -> 8 (ishora topilmagan holat).
+- DSBA9600 da (o'qituvchi slaydga kam ishora qiladi) 18 B dan 4 tasi ishora bo'yicha, 14 tasi 8 s da. DSBA9600 va
+  DSBA9359 sahnalari qayta moslandi (qo'lda qo'yilgani saqlandi). Etalon loyihalar `workdir/bench/` da
+  (sidebar'da ko'rinmaydi).
+
+---
+
 ## 2026-10-29 — O'zbekcha darslarda slayd mavzu boshlanmasdan ochilardi: mavzu o'tish iboralari
 
 - Foydalanuvchi: slayd o'qituvchi u haqida gap boshlamasdan ochiladi; B sahna slayd mavzusi boshlangandan keyin

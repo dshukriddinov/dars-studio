@@ -49,7 +49,7 @@
  "key_defaults": {},
  "scene_policy": {
   "mode": "a_then_b",
-  "a_seconds": 10.0,
+  "a_seconds": 8.0,
   "min_b_seconds": 10.0
  },
  "intro": "intro.mp4",
