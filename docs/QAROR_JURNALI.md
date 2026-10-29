@@ -4,6 +4,26 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-29 — O'zbekcha darslarda slayd mavzu boshlanmasdan ochilardi: mavzu o'tish iboralari
+
+- Foydalanuvchi: slayd o'qituvchi u haqida gap boshlamasdan ochiladi; B sahna slayd mavzusi boshlangandan keyin
+  bo'lishi kerak. Sahna qoidasi (a_then_b: slayd almashganda 10 s A, keyin B) to'g'ri — muammo slayd chegarasining
+  o'zi erta. DSBA9600 (inson tahriri): inson surgan 14 chegaraning hammasi gap boshida va ko'pi o'tish iborasida
+  ("ikkinchi mavzuga o'tamiz", "grafikka qarang", "endi hududlar kesimi haqida…", "uchinchi qismda", "to'rtinchisi,
+  oxirgi qism"); AI esa gap o'rtasidagi pauzaga, oldingi mavzu xulosasiga qo'ygan (~7 s erta).
+- Sinab ko'rildi va olinmadi: chegara faqat gap boshiga (`sent_only`) — jami ±2 s 58 -> 55/85; gap o'rtasidan keyingi
+  gap boshiga surish (`fwd_snap_s` 8/15) — 55/54; inson tasdiqlagan chegaralarni kech qiladi.
+- Olindi: `topic_starts` — gap boshidagi tartib so'zi + mavzu/qism/reja/savol ("endi ikkinchi savolga o'tamiz"),
+  "grafikka/jadvalga qarang", "...ga o'tamiz", "endi ... haqida"; "bu haqda ... gaplashamiz" va "keyinroq" —
+  kelajakka ishora, emas. Eng yaqin AI chegarasi +-10 s ichida shu gap boshiga ("next slide" signalidan keyin,
+  unga tegmaydi). **Natija (5 etalonli dars): ±2 s 58 -> 63/85 (68% -> 74%)**; DSBA9600 16 -> 21/25 (inson surganlari
+  5 -> 10/14, tasdiqlaganlari 11/11 o'zgarmadi); namuna va ingliz tili o'zgarmadi. Etalonsiz darslar: DSBA9359 da 3
+  chegara surildi — uchalasi qo'lda tekshirildi, to'g'ri; DSBA8971, DSBA9607, 0Z1A1251 da 0. DSBA9359 qayta
+  sinxronlandi (qo'lda tahriri yo'q edi); DSBA9600 ga tegilmadi (inson tahriri bor).
+- Ehtiyot: qoida bitta darsning inson tahriridan chiqarilgan — ko'proq o'zbekcha etalon kerak.
+
+---
+
 ## 2026-10-29 — "Xorijiy til 1" (DSBA8915): slaydlar adashdi — til tanlanmagan va taqdimot videoga mos emas
 
 - **Sabab 1 — til:** dars "Dars tili" tanlanmay yaratilgan -> o'zbek modeli (rubaistt) inglizcha nutqni buzib

@@ -139,3 +139,15 @@ def test_bounds_order_restored(monkeypatch: Any) -> None:
     r = ai_align.align(words, slides, total, Fraction(25))
     assert all(s.end - s.start >= 10 for s in r.spans)
     assert [s.start for s in r.spans] == sorted(s.start for s in r.spans)
+
+
+def test_topic_starts_uzbek_transition_phrases() -> None:
+    """DSBA9600 (inson slaydni shu gaplar boshida almashtirgan) va DSBA9359 dagi yolg'on holat."""
+    from darsstudio.project.model import Word
+    from darsstudio.sync.ai_align import topic_starts
+    text = ("o'sha ko'proq oladi. ikkinchi mavzuga o'tamiz. mahalliy byudjet. esa bu to'lanadi. grafikka qarang, "
+            "o'z daromadlari. bu haqda beshinchi savolda gaplashamiz. endi aholi ishtiroki haqida gaplashadigan "
+            "bo'lsak, ishtirok. uchinchi qismda gap pulni o'zi haqida. bu ikkinchi mavzuga bog'liq gap.")
+    ws = [Word(text=t, start_ms=i * 400, end_ms=i * 400 + 300, conf=0.9) for i, t in enumerate(text.split())]
+    hits = [next(w.text for w in ws if w.start_ms == ms) for ms in topic_starts(ws)]
+    assert hits == ["ikkinchi", "grafikka", "endi", "uchinchi"]   # "bu haqda..." kelajak, gap o'rtasi — emas

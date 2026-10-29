@@ -39,6 +39,10 @@ class Params:
     suspicious_below: float = 0.6
     short_back_s: float = 10.0
     premature_s: float = 20.0    # A->B->A, B keyinroq yana: birinchi qisqa "borish" olib tashlanadi
+    sent_only: float = 0.0       # 1: chegara faqat tinish belgili gap boshiga (gap ichidagi pauzaga emas)
+    fwd_snap_s: float = 0.0      # > 0: gap o'rtasidagi chegara shu oraliqdagi keyingi gap boshiga
+    topic_cues: float = 1.0      # o'zbekcha mavzu o'tish iboralari ("ikkinchi mavzuga o'tamiz", "grafikka qarang")
+    topic_window_s: float = 10.0
     cue_window_s: float = 25.0   # "keyingi slayd" signali chegaradan shuncha uzoqlikkacha izlanadi
 
 
@@ -187,7 +191,11 @@ def posteriors(cost: F, trans: F, init: F) -> F:
 BOUNDARY_BONUS = 1.0  # gap boshi yoki >= 0.3 s pauza oldidagi nuqtaga bonus (so'z mosligi birligida)
 
 
-def _refine(segs: list[TextSeg], i: int, old: int, new: int, vocab: list[set[str]]) -> int:
+def _ends(w: Word) -> bool:
+    return bool(re.search(r"[.!?…]$", w.text.rstrip()))
+
+
+def _refine(segs: list[TextSeg], i: int, old: int, new: int, vocab: list[set[str]], sent_only: bool = False) -> int:
     """i-1 va i segmentlar orasidagi chegara (ms): change-point. Har so'z uchun s = [yangi slayd lug'atida] -
     [eski slayd lug'atida]; chegara c — o'ngdagi s yig'indisi + (gap boshi / pauza bonusi) maksimal nuqta."""
     words = segs[i - 1].words + segs[i].words
@@ -199,7 +207,8 @@ def _refine(segs: list[TextSeg], i: int, old: int, new: int, vocab: list[set[str
     for k, w in enumerate(words):
         if k == 0:
             continue
-        brk = w.start_ms in starts or w.start_ms - words[k - 1].end_ms >= 300
+        brk = (_ends(words[k - 1]) if sent_only else
+               w.start_ms in starts or w.start_ms - words[k - 1].end_ms >= 300)
         sc = float(tail[k]) + (BOUNDARY_BONUS if brk else 0.0)
         if sc > best_score:
             best, best_score = w.start_ms, sc
@@ -244,16 +253,20 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
     bounds: list[Boundary] = []
     for i in range(1, len(segs)):
         if path[i] != path[i - 1]:
-            ms = _refine(segs, i, path[i - 1], path[i], vocab)
+            ms = _refine(segs, i, path[i - 1], path[i], vocab, p.sent_only > 0)
             lo, hi = max(0, i - 2), min(len(segs), i + 2)
             conf = float(min(post[t, path[t]] for t in range(lo, hi)))
             bounds.append(Boundary(round(Fraction(ms, 1000) * fps), path[i - 1] + 1, path[i] + 1, round(conf, 3)))
     snap_to_cues(bounds, list(words), fps, p.cue_window_s)
+    if p.topic_cues > 0:
+        snap_to_cues(bounds, list(words), fps, p.topic_window_s, topic_starts, "mavzu o'tish iborasi")
     # aniqlashtirish/signal har chegarani alohida suradi va tartib buzilishi mumkin (sinov: 37->39 1155.8 s, 39->40
     # 1146.9 s -> 39-slayd 0.1 s miltillardi): vaqtlar o'sish tartibida chegaralarga qayta beriladi
     for b, f in zip(bounds, sorted(x.frame for x in bounds), strict=True):
         b.frame = f
     drop_premature(bounds, fps, p.premature_s)
+    if p.fwd_snap_s > 0:
+        snap_forward(bounds, list(words), fps, p.fwd_snap_s)
     spans: list[SlideSpan] = []
     pos, cur = 0, path[0] + 1
     for b in bounds:
@@ -273,6 +286,23 @@ def align(words: Sequence[Word], slides: Sequence[Slide], total: int, fps: Fract
                 b.reason = "qisqa orqaga qaytish"
                 susp.append(b)
     return AlignResult(spans, bounds, susp)
+
+
+def snap_forward(bounds: list[Boundary], words: list[Word], fps: Fraction, max_s: float) -> None:
+    """Gap o'rtasiga tushgan chegara — keyingi gap boshiga (inson slaydni yangi mavzu gapi boshida almashtiradi:
+    DSBA9600 "hudud | keyingi yil uchun..." -> "ikkinchi mavzuga o'tamiz.")."""
+    ws = sorted(words, key=lambda w: w.start_ms)
+    starts = [k for k in range(1, len(ws)) if _ends(ws[k - 1])]
+    for j, b in enumerate(bounds):
+        if b.reason == "og'zaki signal":
+            continue
+        ms = int(Fraction(b.frame) / fps * 1000)
+        if any(abs(ws[k].start_ms - ms) <= 150 for k in starts):
+            continue
+        nxt = int(Fraction(bounds[j + 1].frame) / fps * 1000) if j + 1 < len(bounds) else 1 << 60
+        k = next((k for k in starts if ms < ws[k].start_ms <= min(ms + max_s * 1000, nxt - 1000)), None)
+        if k is not None:
+            b.frame = round(Fraction(max(0, ws[k].start_ms - 150), 1000) * fps)
 
 
 def drop_premature(bounds: list[Boundary], fps: Fraction, max_s: float) -> None:
@@ -308,15 +338,46 @@ def cue_starts(words: list[Word]) -> list[int]:
     return out
 
 
-def snap_to_cues(bounds: list[Boundary], words: list[Word], fps: Fraction, window_s: float) -> None:
+ORD = re.compile(r"^(ikkinchi|uchinchi|to.rtinchi|beshinchi|oltinchi|yettinchi|keyingi|navbatdagi|oxirgi)\w*$")
+TOPIC = re.compile(r"^(mavzu|qism|reja|bo.lim|savol)")
+LOOK = re.compile(r"^(grafik|jadval|diagramma|slayd|rasm|xarita)")
+TOPIC_LEAD = {"endi", "demak", "xo'p", "xo'sh", "xoʻp", "xoʻsh"}
+
+
+def topic_starts(words: list[Word]) -> list[int]:
+    """Gap boshidagi mavzu o'tish iborasi (inson slaydni shu gap boshida almashtiradi, DSBA9600): "ikkinchi mavzuga
+    o'tamiz", "uchinchi qismda", "to'rtinchisi, oxirgi qism", "grafikka qarang", "endi ... haqida gaplashsak"."""
+    toks = [uz_text.normalize(w.text).strip(".,!?:;") for w in words]
+    out = []
+    for i in range(len(words)):
+        if i and not re.search(r"[.!?…]$", words[i - 1].text.rstrip()):
+            continue
+        end = next((j + 1 for j in range(i, min(len(words), i + 8)) if re.search(r"[.!?…]$", words[j].text.rstrip())),
+                   min(len(words), i + 8))
+        head = toks[i:end]   # faqat shu gap
+        if head[:2] == ["bu", "haqda"] or "keyinroq" in head:   # "bu haqda beshinchi savolda gaplashamiz" — kelajak
+            continue
+        k0 = 1 if head[:1] and head[0] in TOPIC_LEAD else 0     # "endi ikkinchi savolga o'tamiz"
+        look = any(LOOK.match(a) and any(b.startswith("qara") for b in head[k + 1:k + 3])
+                   for k, a in enumerate(head[:3]))
+        hit = (bool(head[k0:]) and bool(ORD.match(head[k0])) and any(TOPIC.match(b) for b in head[k0:k0 + 4])
+               or look or any(a.endswith("tamiz") and a.startswith("o") for a in head[:5])
+               or (head[:1] == ["endi"] and "haqida" in head))
+        if hit:
+            out.append(words[i].start_ms)
+    return out
+
+
+def snap_to_cues(bounds: list[Boundary], words: list[Word], fps: Fraction, window_s: float,
+                 find: Callable[[list[Word]], list[int]] | None = None, reason: str = "og'zaki signal") -> None:
     """Oldinga (n -> n+1) chegarani eng yaqin og'zaki signal gapiga ko'chiradi: signal qo'shni chegaralar orasida va
     +-window_s ichida bo'lishi kerak; bitta signal bitta chegaraga. Leksik o'xshashlik chegarani butun gapga surib
     yuborganda (namunada slayd 7: -15 s) shu tuzatadi."""
-    cues = [round(Fraction(ms, 1000) * fps) for ms in cue_starts(words)]
+    cues = [round(Fraction(ms, 1000) * fps) for ms in (find or cue_starts)(words)]
     used: set[int] = set()
     win = round(Fraction(window_s).limit_denominator(1000) * fps)
     for k, b in enumerate(bounds):
-        if b.slide != b.prev_slide + 1:
+        if b.slide != b.prev_slide + 1 or b.reason == "og'zaki signal":
             continue
         lo = bounds[k - 1].frame + 1 if k else 0
         hi = bounds[k + 1].frame - 1 if k + 1 < len(bounds) else 1 << 62
@@ -325,7 +386,7 @@ def snap_to_cues(bounds: list[Boundary], words: list[Word], fps: Fraction, windo
             c = min(cand, key=lambda c: abs(c - b.frame))
             used.add(c)
             b.frame = c
-            b.reason = "og'zaki signal"
+            b.reason = reason
             b.confidence = max(b.confidence, 0.95)
 
 
