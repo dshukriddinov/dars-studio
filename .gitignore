@@ -24,3 +24,7 @@ tests/fixtures/generated/
 
 # foydalanuvchi namunalari (haqiqiy dars materiallari)
 namuna/
+
+# lokal sozlamalar va shaxsiy fayllar
+.claude/
+extra/
