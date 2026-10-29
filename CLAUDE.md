@@ -32,8 +32,8 @@ Windows'da portativ Python: `runtime\python\python.exe` (yuqoridagi `python` o'r
 5. **GPU.** Har GPU ishi `jobs/worker.py` orqali alohida jarayonda, resurs e'loni bilan (`vram_mb`, `nvenc`, `nvdec`).
    Server jarayoni CUDA'ni yuklamaydi. Jami VRAM ≤ 13 GB.
 6. **Oraliq videolar yo'q.** Yakuniy video bitta render o'tishida quriladi. Tahlil natijalari yon fayllarda (`cache/`).
-7. **Eye Contact** — `engines/eye-contact` submodule, faqat CLI orqali (`--patches-out`). Uning ichki kodini Studio'dan
-   import qilma. O'zgarish kerak bo'lsa — o'sha repo'da alohida branch.
+7. **Eye Contact** — `engines/eye-contact` papkasi (2026-10-29 dan submodule emas, repo ichida), lekin chegara
+   saqlanadi: faqat CLI orqali (`--patches-out`), ichki kodini Studio'dan import qilma.
 8. **Offline.** Ish vaqtida tarmoqqa murojaat yo'q. Modellar faqat `tools/fetch_models.py` orqali, manifest + sha256.
 9. **Litsenziya.** Yangi kutubxona yoki model qo'shishdan oldin litsenziyani tekshir (TZ 10.2). AGPL va
    "non-commercial" taqiqlangan. Noma'lum bo'lsa — to'xta va so'ra.

@@ -4,6 +4,18 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-29 — Eye Contact submodule'dan asosiy repoga olindi
+
+- Foydalanuvchi so'rovi: "eye contactni to'liq project ichiga ol" — bitta repo, clone oson, push bitta.
+  `.gitmodules` o'chirildi, `studio-ec` dagi 50 fayl `engines/eye-contact/` ga oddiy papka sifatida qo'shildi.
+- Chegara o'zgarmadi (CLAUDE.md 7-qoida yangilandi): Studio uni faqat CLI orqali chaqiradi (`sys.executable -m
+  eyecontact.cli`, alohida jarayon); ichki import taqiqlangani qoladi. Tarix eski GitHub reposida
+  (dshukriddinov/eye-contact) saqlanadi, yangi o'zgarishlar endi shu repoda.
+- Yo'qotish: submodule ichidagi lokal `.venv` (deinit o'chirdi) — Studio ishiga ta'sir qilmaydi (CLI asosiy
+  .venv python bilan ishlaydi); eye-contact'ning o'z testlari kerak bo'lsa venv qayta quriladi.
+
+---
+
 ## 2026-10-29 — Eksport: fayl hajmi chegarasi (odatda 100 MB)
 
 - Foydalanuvchi: tayyor video < 100 MB bo'lishi kerak; hozir montajdan keyin Convertilla bilan siqadi. Taklif: alohida
