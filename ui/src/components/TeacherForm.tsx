@@ -30,12 +30,42 @@ export function LangField({ meta, onChange }: { meta: Record<string, string>; on
   );
 }
 
+/** Avvalgi darslardagi o'qituvchilar: ism -> o'qituvchi maydonlari (+ fan). Bir ism bir necha darsda bo'lsa —
+ * ro'yxatdagi oxirgisi (bo'sh qiymatlar oldingisini o'chirmaydi). */
+export function teachersFrom(projects: { meta: Record<string, string> }[]): Map<string, Record<string, string>> {
+  const out = new Map<string, Record<string, string>>();
+  for (const { meta } of projects) {
+    const name = meta.oqituvchi?.trim();
+    if (!name) continue;
+    const prev = out.get(name) ?? {};
+    const keep = Object.fromEntries([...TEACHER_FIELDS.map((f) => f.key), "fan"]
+      .map((k) => [k, meta[k]?.trim() || prev[k] || ""]).filter(([, v]) => v));
+    out.set(name, keep);
+  }
+  return out;
+}
+
+export function useTeachers(): Map<string, Record<string, string>> {
+  const [t, setT] = useState<Map<string, Record<string, string>>>(new Map());
+  useEffect(() => { api.projects().then((ps) => setT(teachersFrom(ps))).catch(() => undefined); }, []);
+  return t;
+}
+
+/** Ism ro'yxatdagi o'qituvchiga to'liq mos kelsa — qolgan o'qituvchi maydonlari undan, fan esa bo'sh bo'lsa. */
+export function fillTeacher(meta: Record<string, string>, teachers: Map<string, Record<string, string>>) {
+  const t = teachers.get(meta.oqituvchi?.trim() ?? "");
+  if (!t) return meta;
+  const { fan, ...rest } = t;
+  return { ...meta, ...rest, ...(fan && !meta.fan?.trim() ? { fan } : {}) };
+}
+
 /** Kiritishda oddiy apostrofni oʻ/gʻ uchun U+02BB ga almashtiradi (CLAUDE.md 10-qoida). */
 export const fixOkina = (s: string) => s.replace(/([OoGg])['’‘`]/g, "$1ʻ");
 
-export function MetaFields({ fields, meta, onChange }: {
+export function MetaFields({ fields, meta, onChange, teachers }: {
   fields: { key: string; label: string; hint: string; required?: boolean }[];
   meta: Record<string, string>; onChange: (m: Record<string, string>) => void;
+  teachers?: Map<string, Record<string, string>>;   // ism maydonida taklif va avtomatik to'ldirish
 }) {
   return (
     <div className="grid2">
@@ -43,9 +73,18 @@ export function MetaFields({ fields, meta, onChange }: {
         <label key={f.key} className="field">
           <span className="label">{f.label}{f.required ? " *" : ""}</span>
           <input value={meta[f.key] ?? ""} placeholder={f.hint} required={f.required}
-            onChange={(e) => onChange({ ...meta, [f.key]: fixOkina(e.target.value) })} />
+            list={teachers && f.key === "oqituvchi" ? "known-teachers" : undefined} autoComplete="off"
+            onChange={(e) => {
+              const next = { ...meta, [f.key]: fixOkina(e.target.value) };
+              onChange(teachers && f.key === "oqituvchi" ? fillTeacher(next, teachers) : next);
+            }} />
         </label>
       ))}
+      {teachers?.size ? (
+        <datalist id="known-teachers">
+          {[...teachers].map(([n, t]) => <option key={n} value={n}>{[t.lavozim, t.ish_joyi].filter(Boolean).join(", ")}</option>)}
+        </datalist>
+      ) : null}
     </div>
   );
 }

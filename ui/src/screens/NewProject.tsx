@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FolderOpen } from "lucide-react";
 import { useStore } from "../store";
 import { api } from "../lib/api";
-import { LESSON_FIELDS, LangField, LowerThirdPreview, MetaFields, TEACHER_FIELDS } from "../components/TeacherForm";
+import { LESSON_FIELDS, LangField, LowerThirdPreview, MetaFields, TEACHER_FIELDS, useTeachers } from "../components/TeacherForm";
 
 const DEFAULT_TEMPLATE = "akademiya";
 
@@ -11,6 +11,7 @@ export function NewProject() {
   const [video, setVideo] = useState("");
   const [more, setMore] = useState("");   // davomi (ikkinchi fayl), ixtiyoriy
   const [slides, setSlides] = useState("");
+  const teachers = useTeachers();   // avvalgi darslardagi o'qituvchilar: ism tanlansa qolgani to'ldiriladi
   const [name, setName] = useState("");
   const [templates, setTemplates] = useState<string[]>([]);
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
@@ -85,7 +86,7 @@ export function NewProject() {
 
         <section className="block form">
           <h2 className="h2">Dars boshidagi yozuv</h2>
-          <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} />
+          <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} teachers={teachers} />
           <LowerThirdPreview template={template} meta={meta} />
           <label className="check">
             <input type="checkbox" checked={prepare} onChange={(e) => setPrepare(e.target.checked)} />

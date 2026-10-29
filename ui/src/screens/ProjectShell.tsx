@@ -6,7 +6,7 @@ import { api, urls } from "../lib/api";
 import * as E from "../lib/edits";
 import { frameToSec, parseFps, type Fps } from "../lib/time";
 import type { Job, Project as P } from "../lib/types";
-import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS, langLabel } from "../components/TeacherForm";
+import { LESSON_FIELDS, LowerThirdPreview, MetaFields, TEACHER_FIELDS, langLabel, useTeachers } from "../components/TeacherForm";
 import { StepReview } from "./StepReview";
 
 const projName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
@@ -80,13 +80,14 @@ function StepFiles({ name, p, fps, busy }: { name: string; p: P; fps: Fps; busy:
   const command = useStore.getState().command;
   const [meta, setMeta] = useState<Record<string, string>>(p.meta);
   useEffect(() => setMeta(p.meta), [p.meta]);
+  const teachers = useTeachers();
   const keys = [...TEACHER_FIELDS, ...LESSON_FIELDS].map((f) => f.key);
   const dirty = keys.some((k) => (meta[k] ?? "") !== (p.meta[k] ?? ""));
   return (
     <div className="cols">
       <section className="block">
         <h2 className="h2">Dars boshidagi yozuv</h2>
-        <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} />
+        <MetaFields fields={TEACHER_FIELDS} meta={meta} onChange={setMeta} teachers={teachers} />
         <LowerThirdPreview template={p.template_id} meta={meta} />
         <MetaFields fields={LESSON_FIELDS} meta={meta} onChange={setMeta} />
         <div className="row">
