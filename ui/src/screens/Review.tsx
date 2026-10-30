@@ -282,8 +282,9 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
           <label className="label dim" htmlFor="slide-no">Slayd raqami</label>
           <select id="slide-no" value={curSpan?.slide ?? ""} disabled={!curSpan}
             onChange={(e) => run(E.setSlideCmd(p, spanIdx, Number(e.target.value)))}>
-            {(p.slides.length ? p.slides.map((s) => s.index) : [curSpan?.slide ?? 1]).map((n) => (
-              <option key={n} value={n}>{n}</option>
+            {(p.slides.length ? p.slides : [{ index: curSpan?.slide ?? 1, title: "" }]).map((s) => (
+              <option key={s.index} value={s.index}>
+                {s.index}{s.title ? `. ${s.title.replace(//g, " ").slice(0, 48)}` : ""}</option>
             ))}
           </select>
           <span className="label dim">Sahna</span>
