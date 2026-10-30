@@ -130,9 +130,11 @@ def create_app(workdir: Path | None = None, start_scheduler: bool = True) -> Fas
     @app.get("/api/projects")
     def list_projects() -> list[dict[str, Any]]:
         out = []
-        for d in sorted(wd.iterdir()):
+        # eng oxirgi yaratilgani ro'yxat boshida (papka st_ctime: Windows'da yaratilgan vaqt, qayta yozilmaydi)
+        dirs = [d for d in wd.iterdir() if d.is_dir() and (d / "project.json").is_file()]
+        for d in sorted(dirs, key=lambda d: d.stat().st_ctime, reverse=True):
             s = ProjectStore(d)
-            if d.is_dir() and s.exists():
+            if s.exists():
                 p = s.load()
                 jobs = queue.list(project=str(d))
                 out.append({"name": d.name, "id": p.id, "fps": p.fps, "total_frames": p.total_frames,
