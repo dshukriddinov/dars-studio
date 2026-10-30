@@ -52,10 +52,13 @@ SIZE_AUDIO_KBPS = 128      # hajm chegarali eksportda ovoz (nutq uchun yetarli)
 SIZE_MARGIN = 0.93         # konteyner, intro/outro va VBR og'ishi uchun zaxira
 
 
-def size_profile(max_mb: float, seconds: float) -> str:
+def size_profile(max_mb: float, seconds: float, main_seconds: float | None = None, reserved_bytes: int = 0) -> str:
     """Butun fayl max_mb dan oshmasin: video bitreyti uzunlikdan hisoblanadi ("size850" = 850 kbit/s).
-    Natija PROFILES ga qo'shiladi (render kaliti va intro/outro keshi profil nomi bilan ajraladi)."""
-    kbps = int((max_mb * 1024 * 1024 * 8 * SIZE_MARGIN / max(seconds, 1.0) - SIZE_AUDIO_KBPS * 1000) / 1000)
+    main_seconds/reserved_bytes: intro/outro alohida (yuqori sifatda) kodlanadi — ularning baytlari byudjetdan
+    ayiriladi, bitreyt faqat asosiy qism uzunligiga bo'linadi. Natija PROFILES ga qo'shiladi."""
+    budget_bits = max_mb * 1024 * 1024 * 8 * SIZE_MARGIN - SIZE_AUDIO_KBPS * 1000 * max(seconds, 1.0) \
+        - reserved_bytes * 8
+    kbps = int(budget_bits / max(main_seconds if main_seconds is not None else seconds, 1.0) / 1000)
     kbps = max(250, min(kbps, 8000))
     name = f"size{kbps}"
     PROFILES[name] = size_args(kbps)

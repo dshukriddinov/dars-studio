@@ -23,3 +23,12 @@ def test_check_size(tmp_path: Path) -> None:
     assert check_size(f, 5).status == "ok"
     bad = check_size(f, 2)
     assert bad.status == "ogohlantirish" and "3.0 MB" in bad.detail
+
+
+def test_size_profile_reserves_bumper_bytes() -> None:
+    # intro/outro 6 MB yuqori sifatda: byudjetdan ayiriladi, bitreyt faqat asosiy qismga bo'linadi
+    plain = int(renderer.size_profile(100, 16 * 60)[4:])
+    with_bump = int(renderer.size_profile(100, 16 * 60 + 10, main_seconds=16 * 60, reserved_bytes=6 * 2**20)[4:])
+    assert with_bump < plain and plain - with_bump < 120
+    from darsstudio.render.bumpers import bumper_profile
+    assert bumper_profile("size679") == "web" and bumper_profile("arxiv") == "arxiv"

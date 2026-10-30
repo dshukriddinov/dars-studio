@@ -214,7 +214,12 @@ def export_project(stack: CommandStack, profile: str = "web", premiere: bool = F
     d.mkdir(parents=True, exist_ok=True)
     mp4 = d / f"{name}.mp4"
     if max_mb:
-        profile = renderer.size_profile(max_mb, output_seconds(stack))
+        # intro/outro oldindan yuqori sifatda kodlanadi (keshlanadi), hajmi byudjetdan ayiriladi
+        tpl0 = templates.load(stack.project.template_id)
+        bump = bumpers.encode_all(tpl0, stack.project.fps_frac, "web", store.cache("render"))
+        reserved = sum(f.stat().st_size for f, _ in bump.values())
+        main_s = float(Fraction(cuts.timemap(stack.project).out_total) / stack.project.fps_frac)
+        profile = renderer.size_profile(max_mb, output_seconds(stack), main_s, reserved)
     r = render_project(stack, mp4, profile=profile, subtitles=subtitles, on_progress=on_progress)
     p = stack.project
     tm = cuts.timemap(p)

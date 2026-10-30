@@ -42,19 +42,32 @@ def encode(src: Path, out: Path, fps: Fraction, canvas: tuple[int, int], profile
     return n
 
 
+def bumper_profile(profile: str) -> str:
+    """Intro/outro doim yuqori sifatda: hajm chegarali ("sizeNNN") eksportda past bitreyt tez harakatli grafikani
+    buzadi (intro "ijirlab" qolardi). Ularning hajmi byudjetdan alohida ayiriladi (size_profile reserved_bytes)."""
+    return "web" if profile.startswith("size") else profile
+
+
+def encode_all(tpl: Template, fps: Fraction, profile: str, cache: Path) -> dict[str, tuple[Path, int]]:
+    """Intro/outro'ni (keshlab) kodlaydi: {nom: (mp4, kadrlar)}. wrap() va hajm byudjeti shu keshdan foydalanadi."""
+    bp = bumper_profile(profile)
+    bump: dict[str, tuple[Path, int]] = {}
+    for name in {x for x in (tpl.intro, tpl.outro) if x}:
+        src = tpl.asset(name)
+        tag = f"{fps}|{tpl.canvas}|{encoder_args(bp)}"     # kodlash sozlamasi o'zgarsa — qayta
+        key = hashlib.sha256(src.read_bytes() + tag.encode()).hexdigest()[:16]
+        enc = cache / f"bumper_{key}.mp4"
+        bump[name] = (enc, encode(src, enc, fps, tpl.canvas, bp))
+    return bump
+
+
 def wrap(main: Path, tpl: Template, fps: Fraction, profile: str, cache: Path,
          audio_wav: Path | None = None) -> tuple[int, int]:
     """main.mp4 ni joyida intro + main + outro ga almashtiradi. audio_wav — asosiy qism audiosi (chiqish vaqt o'qida,
     PCM); berilmasa main'dan dekodlanadi. -> (intro, outro) kadrlari."""
     if not (tpl.intro or tpl.outro):
         return 0, 0
-    bump: dict[str, tuple[Path, int]] = {}
-    for name in {x for x in (tpl.intro, tpl.outro) if x}:
-        src = tpl.asset(name)
-        tag = f"{fps}|{tpl.canvas}|{encoder_args(profile)}"     # kodlash sozlamasi o'zgarsa — qayta
-        key = hashlib.sha256(src.read_bytes() + tag.encode()).hexdigest()[:16]
-        enc = cache / f"bumper_{key}.mp4"
-        bump[name] = (enc, encode(src, enc, fps, tpl.canvas, profile))
+    bump = encode_all(tpl, fps, profile, cache)
     q = probe.probe(main)
     n_main = round(q.duration * fps)
     body = main.with_name(main.stem + ".body.mp4")

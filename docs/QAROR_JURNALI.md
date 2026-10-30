@@ -4,6 +4,18 @@ Har yozuv: sana, bosqich, qaror yoki o'lchov, sabab, dalil (commit, fayl, buyruq
 
 ---
 
+## 2026-10-30 — Hajm chegarasida intro buzilishi tuzatildi
+
+- Foydalanuvchi: 100 MB tanlansa intro "ijirlab" qolyapti. Sabab: intro/outro ham asosiy qism bilan bir xil past
+  bitreytda (679 kbit/s) kodlanardi — tez harakatli grafika uchun juda kam.
+- Endi intro/outro doim "web" sifatida (8 Mbit/s) kodlanadi; ularning haqiqiy baytlari byudjetdan ayiriladi va
+  qolgan bitreyt faqat asosiy qismga bo'linadi (`size_profile(main_seconds, reserved_bytes)`,
+  `bumpers.bumper_profile/encode_all` — eksport oldidan keshlab kodlaydi).
+- O'lchov (DSBA8971, 100 MB): **94.2 MB**, QA ok; intro kadrlari eski variantda xira/oqib ketgan, yangisida toza
+  (vizual taqqoslandi, 2.2 s va 3.6 s kadrlar). Eksport 381 s.
+
+---
+
 ## 2026-10-29 — Diarization: "boshqa ovoz" (operator) takliflari
 
 - Foydalanuvchi: operator "boshlasangiz bo'ladi" degan yoki xatolikni aytgan joylar kesish taklifi bo'lsin.
