@@ -202,8 +202,9 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
 .ntl .tl-item.sel { box-shadow: inset 0 0 0 2px var(--accent-strong); }
 .tl-stick { position: sticky; left: 0; display: flex; align-items: center; gap: 6px; height: 100%; min-width: 0; pointer-events: none; }
 .tl-thumb { height: 100%; aspect-ratio: 16 / 9; object-fit: cover; flex: none; border-radius: 3px 0 0 3px; pointer-events: none; }
-.ntl .tl-bound { width: 6px; margin-left: -3px; background: var(--ink-secondary); opacity: .55; z-index: 2; }
-.ntl .tl-bound:hover, .ntl .tl-bound.sel { opacity: 1; background: var(--accent-strong); }
+.ntl .tl-bound { width: 10px; margin-left: -5px; background: transparent; z-index: 2; display: flex; justify-content: center; }
+.ntl .tl-bound::before { content: ""; width: 4px; background: var(--ink-secondary); opacity: .55; }
+.ntl .tl-bound:hover::before, .ntl .tl-bound.sel::before { opacity: 1; background: var(--accent-strong); }
 .ntl-wave { color: color-mix(in srgb, var(--accent) 55%, var(--ink-secondary)); background: var(--surface-200); }
 .ntl-hover { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: var(--ink-secondary); opacity: .35; pointer-events: none; }
 .ntl-ghost { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; margin-left: -1px; background: var(--warn); pointer-events: none; z-index: 4; }
@@ -229,7 +230,7 @@ a.btn-secondary { text-decoration: none; color: var(--ink); display: inline-flex
 .final-stale span { flex: 1; }
 .ntl .tl-item.anim { background: var(--success-subtle); color: var(--success); }
 .ntl .tl-item.anim.src-manual { background: var(--accent-subtle); color: var(--accent-strong); }
-.ntl .tl-bound.end { left: auto; right: 0; margin-left: 0; margin-right: -3px; }
+.ntl .tl-bound.end { left: auto; right: 0; margin-left: 0; margin-right: -5px; }
 .tl-inner.razor, .tl-inner.razor * { cursor: crosshair !important; }
 .ntl-range { position: absolute; top: 26px; bottom: 0; background: color-mix(in srgb, var(--danger) 22%, transparent);
   box-shadow: inset 2px 0 0 var(--danger), inset -2px 0 0 var(--danger); pointer-events: none; z-index: 4; }

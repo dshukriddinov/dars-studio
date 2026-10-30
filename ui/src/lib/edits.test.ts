@@ -151,3 +151,13 @@ describe("removeCutCmd (Delete tugmasi)", () => {
     expect(E.removeCutCmd({ ...p, cuts: [{ ...p.cuts[1], status: "rad_etilgan" as const }] }, 0)).toBeNull();
   });
 });
+
+describe("deleteSlideSpanCmd (Delete)", () => {
+  it("oraliq o'chadi, vaqti qo'shniga qo'shiladi; yakka oraliq o'chmaydi", () => {
+    const p = project();
+    expect((E.deleteSlideSpanCmd(p, 1)!.values.slide_spans as { start: number; end: number; slide: number }[])
+      .map((s) => [s.start, s.end, s.slide])).toEqual([[0, 200, 1], [200, 300, 3]]);
+    expect((E.deleteSlideSpanCmd(p, 0)!.values.slide_spans as { start: number }[])[0].start).toBe(0);
+    expect(E.deleteSlideSpanCmd({ ...p, slide_spans: [p.slide_spans[0]] }, 0)).toBeNull();
+  });
+});

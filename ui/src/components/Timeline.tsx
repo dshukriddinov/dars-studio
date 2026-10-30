@@ -298,6 +298,7 @@ interface LaneProps {
 const LaneRow = memo(function LaneRow({ lane, zoom, from, to, selected, selectedBoundary, onItemClick, onBoundaryClick,
   onItemDouble, onBoundaryDown }: LaneProps) {
   const [i0, i1] = visibleSlice(lane.items, from, to, lane.maxLen);
+  const laneLast = lane.items.length - 1;
   const h = lane.tall ? TALL_H : LANE_H;
   const els = [];
   for (let k = i0; k < i1; k++) {
@@ -325,7 +326,15 @@ const LaneRow = memo(function LaneRow({ lane, zoom, from, to, selected, selected
               e.stopPropagation();
               if (onBoundaryDown) onBoundaryDown(e, it.i - 1, "start"); else onBoundaryClick?.(it.i - 1);
             }} />
-        ) : lane.drag ? (
+        ) : null}
+        {lane.boundaries && it.i < laneLast ? (
+          <span className={`tl-bound end${it.i === selectedBoundary ? " sel" : ""}`} title="Chegara: sudrab suring"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              if (onBoundaryDown) onBoundaryDown(e, it.i, "start"); else onBoundaryClick?.(it.i);
+            }} />
+        ) : null}
+        {!lane.boundaries && lane.drag ? (
           <span className="tl-bound" title="Boshini sudrab suring"
             onMouseDown={(e) => { e.stopPropagation(); onBoundaryDown?.(e, it.i, "start"); }} />
         ) : null}

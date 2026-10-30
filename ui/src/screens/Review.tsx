@@ -57,6 +57,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
   const fps = useMemo(() => parseFps(p.fps), [p.fps]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [selBoundary, setSelBoundary] = useState(-1);
+  const [selSlide, setSelSlide] = useState(-1);
   const [selCut, setSelCut] = useState(-1);
   const [selEye, setSelEye] = useState(-1);
   const [markIn, setMarkIn] = useState<number | null>(null);
@@ -134,8 +135,8 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
 
   const onItemClick = useCallback((lane: string, i: number, frame: number) => {
     player.seek(frame);
-    if (lane === "slide") setSelBoundary(i > 0 ? i - 1 : 0);
-    if (lane === "cut") setSelCut(i);
+    if (lane === "slide") { setSelBoundary(i > 0 ? i - 1 : 0); setSelSlide(i); setSelCut(-1); }
+    if (lane === "cut") { setSelCut(i); setSelSlide(-1); }
     if (lane === "eye") setSelEye(i);
   }, []);
 
@@ -166,7 +167,9 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
       case "approveCut": approveCut("tasdiqlangan"); break;
       case "deleteCut":
         // transkriptda so'z belgilangan bo'lsa Delete o'sha yerga tegishli (TextEdit o'zi kesadi)
-        if (selCut >= 0 && !document.querySelector(".textedit .w.sel")) { run(E.removeCutCmd(p, selCut)); setSelCut(-1); }
+        if (document.querySelector(".textedit .w.sel")) break;
+        if (selCut >= 0) { run(E.removeCutCmd(p, selCut)); setSelCut(-1); }
+        else if (selSlide >= 0) { run(E.deleteSlideSpanCmd(p, selSlide)); setSelSlide(-1); setSelBoundary(-1); }
         break;
       case "undo": void undo(); break;
       case "redo": void redo(); break;
@@ -329,7 +332,7 @@ function ReviewBody({ name, p, words, suspicious, command, undo, redo }: BodyPro
           onRangeCut={(a, b) => run(E.addCutCmd(p, E.snapOutOfWord(a, sortedWords, fps), E.snapOutOfWord(b, sortedWords, fps)))}
           onSeek={(f) => player.seek(f)} waveform={wave} overview={cutMarks} />
         <p className="caption dim hint">
-          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End · Delete tanlangan kesishni olib tashlaydi · C kesish asbobi · kesish chetlarini sudrang · sahnani ikki bosish A↔B
+          J −1 s · K pauza · L ijro · ←/→ kadr · Shift+←/→ 1 s · [ ] chegara · 1/2 sahna · Enter tasdiqlash · Ctrl+Z/Y · Alt+gʻildirak masshtab · = / − · \ butun dars · Home/End · Delete tanlangan kesish/slayd oraligʻini olib tashlaydi · C kesish asbobi · kesish chetlarini sudrang · sahnani ikki bosish A↔B
         </p>
       </section>
     </div>

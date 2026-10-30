@@ -38,7 +38,7 @@ describe("Timeline virtualization", () => {
     fireEvent.mouseDown(screen.getByTitle("s3"), { button: 0 });
     expect(onItem.mock.calls[0][0]).toBe("slide");
     expect(onItem.mock.calls[0][1]).toBe(3);
-    fireEvent.mouseDown(container.querySelectorAll(".tl-bound")[0]);
+    fireEvent.mouseDown(container.querySelectorAll(".tl-bound:not(.end)")[0]);
     expect(onBound).toHaveBeenCalledWith(0);
   });
 
@@ -60,7 +60,7 @@ describe("Timeline virtualization", () => {
     const onDrag = vi.fn();
     const { container } = render(<Timeline total={20000} lanes={lanes} onSeek={() => undefined} width={1000} pxPerFrame={1}
       onBoundaryDrag={onDrag} />);
-    fireEvent.mouseDown(container.querySelectorAll(".tl-bound")[1], { button: 0, clientX: 20 });
+    fireEvent.mouseDown(container.querySelectorAll(".tl-bound:not(.end)")[1], { button: 0, clientX: 20 });
     fireEvent.mouseMove(window, { clientX: 57 });
     expect(container.querySelector(".ntl-ghost")).toBeTruthy();
     fireEvent.mouseUp(window, { clientX: 57 });

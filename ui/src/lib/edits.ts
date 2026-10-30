@@ -51,6 +51,16 @@ export function splitSlideCmd(p: Project, frame: number): Cmd | null {
   return changed(spans, p.slide_spans) ? { label: "Chegara qoʻshish", values: { slide_spans: spans } } : null;
 }
 
+/** Tanlangan slayd oralig'ini o'chirish: vaqti qo'shni oraliqqa qo'shiladi (birinchisi bo'lsa — keyingisiga). */
+export function deleteSlideSpanCmd(p: Project, i: number): Cmd | null {
+  const s = p.slide_spans[i];
+  if (!s || p.slide_spans.length < 2) return null;
+  const spans = p.slide_spans.filter((_, k) => k !== i).map((x) => ({ ...x }));
+  if (i > 0) spans[i - 1] = { ...spans[i - 1], end: s.end, source: "manual" };
+  else spans[0] = { ...spans[0], start: s.start, source: "manual" };
+  return { label: `Slayd oraligʻini oʻchirish (${s.slide})`, values: { slide_spans: spans } };
+}
+
 export function mergeSlideCmd(p: Project, b: number): Cmd | null {
   const spans = mergeAt(p.slide_spans, b);
   return changed(spans, p.slide_spans) ? { label: "Chegarani oʻchirish", values: { slide_spans: spans } } : null;
