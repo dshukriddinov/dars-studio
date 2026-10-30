@@ -558,7 +558,9 @@ def reread_cuts(words: Sequence[Word], fps: Fraction,
             cs, ce = _mid_frame(lo, ws[s].start_ms, fps, True), _mid_frame(ws[x - 1].end_ms, ws[x].start_ms, fps, False)
             if ce > cs:
                 out.append(CutProposal(start=cs, end=ce, reason="takror"))
-            j = x + 8
+            # x orqaga surilgan bo'lishi mumkin (chala urinish boshiga): j old jilmasa bir xil joy qayta-qayta
+            # ishlanib cheksiz ilmoq bo'lardi (DSBA9714, cuts vazifasi 13+ daqiqa osilib qoldi)
+            j = max(j + 1, x + 8)
         else:
             j += 1
     return out
